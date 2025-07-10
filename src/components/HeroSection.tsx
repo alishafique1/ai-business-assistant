@@ -21,20 +21,36 @@ export const HeroSection = () => {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
             <span className="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
-            Pre-Launch: Early Access Available
+            No App Download Required • Works in Telegram & WhatsApp
           </div>
           
           {/* Main heading */}
-          <h1 className="text-5xl md:text-7xl font-bold text-foreground mb-6 leading-tight">
-            Replace 5+ AI Tools
-            <span className="bg-gradient-primary bg-clip-text text-transparent"> With One Platform</span>
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
+            Your AI Business Assistant
+            <span className="bg-gradient-primary bg-clip-text text-transparent"> Right Where You Work</span>
           </h1>
           
           {/* Subheading */}
-          <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
-            Stop paying for ChatGPT, Claude, expense apps, and content tools separately. 
-            Our secure, private AI platform keeps YOUR data yours while handling everything your business needs.
+          <p className="text-xl md:text-2xl text-muted-foreground mb-6 max-w-4xl mx-auto leading-relaxed">
+            Skip the app downloads. Get AI-powered expense tracking, content creation, and business insights directly in Telegram or WhatsApp Business. 
+            <span className="block mt-2 text-lg text-primary font-medium">We handle setup • You keep your data private • One platform replaces 5+ tools</span>
           </p>
+          
+          {/* Integration highlight */}
+          <div className="flex flex-wrap justify-center items-center gap-4 mb-8 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 bg-card/60 backdrop-blur-sm px-3 py-2 rounded-full">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span>Works in Telegram</span>
+            </div>
+            <div className="flex items-center gap-2 bg-card/60 backdrop-blur-sm px-3 py-2 rounded-full">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span>WhatsApp Business Ready</span>
+            </div>
+            <div className="flex items-center gap-2 bg-card/60 backdrop-blur-sm px-3 py-2 rounded-full">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span>Full Setup Support</span>
+            </div>
+          </div>
           
           {/* CTA buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
