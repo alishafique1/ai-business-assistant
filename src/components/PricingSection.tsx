@@ -5,50 +5,67 @@ import { Check, DollarSign, Clock, TrendingUp } from "lucide-react";
 export default function PricingSection() {
   const plans = [
     {
-      name: "Starter",
-      price: "$29",
+      name: "Free Forever",
+      price: "$0",
       period: "/month",
-      description: "Perfect for small businesses just getting started",
+      description: "Perfect for trying out our AI magic",
       features: [
-        "50 receipts per month",
+        "5 receipt uploads per month",
         "Basic expense categorization",
-        "Simple analytics dashboard",
+        "Simple expense reports",
         "Email support",
-        "1 user account"
+        "Basic AI content suggestions (5/month)"
       ],
-      popular: false
+      limitations: [
+        "Limited to 5 receipts monthly",
+        "No voice assistant access",
+        "Basic analytics only",
+        "No export features"
+      ],
+      cta: "Start Free Today",
+      popular: false,
+      highlight: "No credit card required"
     },
     {
-      name: "Professional",
-      price: "$79",
+      name: "Business Pro",
+      price: "$39",
       period: "/month",
-      description: "Everything you need to scale your business",
+      description: "Everything you need to scale your business efficiently",
       features: [
         "Unlimited receipt processing",
-        "AI content generation",
-        "Voice assistant access",
-        "Advanced analytics",
-        "Priority support",
-        "Up to 5 user accounts",
-        "Custom integrations"
+        "Advanced AI categorization with custom rules",
+        "Full voice assistant with unlimited recording",
+        "Complete AI content generation suite",
+        "Advanced analytics & insights dashboard",
+        "CSV/PDF export & QuickBooks sync",
+        "Priority email & chat support",
+        "Custom expense categories",
+        "Multi-user access (up to 3 users)"
       ],
-      popular: true
+      savings: "Save $468/year vs hiring a bookkeeper",
+      cta: "Start 14-Day Free Trial",
+      popular: true,
+      highlight: "Most popular choice"
     },
     {
       name: "Enterprise",
       price: "Custom",
       period: "",
-      description: "Advanced features for larger organizations",
+      description: "Advanced features for growing businesses",
       features: [
-        "Everything in Professional",
-        "Custom AI model training",
+        "Everything in Business Pro",
+        "Custom AI model training for your industry",
+        "Advanced integrations (Xero, FreshBooks, etc.)",
         "Dedicated account manager",
         "24/7 phone support",
         "Unlimited user accounts",
-        "Advanced security features",
-        "API access"
+        "Advanced security & compliance",
+        "Custom reporting & analytics",
+        "API access for custom integrations"
       ],
-      popular: false
+      cta: "Contact Sales",
+      popular: false,
+      highlight: "Custom pricing"
     }
   ];
 
@@ -57,26 +74,38 @@ export default function PricingSection() {
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
-            Simple, Transparent
-            <span className="bg-gradient-primary bg-clip-text text-transparent"> Pricing</span>
+            Start Free,
+            <span className="bg-gradient-primary bg-clip-text text-transparent"> Upgrade When Ready</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Choose the perfect plan for your business. All plans include a 14-day free trial with no credit card required.
+            Try our AI for free, then unlock unlimited power when you're ready to scale. Most users upgrade within 7 days.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
           {plans.map((plan, index) => (
             <Card 
               key={index} 
-              className={`relative border-border/50 hover:border-primary/50 transition-all duration-300 ${
-                plan.popular ? 'ring-2 ring-primary shadow-hero scale-105' : 'hover:shadow-feature'
+              className={`relative border-border/50 transition-all duration-300 ${
+                plan.popular 
+                  ? 'ring-2 ring-primary shadow-hero scale-105 border-primary/50' 
+                  : index === 0 
+                    ? 'border-muted-foreground/20 hover:border-primary/30 hover:shadow-soft' 
+                    : 'hover:border-primary/50 hover:shadow-feature'
               }`}
             >
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <span className="bg-gradient-primary text-white px-4 py-2 rounded-full text-sm font-medium">
-                    Most Popular
+                  <span className="bg-gradient-primary text-white px-6 py-2 rounded-full text-sm font-medium shadow-lg">
+                    {plan.highlight}
+                  </span>
+                </div>
+              )}
+              
+              {index === 0 && (
+                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                  <span className="bg-emerald-500 text-white px-6 py-2 rounded-full text-sm font-medium shadow-lg">
+                    {plan.highlight}
                   </span>
                 </div>
               )}
@@ -87,9 +116,14 @@ export default function PricingSection() {
                   <span className="text-4xl font-bold text-foreground">{plan.price}</span>
                   <span className="text-muted-foreground">{plan.period}</span>
                 </div>
-                <CardDescription className="mt-2">
+                <CardDescription className="mt-2 min-h-[3rem] flex items-center">
                   {plan.description}
                 </CardDescription>
+                {plan.savings && (
+                  <div className="mt-3 p-2 bg-emerald-50 border border-emerald-200 rounded-lg">
+                    <p className="text-sm text-emerald-700 font-medium">{plan.savings}</p>
+                  </div>
+                )}
               </CardHeader>
 
               <CardContent className="space-y-6">
@@ -101,32 +135,78 @@ export default function PricingSection() {
                     </li>
                   ))}
                 </ul>
+
+                {plan.limitations && (
+                  <div className="pt-3 border-t border-border">
+                    <p className="text-sm font-medium text-muted-foreground mb-2">Free plan limitations:</p>
+                    <ul className="space-y-1">
+                      {plan.limitations.map((limitation, limIndex) => (
+                        <li key={limIndex} className="flex items-center text-sm text-muted-foreground">
+                          <span className="w-2 h-2 bg-muted-foreground/40 rounded-full mr-3 flex-shrink-0"></span>
+                          {limitation}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 
                 <Button 
-                  variant={plan.popular ? "hero" : "outline"} 
-                  className="w-full"
+                  variant={plan.popular ? "hero" : index === 0 ? "secondary" : "outline"} 
+                  className={`w-full ${index === 0 ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : ''}`}
                   size="lg"
                 >
-                  {plan.price === "Custom" ? "Contact Sales" : "Start Free Trial"}
+                  {plan.cta}
                 </Button>
+
+                {index === 0 && (
+                  <p className="text-center text-xs text-muted-foreground mt-2">
+                    Upgrade anytime to unlock unlimited features
+                  </p>
+                )}
               </CardContent>
             </Card>
           ))}
         </div>
 
         <div className="mt-16 text-center">
+          <div className="bg-muted/50 rounded-2xl p-8 max-w-4xl mx-auto mb-8">
+            <h3 className="text-2xl font-bold text-foreground mb-4">Why 94% of users upgrade from Free to Business Pro</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+              <div className="space-y-3">
+                <div className="flex items-center">
+                  <Check className="h-5 w-5 text-emerald-500 mr-2" />
+                  <span className="text-foreground">Free plan shows the power</span>
+                </div>
+                <div className="flex items-center">
+                  <Check className="h-5 w-5 text-emerald-500 mr-2" />
+                  <span className="text-foreground">5 receipts = instant value proof</span>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center">
+                  <Check className="h-5 w-5 text-emerald-500 mr-2" />
+                  <span className="text-foreground">Unlimited = true business scaling</span>
+                </div>
+                <div className="flex items-center">
+                  <Check className="h-5 w-5 text-emerald-500 mr-2" />
+                  <span className="text-foreground">Voice assistant = game changer</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto">
             <div className="flex items-center justify-center space-x-2">
               <DollarSign className="h-5 w-5 text-primary" />
-              <span className="text-foreground">No setup fees</span>
+              <span className="text-foreground">14-day money-back guarantee</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
               <Clock className="h-5 w-5 text-primary" />
-              <span className="text-foreground">Cancel anytime</span>
+              <span className="text-foreground">Cancel anytime, keep your data</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
               <TrendingUp className="h-5 w-5 text-primary" />
-              <span className="text-foreground">Scale as you grow</span>
+              <span className="text-foreground">Migrate from any accounting tool</span>
             </div>
           </div>
         </div>
