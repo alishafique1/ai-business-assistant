@@ -10,6 +10,9 @@ import {
   ArrowRight,
   CheckCircle
 } from "lucide-react";
+import expenseTrackingImg from "@/assets/expense-tracking.jpg";
+import aiContentImg from "@/assets/ai-content.jpg";
+import voiceModelImg from "@/assets/voice-model.jpg";
 
 export const FeaturesSection = () => {
   const features = [
@@ -23,7 +26,8 @@ export const FeaturesSection = () => {
         "Visual analytics dashboard with export options",
         "Real-time financial insights"
       ],
-      gradient: "from-blue-500 to-cyan-500"
+      gradient: "from-blue-500 to-cyan-500",
+      image: expenseTrackingImg
     },
     {
       icon: Sparkles,
@@ -35,7 +39,8 @@ export const FeaturesSection = () => {
         "Contextual content generation",
         "Social media, blogs, email, and ad copy"
       ],
-      gradient: "from-purple-500 to-pink-500"
+      gradient: "from-purple-500 to-pink-500",
+      image: aiContentImg
     },
     {
       icon: Mic,
@@ -47,7 +52,8 @@ export const FeaturesSection = () => {
         "Intelligent idea generation",
         "Interactive voice conversations"
       ],
-      gradient: "from-emerald-500 to-teal-500"
+      gradient: "from-emerald-500 to-teal-500",
+      image: voiceModelImg
     }
   ];
 
@@ -68,12 +74,21 @@ export const FeaturesSection = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
           {features.map((feature, index) => (
             <Card key={index} className="relative overflow-hidden bg-card/90 backdrop-blur-sm border-0 shadow-feature hover:shadow-hero transition-all duration-300 group">
-              <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-5 group-hover:opacity-10 transition-opacity duration-300`}></div>
+              <div className="aspect-video relative overflow-hidden">
+                <img 
+                  src={feature.image} 
+                  alt={feature.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                <div className="absolute bottom-4 left-4">
+                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${feature.gradient} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                    <feature.icon className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+              </div>
               
               <CardHeader className="relative z-10">
-                <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4`}>
-                  <feature.icon className="w-6 h-6 text-white" />
-                </div>
                 <CardTitle className="text-xl font-bold text-foreground">
                   {feature.title}
                 </CardTitle>

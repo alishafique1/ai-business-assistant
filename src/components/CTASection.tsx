@@ -1,7 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 export const CTASection = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   return (
     <section className="py-24 bg-gradient-primary relative overflow-hidden">
       {/* Background decoration */}
@@ -43,8 +47,9 @@ export const CTASection = () => {
             <Button 
               size="lg" 
               className="bg-white text-primary hover:bg-white/95 text-lg px-8 py-4 font-semibold shadow-hero"
+              onClick={() => navigate(user ? "/dashboard" : "/auth")}
             >
-              Start Your Free Trial
+              {user ? "Go to Dashboard" : "Start Your Free Trial"}
               <ArrowRight className="w-5 h-5" />
             </Button>
             <Button 
