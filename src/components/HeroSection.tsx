@@ -20,21 +20,20 @@ export const HeroSection = () => {
         <div className="max-w-4xl mx-auto">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
-            <Sparkles className="w-4 h-4" />
-            AI-Powered Business Platform
+            <span className="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+            Pre-Launch: Early Access Available
           </div>
           
           {/* Main heading */}
           <h1 className="text-5xl md:text-7xl font-bold text-foreground mb-6 leading-tight">
-            Your AI Agent for
-            <span className="bg-gradient-primary bg-clip-text text-transparent"> Complete Business</span>
-            <br />
-            Automation
+            Replace 5+ AI Tools
+            <span className="bg-gradient-primary bg-clip-text text-transparent"> With One Platform</span>
           </h1>
           
           {/* Subheading */}
           <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
-            Reduce administrative burden, gain financial insights, and accelerate growth with our comprehensive AI platform designed specifically for small businesses.
+            Stop paying for ChatGPT, Claude, expense apps, and content tools separately. 
+            Our secure, private AI platform keeps YOUR data yours while handling everything your business needs.
           </p>
           
           {/* CTA buttons */}

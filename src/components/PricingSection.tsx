@@ -42,10 +42,10 @@ export default function PricingSection() {
         "Custom expense categories",
         "Multi-user access (up to 3 users)"
       ],
-      savings: "Save $468/year vs hiring a bookkeeper",
-      cta: "Start 14-Day Free Trial",
+      savings: "Replace ChatGPT Plus + Claude + expense apps + content tools",
+      cta: "Lock In Pre-Launch Price",
       popular: true,
-      highlight: "Most popular choice"
+      highlight: "Limited Time: Lifetime Rate"
     },
     {
       name: "Enterprise",
@@ -74,11 +74,11 @@ export default function PricingSection() {
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
-            Start Free,
-            <span className="bg-gradient-primary bg-clip-text text-transparent"> Upgrade When Ready</span>
+            Pre-Launch Pricing:
+            <span className="bg-gradient-primary bg-clip-text text-transparent"> Lock In Lifetime Rates</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Try our AI for free, then unlock unlimited power when you're ready to scale. Most users upgrade within 7 days.
+            Early adopters get all current AND future AI features at today's prices. No price increases, ever.
           </p>
         </div>
 
@@ -170,26 +170,34 @@ export default function PricingSection() {
 
         <div className="mt-16 text-center">
           <div className="bg-muted/50 rounded-2xl p-8 max-w-4xl mx-auto mb-8">
-            <h3 className="text-2xl font-bold text-foreground mb-4">Why 94% of users upgrade from Free to Business Pro</h3>
+            <h3 className="text-2xl font-bold text-foreground mb-4">Pre-Launch Benefits: More Features Coming Weekly</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
               <div className="space-y-3">
                 <div className="flex items-center">
                   <Check className="h-5 w-5 text-emerald-500 mr-2" />
-                  <span className="text-foreground">Free plan shows the power</span>
+                  <span className="text-foreground">Your data never leaves our secure servers</span>
                 </div>
                 <div className="flex items-center">
                   <Check className="h-5 w-5 text-emerald-500 mr-2" />
-                  <span className="text-foreground">5 receipts = instant value proof</span>
+                  <span className="text-foreground">All future AI features included free</span>
+                </div>
+                <div className="flex items-center">
+                  <Check className="h-5 w-5 text-emerald-500 mr-2" />
+                  <span className="text-foreground">Lifetime pricing protection</span>
                 </div>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center">
                   <Check className="h-5 w-5 text-emerald-500 mr-2" />
-                  <span className="text-foreground">Unlimited = true business scaling</span>
+                  <span className="text-foreground">Cancel subscriptions to 5+ AI tools</span>
                 </div>
                 <div className="flex items-center">
                   <Check className="h-5 w-5 text-emerald-500 mr-2" />
-                  <span className="text-foreground">Voice assistant = game changer</span>
+                  <span className="text-foreground">Priority support & feature requests</span>
+                </div>
+                <div className="flex items-center">
+                  <Check className="h-5 w-5 text-emerald-500 mr-2" />
+                  <span className="text-foreground">Early access to beta features</span>
                 </div>
               </div>
             </div>

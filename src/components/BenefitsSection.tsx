@@ -11,46 +11,46 @@ import {
 export const BenefitsSection = () => {
   const benefits = [
     {
-      icon: Clock,
-      title: "Reclaim 12+ Hours Each Week",
-      description: "Stop spending evenings sorting receipts and categorizing expenses. Our AI handles it in seconds, not hours.",
-      stat: "From 3 hours to 15 minutes weekly",
-      realExample: "Like having a full-time bookkeeper for $2/day"
-    },
-    {
       icon: DollarSign,
-      title: "Catch Every Tax Deduction",
-      description: "Never miss business expenses again. Our AI finds deductions you didn't even know existed.",
-      stat: "Average $3,200 more in deductions",
-      realExample: "One user recovered $8K in missed deductions"
-    },
-    {
-      icon: TrendingUp,
-      title: "Make Decisions with Real Data",
-      description: "See exactly where your money goes with visual insights that actually make sense to busy entrepreneurs.",
-      stat: "89% better spending awareness",
-      realExample: "\"I finally understand my cash flow\" - Maria, Restaurant Owner"
-    },
-    {
-      icon: Zap,
-      title: "Content That Converts",
-      description: "Stop staring at blank pages. Get marketing ideas trained on your specific business, not generic templates.",
-      stat: "3x faster content creation",
-      realExample: "Generated 30 social posts in 10 minutes"
-    },
-    {
-      icon: Users,
-      title: "Your 24/7 Business Assistant",
-      description: "Voice-record ideas, meetings, or random thoughts. Turn them into actionable business strategies instantly.",
-      stat: "Capture 100% of your ideas",
-      realExample: "Never forget a client conversation again"
+      title: "Replace 5+ Expensive AI Subscriptions",
+      description: "Stop paying $20/month for ChatGPT, $20 for Claude, $30 for expense apps, $25 for content tools. Get everything for less.",
+      stat: "Save $95+ monthly on AI tools",
+      realExample: "One platform vs $1,140/year in separate subscriptions"
     },
     {
       icon: Shield,
-      title: "Enterprise-Grade Security",
-      description: "Your financial data is protected with bank-level encryption. Focus on growth, not security worries.",
-      stat: "SOC 2 compliant infrastructure",
-      realExample: "Trusted by 500+ businesses with sensitive data"
+      title: "Your Data Stays Yours, Always",
+      description: "We don't store your business data with OpenAI, Google, or any third-party AI company. Full privacy guaranteed.",
+      stat: "100% data ownership",
+      realExample: "Bank-level encryption, zero AI company data sharing"
+    },
+    {
+      icon: Clock,
+      title: "Reclaim 12+ Hours Each Week",
+      description: "Stop spending evenings sorting receipts and creating content. Our AI handles it in seconds, not hours.",
+      stat: "From 3 hours to 15 minutes weekly",
+      realExample: "Like having a full-time assistant for $1.30/day"
+    },
+    {
+      icon: TrendingUp,
+      title: "New AI Features Added Weekly",
+      description: "This is just the beginning. We're constantly adding new AI capabilities based on user feedback and needs.",
+      stat: "Pre-launch: Lock in lifetime pricing",
+      realExample: "Early adopters get all future features included"
+    },
+    {
+      icon: Zap,
+      title: "Content That Actually Converts",
+      description: "No generic ChatGPT responses. Our AI learns your business voice and creates content that sounds like you.",
+      stat: "3x better than generic AI tools",
+      realExample: "Trained on YOUR business, not random internet data"
+    },
+    {
+      icon: Users,
+      title: "Your 24/7 Business Brain",
+      description: "Voice-record ideas, meetings, or thoughts. Turn them into actionable strategies without losing context.",
+      stat: "Never lose another great idea",
+      realExample: "Like having a business partner who never forgets"
     }
   ];
 
@@ -59,11 +59,11 @@ export const BenefitsSection = () => {
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
-            Real Results from
-            <span className="bg-gradient-primary bg-clip-text text-transparent"> Real Business Owners</span>
+            Why Pay Multiple AI Companies When
+            <span className="bg-gradient-primary bg-clip-text text-transparent"> One Platform Does It All?</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            These aren't hypothetical benefits. These are measurable improvements our users see in their first 30 days.
+            Early access users are already saving hundreds monthly while keeping their data private and secure.
           </p>
         </div>
 
@@ -108,14 +108,14 @@ export const BenefitsSection = () => {
                 +50
               </div>
             </div>
-            <span className="text-foreground font-medium">Early access users already saving time</span>
+            <span className="text-foreground font-medium">Early access users already saving money & time</span>
           </div>
           
           <blockquote className="text-xl md:text-2xl text-foreground font-medium max-w-4xl mx-auto mb-4">
-            "I was drowning in receipts and spending entire weekends on bookkeeping. Now I just snap photos 
-            and everything is categorized automatically. I got my weekends back and my accountant loves the organization."
+            "I was paying $75/month for ChatGPT Plus, Claude, and two other business apps. This platform does everything 
+            for $39 and keeps my data private. Plus they keep adding features every week!"
           </blockquote>
-          <cite className="text-muted-foreground">— Marcus Rodriguez, HVAC Business Owner (Saves 8 hours/week)</cite>
+          <cite className="text-muted-foreground">— Jennifer Kim, Marketing Agency Owner (Early Access User)</cite>
         </div>
       </div>
     </section>
