@@ -49,7 +49,7 @@ export const BenefitsSection = () => {
   ];
 
   return (
-    <section className="py-24 bg-background">
+    <section id="benefits" className="py-24 bg-background">
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
