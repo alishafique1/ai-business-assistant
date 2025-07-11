@@ -14,6 +14,244 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_settings: {
+        Row: {
+          created_at: string
+          id: string
+          max_tokens: number | null
+          openai_model: string | null
+          system_prompt: string | null
+          temperature: number | null
+          updated_at: string
+          user_id: string
+          voice_enabled: boolean | null
+          voice_model: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          max_tokens?: number | null
+          openai_model?: string | null
+          system_prompt?: string | null
+          temperature?: number | null
+          updated_at?: string
+          user_id: string
+          voice_enabled?: boolean | null
+          voice_model?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          max_tokens?: number | null
+          openai_model?: string | null
+          system_prompt?: string | null
+          temperature?: number | null
+          updated_at?: string
+          user_id?: string
+          voice_enabled?: boolean | null
+          voice_model?: string | null
+        }
+        Relationships: []
+      }
+      clients: {
+        Row: {
+          avatar_url: string | null
+          company: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          status: Database["public"]["Enums"]["client_status"]
+          telegram_id: string | null
+          updated_at: string
+          user_id: string
+          whatsapp_number: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          status?: Database["public"]["Enums"]["client_status"]
+          telegram_id?: string | null
+          updated_at?: string
+          user_id: string
+          whatsapp_number?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          company?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          status?: Database["public"]["Enums"]["client_status"]
+          telegram_id?: string | null
+          updated_at?: string
+          user_id?: string
+          whatsapp_number?: string | null
+        }
+        Relationships: []
+      }
+      conversations: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          id: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category: Database["public"]["Enums"]["expense_category"]
+          created_at: string
+          date: string
+          description: string | null
+          id: string
+          receipt_url: string | null
+          status: Database["public"]["Enums"]["expense_status"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category?: Database["public"]["Enums"]["expense_category"]
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          receipt_url?: string | null
+          status?: Database["public"]["Enums"]["expense_status"]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: Database["public"]["Enums"]["expense_category"]
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          receipt_url?: string | null
+          status?: Database["public"]["Enums"]["expense_status"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      integrations: {
+        Row: {
+          api_key_encrypted: string | null
+          configuration: Json | null
+          created_at: string
+          enabled: boolean | null
+          id: string
+          name: string
+          type: Database["public"]["Enums"]["integration_type"]
+          updated_at: string
+          user_id: string
+          webhook_url: string | null
+        }
+        Insert: {
+          api_key_encrypted?: string | null
+          configuration?: Json | null
+          created_at?: string
+          enabled?: boolean | null
+          id?: string
+          name: string
+          type: Database["public"]["Enums"]["integration_type"]
+          updated_at?: string
+          user_id: string
+          webhook_url?: string | null
+        }
+        Update: {
+          api_key_encrypted?: string | null
+          configuration?: Json | null
+          created_at?: string
+          enabled?: boolean | null
+          id?: string
+          name?: string
+          type?: Database["public"]["Enums"]["integration_type"]
+          updated_at?: string
+          user_id?: string
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           business_name: string | null
@@ -49,7 +287,26 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      client_status: "active" | "inactive" | "pending"
+      expense_category:
+        | "office_supplies"
+        | "travel"
+        | "meals"
+        | "software"
+        | "marketing"
+        | "equipment"
+        | "professional_services"
+        | "utilities"
+        | "other"
+      expense_status: "pending" | "approved" | "rejected"
+      integration_type:
+        | "telegram"
+        | "whatsapp"
+        | "slack"
+        | "discord"
+        | "email"
+        | "zapier"
+        | "api"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -176,6 +433,29 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      client_status: ["active", "inactive", "pending"],
+      expense_category: [
+        "office_supplies",
+        "travel",
+        "meals",
+        "software",
+        "marketing",
+        "equipment",
+        "professional_services",
+        "utilities",
+        "other",
+      ],
+      expense_status: ["pending", "approved", "rejected"],
+      integration_type: [
+        "telegram",
+        "whatsapp",
+        "slack",
+        "discord",
+        "email",
+        "zapier",
+        "api",
+      ],
+    },
   },
 } as const
