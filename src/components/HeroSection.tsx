@@ -1,8 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, Zap } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-bg.jpg";
 
 export const HeroSection = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   return (
     <section className="relative min-h-screen flex items-center justify-center bg-gradient-hero overflow-hidden">
       {/* Hero background image */}
@@ -54,8 +58,13 @@ export const HeroSection = () => {
           
           {/* CTA buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-            <Button variant="hero" size="lg" className="text-lg px-8 py-4">
-              Start Your Free Trial
+            <Button 
+              variant="hero" 
+              size="lg" 
+              className="text-lg px-8 py-4"
+              onClick={() => navigate(user ? '/dashboard' : '/auth')}
+            >
+              {user ? 'Go to Dashboard' : 'Start Your Free Trial'}
               <ArrowRight className="w-5 h-5" />
             </Button>
             <Button variant="outline" size="lg" className="text-lg px-8 py-4">
