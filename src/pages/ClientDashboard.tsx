@@ -14,8 +14,12 @@ import {
   Mail,
   Calendar,
   Download,
-  Archive
+  Archive,
+  Upload,
+  Bot
 } from "lucide-react";
+import { DocumentUpload } from "@/components/client/DocumentUpload";
+import { AIChat } from "@/components/client/AIChat";
 
 export default function ClientDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -109,10 +113,11 @@ export default function ClientDashboard() {
 
       <div className="container mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="chat">AI Assistant</TabsTrigger>
+            <TabsTrigger value="chat">AI Chat</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
+            <TabsTrigger value="upload">Upload</TabsTrigger>
             <TabsTrigger value="profile">Profile</TabsTrigger>
           </TabsList>
 
@@ -229,31 +234,56 @@ export default function ClientDashboard() {
 
           {/* AI Assistant Tab */}
           <TabsContent value="chat" className="space-y-6">
-            <Card>
+            <div className="max-w-4xl mx-auto">
+              <AIChat />
+            </div>
+            <Card className="mt-6">
               <CardHeader>
-                <CardTitle>AI Assistant Chat</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Bot className="h-5 w-5" />
+                  External Platform Integration
+                </CardTitle>
                 <CardDescription>
-                  Start a conversation with your AI business assistant
+                  Your AI assistant is also available through other platforms
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="bg-muted/50 rounded-lg p-8 text-center">
-                  <MessageSquare className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-semibold mb-2">AI Assistant Integration</h3>
-                  <p className="text-muted-foreground mb-6">
-                    Your AI assistant is available through Telegram and WhatsApp. 
-                    Use the links below to start chatting.
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <Button>
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      Open Telegram
-                    </Button>
-                    <Button variant="outline">
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      Open WhatsApp
-                    </Button>
-                  </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <Card className="border-dashed hover:border-primary/50 transition-colors cursor-pointer">
+                    <CardContent className="p-6 text-center space-y-3">
+                      <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mx-auto">
+                        <MessageSquare className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">Telegram</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Chat with your AI assistant on Telegram
+                        </p>
+                      </div>
+                      <Button size="sm">
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        Open Telegram
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-dashed hover:border-primary/50 transition-colors cursor-pointer">
+                    <CardContent className="p-6 text-center space-y-3">
+                      <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+                        <MessageSquare className="h-6 w-6 text-green-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">WhatsApp</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Get assistance through WhatsApp messages
+                        </p>
+                      </div>
+                      <Button size="sm" variant="outline">
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        Open WhatsApp
+                      </Button>
+                    </CardContent>
+                  </Card>
                 </div>
               </CardContent>
             </Card>
@@ -294,6 +324,11 @@ export default function ClientDashboard() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Document Upload Tab */}
+          <TabsContent value="upload" className="space-y-6">
+            <DocumentUpload />
           </TabsContent>
 
           {/* Profile Tab */}
