@@ -211,21 +211,33 @@ export default function ClientDashboard() {
                   <CardDescription>Common tasks and shortcuts</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button 
+                    className="w-full justify-start" 
+                    variant="outline"
+                    onClick={() => setActiveTab("chat")}
+                  >
                     <MessageSquare className="w-4 h-4 mr-2" />
                     Start AI Conversation
                   </Button>
-                  <Button className="w-full justify-start" variant="outline">
+                  <Button 
+                    className="w-full justify-start" 
+                    variant="outline"
+                    onClick={() => setActiveTab("upload")}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Document
+                  </Button>
+                  <Button 
+                    className="w-full justify-start" 
+                    variant="outline"
+                    onClick={() => setActiveTab("documents")}
+                  >
                     <FileText className="w-4 h-4 mr-2" />
-                    Request Document
+                    View Documents
                   </Button>
                   <Button className="w-full justify-start" variant="outline">
                     <Calendar className="w-4 h-4 mr-2" />
                     Schedule Consultation
-                  </Button>
-                  <Button className="w-full justify-start" variant="outline">
-                    <Download className="w-4 h-4 mr-2" />
-                    Download Reports
                   </Button>
                 </CardContent>
               </Card>
