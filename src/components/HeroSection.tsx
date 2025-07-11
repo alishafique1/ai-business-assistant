@@ -62,7 +62,7 @@ export const HeroSection = () => {
               variant="hero" 
               size="lg" 
               className="text-lg px-8 py-4"
-              onClick={() => navigate(user ? '/dashboard' : '/auth')}
+              onClick={() => navigate(user ? '/dashboard' : '/onboarding')}
             >
               {user ? 'Go to Dashboard' : 'Start Your Free Trial'}
               <ArrowRight className="w-5 h-5" />
