@@ -16,13 +16,23 @@ import {
   Download,
   Archive,
   Upload,
-  Bot
+  Bot,
+  CreditCard,
+  Edit
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { DocumentUpload } from "@/components/client/DocumentUpload";
 import { AIChat } from "@/components/client/AIChat";
 
 export default function ClientDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editedData, setEditedData] = useState({
+    name: "Sarah Johnson",
+    email: "sarah@example.com",
+    phone: "+1 (555) 123-4567"
+  });
 
   // Mock client data
   const clientData = {
@@ -357,28 +367,65 @@ export default function ClientDashboard() {
                     <AvatarFallback className="text-lg">SJ</AvatarFallback>
                   </Avatar>
                   <div>
-                    <h3 className="text-lg font-semibold">{clientData.name}</h3>
+                    <h3 className="text-lg font-semibold">{isEditingProfile ? editedData.name : clientData.name}</h3>
                     <p className="text-muted-foreground">Premium Client</p>
                   </div>
                 </div>
 
+                {/* Contact Details Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <Mail className="w-5 h-5 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium">Email</p>
-                        <p className="text-sm text-muted-foreground">{clientData.email}</p>
-                      </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="name" className="text-sm font-medium flex items-center gap-2">
+                        <Edit className="w-4 h-4" />
+                        Full Name
+                      </Label>
+                      {isEditingProfile ? (
+                        <Input
+                          id="name"
+                          value={editedData.name}
+                          onChange={(e) => setEditedData({...editedData, name: e.target.value})}
+                        />
+                      ) : (
+                        <p className="text-sm text-muted-foreground px-3 py-2 bg-muted/50 rounded-md">{clientData.name}</p>
+                      )}
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Phone className="w-5 h-5 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium">Phone</p>
-                        <p className="text-sm text-muted-foreground">{clientData.phone}</p>
-                      </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        Email
+                      </Label>
+                      {isEditingProfile ? (
+                        <Input
+                          id="email"
+                          type="email"
+                          value={editedData.email}
+                          onChange={(e) => setEditedData({...editedData, email: e.target.value})}
+                        />
+                      ) : (
+                        <p className="text-sm text-muted-foreground px-3 py-2 bg-muted/50 rounded-md">{clientData.email}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="phone" className="text-sm font-medium flex items-center gap-2">
+                        <Phone className="w-4 h-4" />
+                        Phone
+                      </Label>
+                      {isEditingProfile ? (
+                        <Input
+                          id="phone"
+                          type="tel"
+                          value={editedData.phone}
+                          onChange={(e) => setEditedData({...editedData, phone: e.target.value})}
+                        />
+                      ) : (
+                        <p className="text-sm text-muted-foreground px-3 py-2 bg-muted/50 rounded-md">{clientData.phone}</p>
+                      )}
                     </div>
                   </div>
+                  
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
                       <Clock className="w-5 h-5 text-muted-foreground" />
@@ -398,7 +445,43 @@ export default function ClientDashboard() {
                 </div>
 
                 <div className="pt-6 border-t">
-                  <Button>Update Profile</Button>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    {isEditingProfile ? (
+                      <>
+                        <Button 
+                          onClick={() => {
+                            // Here you would save to backend
+                            setIsEditingProfile(false);
+                          }}
+                        >
+                          Save Changes
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            setEditedData({
+                              name: clientData.name,
+                              email: clientData.email,
+                              phone: clientData.phone
+                            });
+                            setIsEditingProfile(false);
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </>
+                    ) : (
+                      <Button onClick={() => setIsEditingProfile(true)}>
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit Profile
+                      </Button>
+                    )}
+                    
+                    <Button variant="outline">
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Billing & Payment
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
