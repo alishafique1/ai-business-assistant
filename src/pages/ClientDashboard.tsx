@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DocumentUpload } from "@/components/client/DocumentUpload";
 import { AIChat } from "@/components/client/AIChat";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function ClientDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -123,11 +124,12 @@ export default function ClientDashboard() {
 
       <div className="container mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="chat">AI Chat</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
             <TabsTrigger value="upload">Upload</TabsTrigger>
+            <TabsTrigger value="billing">Billing</TabsTrigger>
             <TabsTrigger value="profile">Profile</TabsTrigger>
           </TabsList>
 
@@ -353,6 +355,148 @@ export default function ClientDashboard() {
             <DocumentUpload />
           </TabsContent>
 
+          {/* Billing Tab */}
+          <TabsContent value="billing" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Current Plan */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="w-5 h-5" />
+                    Current Plan
+                  </CardTitle>
+                  <CardDescription>Your active subscription details</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-semibold text-lg">Premium Plan</h3>
+                      <Badge className="bg-primary/10 text-primary border-primary/20">Active</Badge>
+                    </div>
+                    <p className="text-muted-foreground text-sm mb-3">
+                      Full access to AI assistant, unlimited documents, and priority support
+                    </p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-2xl font-bold">$79<span className="text-lg font-normal">/month</span></span>
+                      <span className="text-sm text-muted-foreground">Renews Jan 15, 2025</span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <Button 
+                      className="w-full" 
+                      onClick={async () => {
+                        try {
+                          const { data } = await supabase.functions.invoke('customer-portal');
+                          if (data?.url) {
+                            window.open(data.url, '_blank');
+                          }
+                        } catch (error) {
+                          console.error('Error opening customer portal:', error);
+                        }
+                      }}
+                    >
+                      Manage Subscription
+                    </Button>
+                    <Button variant="outline" className="w-full">
+                      View Invoice History
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Payment Method */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Payment Method</CardTitle>
+                  <CardDescription>Your default payment method</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-3 p-3 rounded-lg border">
+                    <CreditCard className="w-8 h-8 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">•••• •••• •••• 4242</p>
+                      <p className="text-sm text-muted-foreground">Expires 12/2027</p>
+                    </div>
+                  </div>
+                  <Button variant="outline" className="w-full">
+                    Update Payment Method
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Cancellation Policy */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Cancellation Policy</CardTitle>
+                <CardDescription>Important information about subscription changes</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-4 rounded-lg bg-amber-50 border border-amber-200">
+                  <h4 className="font-semibold text-amber-800 mb-2">30-Day Notice Required</h4>
+                  <p className="text-sm text-amber-700 mb-3">
+                    To cancel your subscription, please provide at least 30 days notice before your next billing cycle. 
+                    This ensures you have uninterrupted access to your data and services during the transition period.
+                  </p>
+                  <ul className="text-sm text-amber-700 space-y-1 list-disc list-inside">
+                    <li>Cancellation requests must be submitted 30 days before renewal</li>
+                    <li>You'll continue to have access until the end of your current billing period</li>
+                    <li>All data will be retained for 90 days after cancellation</li>
+                    <li>Refunds are not available for partial billing periods</li>
+                  </ul>
+                </div>
+                
+                <div className="flex gap-3">
+                  <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">
+                    Request Cancellation
+                  </Button>
+                  <Button variant="outline">
+                    Contact Support
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Billing History */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Invoices</CardTitle>
+                <CardDescription>Your billing history and payment records</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {[
+                    { date: "Dec 15, 2024", amount: "$79.00", status: "Paid", invoice: "INV-2024-12-001" },
+                    { date: "Nov 15, 2024", amount: "$79.00", status: "Paid", invoice: "INV-2024-11-001" },
+                    { date: "Oct 15, 2024", amount: "$79.00", status: "Paid", invoice: "INV-2024-10-001" }
+                  ].map((invoice, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                          <CheckCircle className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{invoice.invoice}</p>
+                          <p className="text-sm text-muted-foreground">{invoice.date}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">{invoice.amount}</p>
+                        <Badge variant="outline" className="text-green-600 border-green-200">
+                          {invoice.status}
+                        </Badge>
+                      </div>
+                      <Button size="sm" variant="ghost">
+                        <Download className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-6">
             <Card>
@@ -477,7 +621,10 @@ export default function ClientDashboard() {
                       </Button>
                     )}
                     
-                    <Button variant="outline">
+                    <Button 
+                      variant="outline"
+                      onClick={() => setActiveTab("billing")}
+                    >
                       <CreditCard className="w-4 h-4 mr-2" />
                       Billing & Payment
                     </Button>
