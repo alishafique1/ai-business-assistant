@@ -17,19 +17,19 @@ function FloatingElements() {
     <group ref={groupRef}>
       <Float speed={1.4} rotationIntensity={0.5} floatIntensity={0.5}>
         <Sphere args={[0.5, 32, 32]} position={[2, 1, 0]}>
-          <meshStandardMaterial color="#8B5CF6" transparent opacity={0.8} />
+          <meshStandardMaterial color="hsl(var(--primary))" transparent opacity={0.8} />
         </Sphere>
       </Float>
       
       <Float speed={1.2} rotationIntensity={0.3} floatIntensity={0.7}>
         <Box args={[0.8, 0.8, 0.8]} position={[-2, -1, 1]}>
-          <meshStandardMaterial color="#06B6D4" transparent opacity={0.7} />
+          <meshStandardMaterial color="hsl(var(--accent))" transparent opacity={0.7} />
         </Box>
       </Float>
       
       <Float speed={1.6} rotationIntensity={0.4} floatIntensity={0.6}>
         <Sphere args={[0.3, 16, 16]} position={[0, 2, -1]}>
-          <meshStandardMaterial color="#F59E0B" transparent opacity={0.9} />
+          <meshStandardMaterial color="hsl(var(--secondary))" transparent opacity={0.9} />
         </Sphere>
       </Float>
     </group>
