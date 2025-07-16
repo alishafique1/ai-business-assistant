@@ -1,4 +1,5 @@
 
+
 import { Brain, Menu, X, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -31,19 +32,19 @@ export default function Navigation() {
           <div className="hidden md:flex items-center space-x-2">
             <a 
               href="#features" 
-              className="text-foreground/80 hover:text-foreground transition-colors px-3 py-2 rounded-md hover:bg-muted/50"
+              className="text-foreground/80 hover:text-foreground transition-colors px-3 py-2 rounded-md hover:bg-primary/10"
             >
               Features
             </a>
             <a 
               href="#benefits" 
-              className="text-foreground/80 hover:text-foreground transition-colors px-3 py-2 rounded-md hover:bg-muted/50"
+              className="text-foreground/80 hover:text-foreground transition-colors px-3 py-2 rounded-md hover:bg-primary/10"
             >
               Benefits
             </a>
             <a 
               href="#pricing" 
-              className="text-foreground/80 hover:text-foreground transition-colors px-3 py-2 rounded-md hover:bg-muted/50"
+              className="text-foreground/80 hover:text-foreground transition-colors px-3 py-2 rounded-md hover:bg-primary/10"
             >
               Pricing
             </a>
@@ -98,19 +99,19 @@ export default function Navigation() {
             <div className="flex flex-col space-y-2">
               <a 
                 href="#features" 
-                className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-muted/50"
+                className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-primary/10"
               >
                 Features
               </a>
               <a 
                 href="#benefits" 
-                className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-muted/50"
+                className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-primary/10"
               >
                 Benefits
               </a>
               <a 
                 href="#pricing" 
-                className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-muted/50"
+                className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-primary/10"
               >
                 Pricing
               </a>
@@ -142,3 +143,4 @@ export default function Navigation() {
     </nav>
   );
 }
+
