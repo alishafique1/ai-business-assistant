@@ -1,3 +1,4 @@
+
 import { Brain, Menu, X, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -27,14 +28,23 @@ export default function Navigation() {
             </span>
           </div>
 
-          <div className="hidden md:flex items-center space-x-8">
-            <a href="#features" className="text-foreground/80 hover:text-foreground transition-colors">
+          <div className="hidden md:flex items-center space-x-2">
+            <a 
+              href="#features" 
+              className="text-foreground/80 hover:text-foreground transition-colors px-3 py-2 rounded-md hover:bg-muted/50"
+            >
               Features
             </a>
-            <a href="#benefits" className="text-foreground/80 hover:text-foreground transition-colors">
+            <a 
+              href="#benefits" 
+              className="text-foreground/80 hover:text-foreground transition-colors px-3 py-2 rounded-md hover:bg-muted/50"
+            >
               Benefits
             </a>
-            <a href="#pricing" className="text-foreground/80 hover:text-foreground transition-colors">
+            <a 
+              href="#pricing" 
+              className="text-foreground/80 hover:text-foreground transition-colors px-3 py-2 rounded-md hover:bg-muted/50"
+            >
               Pricing
             </a>
           </div>
@@ -85,14 +95,23 @@ export default function Navigation() {
 
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-border/50">
-            <div className="flex flex-col space-y-4">
-              <a href="#features" className="text-foreground/80 hover:text-foreground transition-colors py-2">
+            <div className="flex flex-col space-y-2">
+              <a 
+                href="#features" 
+                className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-muted/50"
+              >
                 Features
               </a>
-              <a href="#benefits" className="text-foreground/80 hover:text-foreground transition-colors py-2">
+              <a 
+                href="#benefits" 
+                className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-muted/50"
+              >
                 Benefits
               </a>
-              <a href="#pricing" className="text-foreground/80 hover:text-foreground transition-colors py-2">
+              <a 
+                href="#pricing" 
+                className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-muted/50"
+              >
                 Pricing
               </a>
               <div className="flex flex-col space-y-2 pt-4 border-t border-border/50">
