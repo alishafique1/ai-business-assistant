@@ -1,5 +1,3 @@
-
-
 import { Brain, Menu, X, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -75,7 +73,7 @@ export default function Navigation() {
                 <Button variant="ghost" onClick={() => navigate("/auth")}>
                   Sign In
                 </Button>
-                <Button variant="hero" onClick={() => navigate("/auth")}>
+                <Button variant="hero" showHoverArrows onClick={() => navigate("/auth")}>
                   Get Started
                 </Button>
               </>
@@ -130,7 +128,7 @@ export default function Navigation() {
                     <Button variant="ghost" onClick={() => navigate("/auth")}>
                       Sign In
                     </Button>
-                    <Button variant="hero" onClick={() => navigate("/auth")}>
+                    <Button variant="hero" showHoverArrows onClick={() => navigate("/auth")}>
                       Get Started
                     </Button>
                   </>
@@ -143,4 +141,3 @@ export default function Navigation() {
     </nav>
   );
 }
-

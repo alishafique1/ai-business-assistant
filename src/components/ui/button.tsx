@@ -1,6 +1,8 @@
+
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
+import { ChevronRight } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -18,7 +20,7 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        hero: "bg-gradient-primary text-primary-foreground hover:shadow-hero transform hover:scale-105 transition-all duration-300",
+        hero: "bg-gradient-primary text-primary-foreground hover:shadow-hero transform hover:scale-105 transition-all duration-300 relative overflow-hidden group",
         feature: "bg-accent text-accent-foreground hover:bg-accent/90 shadow-soft hover:shadow-feature transform hover:-translate-y-1 transition-all duration-300",
       },
       size: {
@@ -39,17 +41,39 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
+  showHoverArrows?: boolean
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, showHoverArrows = false, children, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
+    
+    if (showHoverArrows && variant === "hero") {
+      return (
+        <Comp
+          className={cn(buttonVariants({ variant, size, className }))}
+          ref={ref}
+          {...props}
+        >
+          <span className="relative z-10 flex items-center">
+            {children}
+            <div className="ml-1 flex transition-all duration-300 group-hover:ml-2">
+              <ChevronRight className="h-4 w-4 opacity-0 -translate-x-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0" />
+              <ChevronRight className="h-4 w-4 opacity-0 -translate-x-4 transition-all duration-300 delay-75 group-hover:opacity-100 group-hover:translate-x-0" />
+            </div>
+          </span>
+        </Comp>
+      )
+    }
+    
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         {...props}
-      />
+      >
+        {children}
+      </Comp>
     )
   }
 )
