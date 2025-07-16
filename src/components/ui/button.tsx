@@ -56,10 +56,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           {...props}
         >
           <span className="relative z-10 flex items-center justify-center w-full transition-all duration-300 group-hover:justify-start">
-            <span className="transition-transform duration-300 group-hover:-translate-x-6">
+            <span className="transition-transform duration-300 group-hover:-translate-x-8">
               {children}
             </span>
-            <div className="absolute right-0 flex transition-all duration-300 opacity-0 translate-x-6 group-hover:opacity-100 group-hover:translate-x-0">
+            <div className="absolute right-0 flex transition-all duration-300 opacity-0 translate-x-8 group-hover:opacity-100 group-hover:translate-x-0">
               <ChevronRight className="h-4 w-4 transition-all duration-300" />
               <ChevronRight className="h-4 w-4 transition-all duration-300 delay-75 -ml-2" />
             </div>
