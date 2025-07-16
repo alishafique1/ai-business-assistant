@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -54,6 +55,29 @@ export const FeaturesSection = () => {
       ],
       gradient: "from-emerald-500 to-teal-500",
       image: voiceModelImg
+    }
+  ];
+
+  const technologies = [
+    {
+      name: "Google Cloud AI",
+      logo: "https://www.gstatic.com/devrel-devsite/prod/v2210deb8920cd4a55bd580441aa58e7853afc04b39a9d9ac4798e545646ea0ca8/cloud/images/favicons/onecloud/super_cloud.png",
+      description: "Advanced AI and ML services"
+    },
+    {
+      name: "Firebase",
+      logo: "https://www.gstatic.com/devrel-devsite/prod/v2210deb8920cd4a55bd580441aa58e7853afc04b39a9d9ac4798e545646ea0ca8/firebase/images/touchicon-180.png",
+      description: "Real-time database and hosting"
+    },
+    {
+      name: "Vertex AI",
+      logo: "https://cloud.google.com/_static/cloud/images/cloud-logo.svg",
+      description: "Unified ML platform"
+    },
+    {
+      name: "Custom Models",
+      logo: null,
+      description: "Tailored AI solutions"
     }
   ];
 
@@ -121,23 +145,26 @@ export const FeaturesSection = () => {
           <h3 className="text-2xl font-bold text-foreground mb-8">
             Powered by Enterprise-Grade Technology
           </h3>
-          <div className="flex flex-wrap justify-center items-center gap-8 text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg"></div>
-              <span>Google Cloud AI</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg"></div>
-              <span>Firebase</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg"></div>
-              <span>Vertex AI</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg"></div>
-              <span>Custom Models</span>
-            </div>
+          <div className="flex flex-wrap justify-center items-center gap-8">
+            {technologies.map((tech, index) => (
+              <div key={index} className="flex items-center gap-3 bg-card/60 backdrop-blur-sm rounded-lg px-4 py-3 shadow-soft hover:shadow-feature transition-all duration-300">
+                {tech.logo ? (
+                  <img 
+                    src={tech.logo} 
+                    alt={`${tech.name} logo`}
+                    className="w-8 h-8 object-contain"
+                  />
+                ) : (
+                  <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+                    <Brain className="w-4 h-4 text-white" />
+                  </div>
+                )}
+                <div className="text-left">
+                  <span className="text-foreground font-medium block">{tech.name}</span>
+                  <span className="text-muted-foreground text-sm">{tech.description}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
