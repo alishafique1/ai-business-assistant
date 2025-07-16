@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -55,7 +56,7 @@ export const CTASection = () => {
             <Button 
               variant="outline" 
               size="lg" 
-              className="border-white/30 text-white hover:bg-white/10 text-lg px-8 py-4"
+              className="border-white/30 text-primary hover:bg-white/10 text-lg px-8 py-4"
             >
               Schedule a Demo
             </Button>
