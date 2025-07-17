@@ -1,4 +1,5 @@
 
+
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -59,8 +60,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               {children}
             </span>
             <div className="absolute right-0 flex transition-all duration-300 opacity-0 translate-x-6 group-hover:opacity-100 group-hover:translate-x-4 ml-4">
-              <ChevronRight className="h-4 w-4 transition-all duration-300 group-hover:animate-pulse" />
-              <ChevronRight className="h-4 w-4 transition-all duration-300 delay-75 -ml-2 group-hover:animate-pulse group-hover:[animation-delay:150ms]" />
+              <ChevronRight className="h-4 w-4 transition-all duration-300 group-hover:animate-bounce" />
+              <ChevronRight className="h-4 w-4 transition-all duration-300 delay-75 -ml-2 group-hover:animate-bounce group-hover:[animation-delay:150ms]" />
             </div>
           </span>
         </Comp>
@@ -82,3 +83,4 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 Button.displayName = "Button"
 
 export { Button, buttonVariants }
+
