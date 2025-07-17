@@ -1,4 +1,3 @@
-
 import { Brain, Menu, X, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -37,22 +36,22 @@ export default function Navigation() {
                 Home
               </a>
               <a 
-                href="#about" 
+                href="#features" 
                 className="relative px-4 py-2 rounded-full text-foreground/80 hover:text-foreground transition-colors hover:bg-background/50 before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-8 before:h-1 before:bg-primary before:rounded-full before:opacity-0 hover:before:opacity-100 before:transition-opacity"
               >
-                About
+                Features
               </a>
               <a 
-                href="#projects" 
+                href="#benefits" 
                 className="relative px-4 py-2 rounded-full text-foreground/80 hover:text-foreground transition-colors hover:bg-background/50 before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-8 before:h-1 before:bg-primary before:rounded-full before:opacity-0 hover:before:opacity-100 before:transition-opacity"
               >
-                Projects
+                Benefits
               </a>
               <a 
-                href="#resume" 
+                href="#pricing" 
                 className="relative px-4 py-2 rounded-full text-foreground/80 hover:text-foreground transition-colors hover:bg-background/50 before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-8 before:h-1 before:bg-primary before:rounded-full before:opacity-0 hover:before:opacity-100 before:transition-opacity"
               >
-                Resume
+                Pricing
               </a>
             </div>
           </div>
@@ -111,22 +110,22 @@ export default function Navigation() {
                 Home
               </a>
               <a 
-                href="#about" 
+                href="#features" 
                 className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-primary/10"
               >
-                About
+                Features
               </a>
               <a 
-                href="#projects" 
+                href="#benefits" 
                 className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-primary/10"
               >
-                Projects
+                Benefits
               </a>
               <a 
-                href="#resume" 
+                href="#pricing" 
                 className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-primary/10"
               >
-                Resume
+                Pricing
               </a>
               <div className="flex flex-col space-y-2 pt-4 border-t border-border/50">
                 {user ? (
