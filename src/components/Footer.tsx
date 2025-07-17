@@ -107,7 +107,10 @@ export const Footer = () => {
                 placeholder="Enter your email"
                 className="flex-1 px-4 py-2 rounded-md bg-background/10 text-background placeholder-background/50 border border-background/20 focus:outline-none focus:border-background/40"
               />
-              <Button variant="outline" className="border-foreground text-foreground hover:bg-foreground/10 hover:text-foreground">
+              <Button 
+                variant="outline" 
+                className="border-background text-foreground bg-background hover:bg-foreground hover:text-background hover:border-background transition-all duration-300"
+              >
                 Subscribe
               </Button>
             </div>
