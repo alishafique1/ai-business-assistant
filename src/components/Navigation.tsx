@@ -1,4 +1,3 @@
-
 import { Brain, Menu, X, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -21,6 +20,13 @@ export default function Navigation() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border/50">
       <div className="container mx-auto px-6">
@@ -40,12 +46,12 @@ export default function Navigation() {
               >
                 Home
               </button>
-              <a 
-                href="#features" 
+              <button 
+                onClick={() => scrollToSection('features')}
                 className="relative px-4 py-2 rounded-full text-foreground/80 hover:text-foreground transition-colors hover:bg-background/50 before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-8 before:h-1 before:bg-primary before:rounded-full before:opacity-0 hover:before:opacity-100 before:transition-opacity"
               >
                 Features
-              </a>
+              </button>
               <a 
                 href="#benefits" 
                 className="relative px-4 py-2 rounded-full text-foreground/80 hover:text-foreground transition-colors hover:bg-background/50 before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-8 before:h-1 before:bg-primary before:rounded-full before:opacity-0 hover:before:opacity-100 before:transition-opacity"
@@ -114,12 +120,12 @@ export default function Navigation() {
               >
                 Home
               </button>
-              <a 
-                href="#features" 
-                className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-primary/10"
+              <button 
+                onClick={() => scrollToSection('features')}
+                className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-primary/10 text-left"
               >
                 Features
-              </a>
+              </button>
               <a 
                 href="#benefits" 
                 className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-primary/10"
