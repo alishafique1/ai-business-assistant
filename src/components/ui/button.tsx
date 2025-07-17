@@ -51,7 +51,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     if (showHoverArrows && variant === "hero") {
       return (
         <Comp
-          className={cn(buttonVariants({ variant, size, className }), "hover:scale-105")}
+          className={cn(buttonVariants({ variant, size, className }), "hover:scale-110 hover:px-6")}
           ref={ref}
           {...props}
         >
@@ -59,7 +59,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             <span className="transition-transform duration-300 group-hover:-translate-x-8">
               {children}
             </span>
-            <div className="absolute right-0 flex transition-all duration-300 opacity-0 translate-x-8 group-hover:opacity-100 group-hover:translate-x-0">
+            <div className="absolute right-0 flex transition-all duration-300 opacity-0 translate-x-12 group-hover:opacity-100 group-hover:translate-x-0">
               <ChevronRight className="h-4 w-4 transition-all duration-300" />
               <ChevronRight className="h-4 w-4 transition-all duration-300 delay-75 -ml-2" />
             </div>
