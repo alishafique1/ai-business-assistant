@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Mail, Twitter, Linkedin, Github } from "lucide-react";
 
@@ -106,7 +107,7 @@ export const Footer = () => {
                 placeholder="Enter your email"
                 className="flex-1 px-4 py-2 rounded-md bg-background/10 text-background placeholder-background/50 border border-background/20 focus:outline-none focus:border-background/40"
               />
-              <Button variant="outline" className="border-background/20 text-background hover:bg-background/10">
+              <Button className="bg-foreground text-background hover:bg-foreground/90 border-0 px-6 py-2 rounded-md">
                 Subscribe
               </Button>
             </div>
