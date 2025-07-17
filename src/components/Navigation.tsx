@@ -13,6 +13,7 @@ import {
 
 export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -28,7 +29,12 @@ export default function Navigation() {
   };
 
   const handleLogoClick = () => {
-    window.location.href = '/';
+    setIsRefreshing(true);
+    
+    // Add visual feedback with a brief delay
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 200);
   };
 
   return (
@@ -37,9 +43,14 @@ export default function Navigation() {
         <div className="flex items-center justify-between h-16">
           <button 
             onClick={handleLogoClick}
-            className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+            disabled={isRefreshing}
+            className={`flex items-center space-x-3 hover:opacity-80 transition-all duration-200 ${
+              isRefreshing ? 'opacity-60 cursor-not-allowed' : ''
+            }`}
           >
-            <Brain className="h-8 w-8 text-primary" />
+            <Brain className={`h-8 w-8 text-primary transition-transform duration-200 ${
+              isRefreshing ? 'animate-spin' : ''
+            }`} />
             <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
               AI Business Hub
             </span>
