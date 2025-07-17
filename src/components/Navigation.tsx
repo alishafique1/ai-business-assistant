@@ -27,33 +27,25 @@ export default function Navigation() {
             </span>
           </div>
 
-          <div className="hidden md:flex items-center">
-            <div className="bg-muted/50 rounded-full p-1 flex items-center space-x-1">
-              <a 
-                href="#home" 
-                className="relative px-4 py-2 rounded-full text-foreground/80 hover:text-foreground transition-colors hover:bg-background/50 before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-8 before:h-1 before:bg-primary before:rounded-full before:opacity-0 hover:before:opacity-100 before:transition-opacity"
-              >
-                Home
-              </a>
-              <a 
-                href="#features" 
-                className="relative px-4 py-2 rounded-full text-foreground/80 hover:text-foreground transition-colors hover:bg-background/50 before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-8 before:h-1 before:bg-primary before:rounded-full before:opacity-0 hover:before:opacity-100 before:transition-opacity"
-              >
-                About
-              </a>
-              <a 
-                href="#benefits" 
-                className="relative px-4 py-2 rounded-full text-foreground/80 hover:text-foreground transition-colors hover:bg-background/50 before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-8 before:h-1 before:bg-primary before:rounded-full before:opacity-0 hover:before:opacity-100 before:transition-opacity"
-              >
-                Projects
-              </a>
-              <a 
-                href="#pricing" 
-                className="relative px-4 py-2 rounded-full text-foreground/80 hover:text-foreground transition-colors hover:bg-background/50 before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-8 before:h-1 before:bg-primary before:rounded-full before:opacity-0 hover:before:opacity-100 before:transition-opacity"
-              >
-                Resume
-              </a>
-            </div>
+          <div className="hidden md:flex items-center space-x-2">
+            <a 
+              href="#features" 
+              className="text-foreground/80 hover:text-foreground transition-colors px-3 py-2 rounded-md hover:bg-primary/10"
+            >
+              Features
+            </a>
+            <a 
+              href="#benefits" 
+              className="text-foreground/80 hover:text-foreground transition-colors px-3 py-2 rounded-md hover:bg-primary/10"
+            >
+              Benefits
+            </a>
+            <a 
+              href="#pricing" 
+              className="text-foreground/80 hover:text-foreground transition-colors px-3 py-2 rounded-md hover:bg-primary/10"
+            >
+              Pricing
+            </a>
           </div>
 
           <div className="hidden md:flex items-center space-x-4">
@@ -104,28 +96,22 @@ export default function Navigation() {
           <div className="md:hidden py-4 border-t border-border/50">
             <div className="flex flex-col space-y-2">
               <a 
-                href="#home" 
-                className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-primary/10"
-              >
-                Home
-              </a>
-              <a 
                 href="#features" 
                 className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-primary/10"
               >
-                About
+                Features
               </a>
               <a 
                 href="#benefits" 
                 className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-primary/10"
               >
-                Projects
+                Benefits
               </a>
               <a 
                 href="#pricing" 
                 className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-primary/10"
               >
-                Resume
+                Pricing
               </a>
               <div className="flex flex-col space-y-2 pt-4 border-t border-border/50">
                 {user ? (
