@@ -1,3 +1,4 @@
+
 import { Brain, Menu, X, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -36,19 +37,19 @@ export default function Navigation() {
                 Home
               </a>
               <a 
-                href="#features" 
+                href="#about" 
                 className="relative px-4 py-2 rounded-full text-foreground/80 hover:text-foreground transition-colors hover:bg-background/50 before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-8 before:h-1 before:bg-primary before:rounded-full before:opacity-0 hover:before:opacity-100 before:transition-opacity"
               >
                 About
               </a>
               <a 
-                href="#benefits" 
+                href="#projects" 
                 className="relative px-4 py-2 rounded-full text-foreground/80 hover:text-foreground transition-colors hover:bg-background/50 before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-8 before:h-1 before:bg-primary before:rounded-full before:opacity-0 hover:before:opacity-100 before:transition-opacity"
               >
                 Projects
               </a>
               <a 
-                href="#pricing" 
+                href="#resume" 
                 className="relative px-4 py-2 rounded-full text-foreground/80 hover:text-foreground transition-colors hover:bg-background/50 before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-8 before:h-1 before:bg-primary before:rounded-full before:opacity-0 hover:before:opacity-100 before:transition-opacity"
               >
                 Resume
@@ -110,19 +111,19 @@ export default function Navigation() {
                 Home
               </a>
               <a 
-                href="#features" 
+                href="#about" 
                 className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-primary/10"
               >
                 About
               </a>
               <a 
-                href="#benefits" 
+                href="#projects" 
                 className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-primary/10"
               >
                 Projects
               </a>
               <a 
-                href="#pricing" 
+                href="#resume" 
                 className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-primary/10"
               >
                 Resume
