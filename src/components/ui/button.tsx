@@ -59,9 +59,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             <span className="transition-transform duration-300 group-hover:-translate-x-4">
               {children}
             </span>
-            <div className="absolute right-1/2 translate-x-1/2 flex transition-all duration-300 opacity-0 translate-x-8 group-hover:opacity-100 group-hover:translate-x-6">
+            <div className="absolute right-1/2 translate-x-1/2 flex gap-0 transition-all duration-300 opacity-0 translate-x-8 group-hover:opacity-100 group-hover:translate-x-6">
               <ChevronRight className="h-4 w-4 transition-all duration-300" />
-              <ChevronRight className="h-4 w-4 transition-all duration-300 delay-75 -ml-2" />
+              <ChevronRight className="h-4 w-4 transition-all duration-300" />
             </div>
           </span>
         </Comp>
