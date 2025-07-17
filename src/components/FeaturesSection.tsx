@@ -9,7 +9,11 @@ import {
   Mic, 
   Brain,
   ArrowRight,
-  CheckCircle
+  CheckCircle,
+  Cloud,
+  Database,
+  Cpu,
+  Zap
 } from "lucide-react";
 import expenseTrackingImg from "@/assets/expense-tracking.jpg";
 import aiContentImg from "@/assets/ai-content.jpg";
@@ -61,22 +65,22 @@ export const FeaturesSection = () => {
   const technologies = [
     {
       name: "Google Cloud AI",
-      logo: "https://www.gstatic.com/devrel-devsite/prod/v2210deb8920cd4a55bd580441aa58e7853afc04b39a9d9ac4798e545646ea0ca8/cloud/images/favicons/onecloud/super_cloud.png",
+      icon: Cloud,
       description: "Advanced AI and ML services"
     },
     {
       name: "Firebase",
-      logo: "https://www.gstatic.com/devrel-devsite/prod/v2210deb8920cd4a55bd580441aa58e7853afc04b39a9d9ac4798e545646ea0ca8/firebase/images/touchicon-180.png",
+      icon: Database,
       description: "Real-time database and hosting"
     },
     {
       name: "Vertex AI",
-      logo: "https://cloud.google.com/_static/cloud/images/cloud-logo.svg",
+      icon: Cpu,
       description: "Unified ML platform"
     },
     {
       name: "Custom Models",
-      logo: null,
+      icon: Brain,
       description: "Tailored AI solutions"
     }
   ];
@@ -148,17 +152,9 @@ export const FeaturesSection = () => {
           <div className="flex flex-wrap justify-center items-center gap-8">
             {technologies.map((tech, index) => (
               <div key={index} className="flex items-center gap-3 bg-card/60 backdrop-blur-sm rounded-lg px-4 py-3 shadow-soft hover:shadow-feature transition-all duration-300">
-                {tech.logo ? (
-                  <img 
-                    src={tech.logo} 
-                    alt={`${tech.name} logo`}
-                    className="w-8 h-8 object-contain"
-                  />
-                ) : (
-                  <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                    <Brain className="w-4 h-4 text-white" />
-                  </div>
-                )}
+                <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+                  <tech.icon className="w-4 h-4 text-white" />
+                </div>
                 <div className="text-left">
                   <span className="text-foreground font-medium block">{tech.name}</span>
                   <span className="text-muted-foreground text-sm">{tech.description}</span>
