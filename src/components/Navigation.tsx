@@ -1,4 +1,3 @@
-
 import { Brain, Menu, X, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -28,16 +27,23 @@ export default function Navigation() {
     }
   };
 
+  const handleLogoClick = () => {
+    window.location.href = '/';
+  };
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border/50">
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center space-x-3">
+          <button 
+            onClick={handleLogoClick}
+            className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+          >
             <Brain className="h-8 w-8 text-primary" />
             <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
               AI Business Hub
             </span>
-          </div>
+          </button>
 
           <div className="hidden md:flex items-center">
             <div className="bg-muted/50 rounded-full p-1 flex items-center space-x-1">
