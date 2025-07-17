@@ -1,9 +1,7 @@
-
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 import { ChevronRight } from "lucide-react"
-
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
@@ -56,10 +54,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           {...props}
         >
           <span className="relative z-10 flex items-center justify-center w-full transition-all duration-300">
-            <span className="transition-transform duration-300 group-hover:-translate-x-4">
+            <span className="transition-transform duration-300 group-hover:-translate-x-2">
               {children}
             </span>
-            <div className="absolute right-1/2 translate-x-1/2 flex transition-all duration-300 opacity-0 translate-x-8 group-hover:opacity-100 group-hover:translate-x-6">
+            <div className="absolute right-0 flex transition-all duration-300 opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-2 ml-2">
               <ChevronRight className="h-4 w-4 transition-all duration-300" />
               <ChevronRight className="h-4 w-4 transition-all duration-300 delay-75 -ml-2" />
             </div>
@@ -79,6 +77,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     )
   }
 )
+
 Button.displayName = "Button"
 
 export { Button, buttonVariants }
