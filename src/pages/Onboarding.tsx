@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -38,6 +41,7 @@ const steps = [
 
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     businessName: "",
     industry: "",
@@ -49,13 +53,96 @@ export default function Onboarding() {
     categories: ""
   });
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  const handleNext = () => {
+  const saveOnboardingData = async () => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to complete onboarding",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    try {
+      setIsLoading(true);
+
+      // Update profile with business information
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          business_name: formData.businessName,
+          industry: formData.industry,
+        })
+        .eq('user_id', user.id);
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      // Update AI settings
+      const systemPrompt = `You are ${formData.aiName}, a helpful AI business assistant for ${formData.businessName}. 
+Your response style is ${formData.responseStyle}. 
+Focus on helping with ${formData.primaryUse} and categorizing expenses into: ${formData.categories}.`;
+
+      const { error: aiError } = await supabase
+        .from('ai_settings')
+        .update({
+          system_prompt: systemPrompt,
+        })
+        .eq('user_id', user.id);
+
+      if (aiError) {
+        throw aiError;
+      }
+
+      // Create integration if selected
+      if (formData.integration) {
+        const { error: integrationError } = await supabase
+          .from('integrations')
+          .insert({
+            user_id: user.id,
+            type: formData.integration.toLowerCase() as any,
+            name: formData.integration,
+            enabled: true,
+          });
+
+        if (integrationError) {
+          console.error('Integration error:', integrationError);
+          // Don't fail the entire onboarding if integration fails
+        }
+      }
+
+      toast({
+        title: "Onboarding Complete!",
+        description: "Your AI business assistant is now set up and ready to use.",
+      });
+
+      return true;
+    } catch (error: any) {
+      console.error('Onboarding error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to complete onboarding",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleNext = async () => {
     if (currentStep < steps.length) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Complete onboarding
-      navigate("/dashboard");
+      // Complete onboarding by saving data
+      const success = await saveOnboardingData();
+      if (success) {
+        navigate("/dashboard");
+      }
     }
   };
 
@@ -284,8 +371,8 @@ export default function Onboarding() {
               >
                 Previous
               </Button>
-              <Button onClick={handleNext}>
-                {currentStep === steps.length ? "Go to Dashboard" : "Next"}
+              <Button onClick={handleNext} disabled={isLoading}>
+                {isLoading ? "Setting up..." : currentStep === steps.length ? "Complete Setup" : "Next"}
               </Button>
             </div>
           </CardContent>

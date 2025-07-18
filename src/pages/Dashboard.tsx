@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Navigate } from "react-router-dom";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { ExpenseTracker } from "@/components/dashboard/ExpenseTracker";
@@ -13,20 +12,8 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 type DashboardView = "overview" | "expenses" | "assistant" | "integrations" | "settings";
 
 const Dashboard = () => {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const [activeView, setActiveView] = useState<DashboardView>("overview");
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
 
   const renderContent = () => {
     switch (activeView) {

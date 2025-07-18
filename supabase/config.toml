@@ -45,14 +45,14 @@ site_url = "http://127.0.0.1:3000"
 additional_redirect_urls = ["https://bhzymvjwwvgdysoqsunf.lovableproject.com"]
 jwt_expiry = 3600
 enable_signup = true
-enable_email_confirmations = false
+enable_email_confirmations = true
 enable_email_change_confirmations = true
 enable_phone_confirmations = false
 
 [auth.email]
 enable_signup = true
 double_confirm_changes = true
-enable_confirmations = false
+enable_confirmations = true
 
 [auth.sms]
 enable_signup = false
