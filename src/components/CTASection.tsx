@@ -67,13 +67,13 @@ export const CTASection = () => {
             <p className="text-white/70 mb-6">Trusted by forward-thinking businesses</p>
             <div className="flex flex-wrap justify-center items-center gap-8 opacity-70">
               <div className="bg-white/20 px-6 py-3 rounded-lg backdrop-blur-sm">
-                <span className="text-white font-medium !text-white">Enterprise Security</span>
+                <span className="text-white font-medium">Enterprise Security</span>
               </div>
               <div className="bg-white/20 px-6 py-3 rounded-lg backdrop-blur-sm">
-                <span className="text-white font-medium !text-white">GDPR Compliant</span>
+                <span className="text-white font-medium">GDPR Compliant</span>
               </div>
               <div className="bg-white/20 px-6 py-3 rounded-lg backdrop-blur-sm">
-                <span className="text-white font-medium !text-white">24/7 Support</span>
+                <span className="text-white font-medium">24/7 Support</span>
               </div>
             </div>
           </div>
