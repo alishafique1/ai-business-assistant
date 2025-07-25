@@ -1,9 +1,69 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Bot, DollarSign, MessageSquare, Smartphone, TrendingUp } from "lucide-react";
+import { BarChart3, Bot, DollarSign, MessageSquare, Smartphone, TrendingUp, BookOpen } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 export function Overview() {
+  const { user } = useAuth();
+  const [stats, setStats] = useState({
+    monthlyExpenses: 0,
+    totalExpenses: 0,
+    knowledgeEntries: 0,
+    aiInteractions: 0
+  });
+
+  useEffect(() => {
+    if (user) {
+      fetchStats();
+    }
+  }, [user]);
+
+  const fetchStats = async () => {
+    try {
+      // Fetch expenses
+      const expensesResponse = await supabase.functions.invoke('get-user-expenses', {
+        body: { userId: user?.id }
+      });
+      
+      // Fetch knowledge base entries
+      const knowledgeResponse = await supabase.functions.invoke('get-knowledge-base-by-user', {
+        body: { userId: user?.id }
+      });
+      
+      if (expensesResponse.data?.expenses) {
+        const expenses = expensesResponse.data.expenses;
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        
+        const monthlyExpenses = expenses
+          .filter((expense: any) => {
+            const expenseDate = new Date(expense.date);
+            return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
+          })
+          .reduce((sum: number, expense: any) => sum + expense.amount, 0);
+          
+        setStats(prev => ({
+          ...prev,
+          monthlyExpenses,
+          totalExpenses: expenses.length
+        }));
+      }
+      
+      if (knowledgeResponse.data?.entries) {
+        setStats(prev => ({
+          ...prev,
+          knowledgeEntries: knowledgeResponse.data.entries.length
+        }));
+      }
+      
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
@@ -25,19 +85,19 @@ export function Overview() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$0.00</div>
-            <p className="text-xs text-muted-foreground">Start tracking your expenses</p>
+            <div className="text-2xl font-bold">${stats.monthlyExpenses.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">{stats.totalExpenses} total expenses</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">AI Interactions</CardTitle>
-            <Bot className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Knowledge Base</CardTitle>
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">Voice commands processed</p>
+            <div className="text-2xl font-bold">{stats.knowledgeEntries}</div>
+            <p className="text-xs text-muted-foreground">Knowledge entries stored</p>
           </CardContent>
         </Card>
 

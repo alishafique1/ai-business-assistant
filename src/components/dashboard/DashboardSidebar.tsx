@@ -1,4 +1,4 @@
-import { BarChart3, Bot, Home, Settings, Smartphone, Wallet } from "lucide-react";
+import { BarChart3, Bot, Home, Settings, Smartphone, Wallet, BookOpen } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -11,7 +11,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-type DashboardView = "overview" | "expenses" | "assistant" | "integrations" | "settings";
+type DashboardView = "overview" | "expenses" | "knowledge" | "assistant" | "integrations" | "settings";
 
 interface DashboardSidebarProps {
   activeView: DashboardView;
@@ -21,6 +21,7 @@ interface DashboardSidebarProps {
 const menuItems = [
   { id: "overview", title: "Overview", icon: Home },
   { id: "expenses", title: "Expense Tracker", icon: Wallet },
+  { id: "knowledge", title: "Knowledge Base", icon: BookOpen },
   { id: "assistant", title: "AI Assistant", icon: Bot },
   { id: "integrations", title: "Integrations", icon: Smartphone },
   { id: "settings", title: "Settings", icon: Settings },
