@@ -14,268 +14,192 @@ export type Database = {
   }
   public: {
     Tables: {
-      ai_settings: {
-        Row: {
-          created_at: string
-          id: string
-          max_tokens: number | null
-          openai_model: string | null
-          system_prompt: string | null
-          temperature: number | null
-          updated_at: string
-          user_id: string
-          voice_enabled: boolean | null
-          voice_model: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          max_tokens?: number | null
-          openai_model?: string | null
-          system_prompt?: string | null
-          temperature?: number | null
-          updated_at?: string
-          user_id: string
-          voice_enabled?: boolean | null
-          voice_model?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          max_tokens?: number | null
-          openai_model?: string | null
-          system_prompt?: string | null
-          temperature?: number | null
-          updated_at?: string
-          user_id?: string
-          voice_enabled?: boolean | null
-          voice_model?: string | null
-        }
-        Relationships: []
-      }
-      clients: {
-        Row: {
-          avatar_url: string | null
-          company: string | null
-          created_at: string
-          email: string | null
-          id: string
-          name: string
-          notes: string | null
-          phone: string | null
-          status: Database["public"]["Enums"]["client_status"]
-          telegram_id: string | null
-          updated_at: string
-          user_id: string
-          whatsapp_number: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          company?: string | null
-          created_at?: string
-          email?: string | null
-          id?: string
-          name: string
-          notes?: string | null
-          phone?: string | null
-          status?: Database["public"]["Enums"]["client_status"]
-          telegram_id?: string | null
-          updated_at?: string
-          user_id: string
-          whatsapp_number?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          company?: string | null
-          created_at?: string
-          email?: string | null
-          id?: string
-          name?: string
-          notes?: string | null
-          phone?: string | null
-          status?: Database["public"]["Enums"]["client_status"]
-          telegram_id?: string | null
-          updated_at?: string
-          user_id?: string
-          whatsapp_number?: string | null
-        }
-        Relationships: []
-      }
-      conversations: {
-        Row: {
-          client_id: string | null
-          created_at: string
-          id: string
-          title: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          client_id?: string | null
-          created_at?: string
-          id?: string
-          title?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          client_id?: string | null
-          created_at?: string
-          id?: string
-          title?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "conversations_client_id_fkey"
-            columns: ["client_id"]
-            isOneToOne: false
-            referencedRelation: "clients"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      expenses: {
+      business_expenses: {
         Row: {
           amount: number
-          category: Database["public"]["Enums"]["expense_category"]
-          created_at: string
-          date: string
+          category: string
+          created_at: string | null
           description: string | null
+          expense_date: string
           id: string
-          receipt_url: string | null
-          status: Database["public"]["Enums"]["expense_status"]
-          title: string
-          updated_at: string
           user_id: string
         }
         Insert: {
           amount: number
-          category?: Database["public"]["Enums"]["expense_category"]
-          created_at?: string
-          date?: string
+          category: string
+          created_at?: string | null
           description?: string | null
+          expense_date: string
           id?: string
-          receipt_url?: string | null
-          status?: Database["public"]["Enums"]["expense_status"]
-          title: string
-          updated_at?: string
           user_id: string
         }
         Update: {
           amount?: number
-          category?: Database["public"]["Enums"]["expense_category"]
-          created_at?: string
-          date?: string
+          category?: string
+          created_at?: string | null
           description?: string | null
+          expense_date?: string
           id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      business_outcomes: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: string
+          measurement_date: string
+          metric_name: string
+          metric_value: number
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          measurement_date: string
+          metric_name: string
+          metric_value: number
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          measurement_date?: string
+          metric_name?: string
+          metric_value?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      client_metrics: {
+        Row: {
+          created_at: string | null
+          id: string
+          metric_type: string
+          period_end: string
+          period_start: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          metric_type: string
+          period_end: string
+          period_start: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          metric_type?: string
+          period_end?: string
+          period_start?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          amount: number | null
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: number
+          receipt_url: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: number
           receipt_url?: string | null
-          status?: Database["public"]["Enums"]["expense_status"]
-          title?: string
-          updated_at?: string
-          user_id?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: number
+          receipt_url?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
-      integrations: {
-        Row: {
-          api_key_encrypted: string | null
-          configuration: Json | null
-          created_at: string
-          enabled: boolean | null
-          id: string
-          name: string
-          type: Database["public"]["Enums"]["integration_type"]
-          updated_at: string
-          user_id: string
-          webhook_url: string | null
-        }
-        Insert: {
-          api_key_encrypted?: string | null
-          configuration?: Json | null
-          created_at?: string
-          enabled?: boolean | null
-          id?: string
-          name: string
-          type: Database["public"]["Enums"]["integration_type"]
-          updated_at?: string
-          user_id: string
-          webhook_url?: string | null
-        }
-        Update: {
-          api_key_encrypted?: string | null
-          configuration?: Json | null
-          created_at?: string
-          enabled?: boolean | null
-          id?: string
-          name?: string
-          type?: Database["public"]["Enums"]["integration_type"]
-          updated_at?: string
-          user_id?: string
-          webhook_url?: string | null
-        }
-        Relationships: []
-      }
-      messages: {
-        Row: {
-          content: string
-          conversation_id: string
-          created_at: string
-          id: string
-          metadata: Json | null
-          role: string
-        }
-        Insert: {
-          content: string
-          conversation_id: string
-          created_at?: string
-          id?: string
-          metadata?: Json | null
-          role: string
-        }
-        Update: {
-          content?: string
-          conversation_id?: string
-          created_at?: string
-          id?: string
-          metadata?: Json | null
-          role?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "messages_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "conversations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      profiles: {
+      knowledge_base: {
         Row: {
           business_name: string | null
-          created_at: string
-          id: string
+          id: number
           industry: string | null
-          updated_at: string
-          user_id: string
+          products_services: string | null
+          target_audience: string | null
+          user_id: string | null
         }
         Insert: {
           business_name?: string | null
-          created_at?: string
-          id?: string
+          id?: number
           industry?: string | null
-          updated_at?: string
-          user_id: string
+          products_services?: string | null
+          target_audience?: string | null
+          user_id?: string | null
         }
         Update: {
           business_name?: string | null
-          created_at?: string
+          id?: number
+          industry?: string | null
+          products_services?: string | null
+          target_audience?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          business_name: string | null
+          created_at: string | null
+          employees: number | null
+          goals: Json | null
+          id: string
+          industry: string | null
+          location: string | null
+          revenue: number | null
+          updated_at: string | null
+          user_id: string
+          values: Json | null
+        }
+        Insert: {
+          business_name?: string | null
+          created_at?: string | null
+          employees?: number | null
+          goals?: Json | null
           id?: string
           industry?: string | null
-          updated_at?: string
+          location?: string | null
+          revenue?: number | null
+          updated_at?: string | null
+          user_id: string
+          values?: Json | null
+        }
+        Update: {
+          business_name?: string | null
+          created_at?: string | null
+          employees?: number | null
+          goals?: Json | null
+          id?: string
+          industry?: string | null
+          location?: string | null
+          revenue?: number | null
+          updated_at?: string | null
           user_id?: string
+          values?: Json | null
         }
         Relationships: []
       }
@@ -284,29 +208,53 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      assess_values_alignment: {
+        Args: { user_id: string }
+        Returns: Json
+      }
+      calculate_business_roi_metrics: {
+        Args: { user_id: string; category: string }
+        Returns: Json
+      }
+      categorize_expense_trends: {
+        Args: { user_id: string; start_date: string; end_date: string }
+        Returns: Json
+      }
+      correlate_spending_with_outcomes: {
+        Args: { user_id: string }
+        Returns: Json
+      }
+      generate_client_growth_trajectory: {
+        Args: { user_id: string }
+        Returns: Json
+      }
+      get_client_business_profile: {
+        Args: { user_id: string }
+        Returns: Json
+      }
+      get_monthly_expense_summary: {
+        Args: { user_id: string; month: number; year: number }
+        Returns: Json
+      }
+      identify_optimization_opportunities: {
+        Args: { user_id: string }
+        Returns: Json
+      }
+      match_industry_insights: {
+        Args: { industry_param: string; audience_param: string }
+        Returns: string
+      }
+      recommend_soulful_tech_integration: {
+        Args: { business_profile: Json }
+        Returns: Json
+      }
+      update_client_evolution: {
+        Args: { user_id_param: string; new_insights_param: Json }
+        Returns: string
+      }
     }
     Enums: {
-      client_status: "active" | "inactive" | "pending"
-      expense_category:
-        | "office_supplies"
-        | "travel"
-        | "meals"
-        | "software"
-        | "marketing"
-        | "equipment"
-        | "professional_services"
-        | "utilities"
-        | "other"
-      expense_status: "pending" | "approved" | "rejected"
-      integration_type:
-        | "telegram"
-        | "whatsapp"
-        | "slack"
-        | "discord"
-        | "email"
-        | "zapier"
-        | "api"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -433,29 +381,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      client_status: ["active", "inactive", "pending"],
-      expense_category: [
-        "office_supplies",
-        "travel",
-        "meals",
-        "software",
-        "marketing",
-        "equipment",
-        "professional_services",
-        "utilities",
-        "other",
-      ],
-      expense_status: ["pending", "approved", "rejected"],
-      integration_type: [
-        "telegram",
-        "whatsapp",
-        "slack",
-        "discord",
-        "email",
-        "zapier",
-        "api",
-      ],
-    },
+    Enums: {},
   },
 } as const
