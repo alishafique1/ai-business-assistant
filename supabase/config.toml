@@ -68,5 +68,11 @@ verify_jwt = true
 [functions.ai-chat]
 verify_jwt = true
 
+[functions.get-user-expenses]
+verify_jwt = true
+
+[functions.get-knowledge-base-by-user]
+verify_jwt = true
+
 [analytics]
 enabled = false
