@@ -69,10 +69,11 @@ export default function Onboarding() {
     try {
       setIsLoading(true);
 
-      // Update profile with business information
+      // Create or update profile with business information
       const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
+        .from('profiles' as any)
+        .upsert({
+          user_id: user.id,
           business_name: formData.businessName,
           industry: formData.industry,
         })
@@ -82,15 +83,18 @@ export default function Onboarding() {
         throw profileError;
       }
 
-      // Update AI settings
+      // Create or update AI settings
       const systemPrompt = `You are ${formData.aiName}, a helpful AI business assistant for ${formData.businessName}. 
 Your response style is ${formData.responseStyle}. 
 Focus on helping with ${formData.primaryUse} and categorizing expenses into: ${formData.categories}.`;
 
       const { error: aiError } = await supabase
-        .from('ai_settings')
-        .update({
+        .from('ai_settings' as any)
+        .upsert({
+          user_id: user.id,
           system_prompt: systemPrompt,
+          response_style: formData.responseStyle,
+          ai_name: formData.aiName,
         })
         .eq('user_id', user.id);
 
@@ -101,10 +105,10 @@ Focus on helping with ${formData.primaryUse} and categorizing expenses into: ${f
       // Create integration if selected
       if (formData.integration) {
         const { error: integrationError } = await supabase
-          .from('integrations')
+          .from('integrations' as any)
           .insert({
             user_id: user.id,
-            type: formData.integration.toLowerCase() as any,
+            type: formData.integration.toLowerCase(),
             name: formData.integration,
             enabled: true,
           });

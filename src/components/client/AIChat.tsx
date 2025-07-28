@@ -39,7 +39,7 @@ export function AIChat() {
 
       try {
         const { data, error } = await supabase
-          .from('conversations')
+          .from('conversations' as any)
           .insert({
             user_id: user.id,
             title: 'Client Portal Chat'
@@ -48,7 +48,7 @@ export function AIChat() {
           .single();
 
         if (error) throw error;
-        setConversationId(data.id);
+        setConversationId(String((data as any)?.id || ''));
       } catch (error) {
         console.error('Error creating conversation:', error);
       }
