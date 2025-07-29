@@ -32,29 +32,12 @@ export function AIChat() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Create conversation on component mount
+  // Set conversation ID for the chat session
   useEffect(() => {
-    const createConversation = async () => {
-      if (!user) return;
-
-      try {
-        const { data, error } = await supabase
-          .from('conversations' as any)
-          .insert({
-            user_id: user.id,
-            title: 'Client Portal Chat'
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        setConversationId(String((data as any)?.id || ''));
-      } catch (error) {
-        console.error('Error creating conversation:', error);
-      }
-    };
-
-    createConversation();
+    if (user) {
+      // Generate a simple conversation ID based on user and timestamp
+      setConversationId(`${user.id}-${Date.now()}`);
+    }
   }, [user]);
 
   // Auto-scroll to bottom when new messages are added
