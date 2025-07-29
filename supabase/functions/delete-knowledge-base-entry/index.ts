@@ -12,29 +12,38 @@ serve(async (req) => {
   }
 
   try {
-    const { userId } = await req.json();
+    const { entryId, userId } = await req.json();
     
+    console.log('Deleting knowledge base entry:', { entryId, userId });
+
+    if (!entryId || !userId) {
+      throw new Error('Missing entryId or userId');
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { data: entries, error } = await supabase
+    // Delete the knowledge base entry
+    const { error } = await supabase
       .from('knowledge_base')
-      .select('*')
-      .eq('user_id', userId)
-      .order('id', { ascending: false });
+      .delete()
+      .eq('id', entryId)
+      .eq('user_id', userId); // Ensure user can only delete their own entries
 
     if (error) {
       throw error;
     }
 
+    console.log('Knowledge base entry deleted successfully');
+
     return new Response(
-      JSON.stringify({ entries }),
+      JSON.stringify({ success: true }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error fetching knowledge base:', error);
+    console.error('Error deleting knowledge base entry:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

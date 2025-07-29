@@ -1,1 +1,53 @@
 project_id = "xdinmyztzvrcasvgupir"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+smtp_port = 54325
+pop3_port = 54326
+
+[functions.ai-chat]
+verify_jwt = true
+
+[functions.ai-document-categorizer]
+verify_jwt = true
+
+[functions.create-expense]
+verify_jwt = true
+
+[functions.delete-expense]
+verify_jwt = true
+
+[functions.get-user-expenses]
+verify_jwt = true
+
+[functions.get-knowledge-base-by-user]
+verify_jwt = true
+
+[functions.create-knowledge-base-entry]
+verify_jwt = true
+
+[functions.update-knowledge-base-entry]
+verify_jwt = true
+
+[functions.delete-knowledge-base-entry]
+verify_jwt = true
+
+[edge-runtime]
+enabled = true
+port = 54327
+inspector_port = 8083
