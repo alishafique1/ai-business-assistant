@@ -12,29 +12,24 @@ serve(async (req) => {
   }
 
   try {
-    const { entryId, userId, title, content, category, tags } = await req.json();
+    const { userId, title } = await req.json();
     
-    console.log('Updating knowledge base entry:', { entryId, userId, title, category });
+    console.log('Creating conversation:', { userId, title });
 
-    if (!entryId || !userId || !title || !content) {
-      throw new Error('Missing required fields: entryId, userId, title, or content');
+    if (!userId) {
+      throw new Error('Missing userId');
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Update the knowledge base entry
-    const { data, error } = await supabase
-      .from('knowledge_base')
-      .update({
-        title: title,
-        content: content,
-        category: category || 'general',
-        tags: tags || []
+    const { data: conversation, error } = await supabase
+      .from('conversations')
+      .insert({
+        user_id: userId,
+        title: title || 'New Conversation'
       })
-      .eq('id', entryId)
-      .eq('user_id', userId) // Ensure user can only update their own entries
       .select()
       .single();
 
@@ -42,18 +37,18 @@ serve(async (req) => {
       throw error;
     }
 
-    console.log('Knowledge base entry updated successfully');
+    console.log('Conversation created successfully');
 
     return new Response(
       JSON.stringify({ 
-        entry: data,
+        conversation,
         success: true 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error updating knowledge base entry:', error);
+    console.error('Error creating conversation:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

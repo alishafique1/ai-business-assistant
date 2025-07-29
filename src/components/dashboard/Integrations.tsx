@@ -8,8 +8,24 @@ import { Calendar, CheckCircle, ExternalLink, MessageCircle, Settings, Smartphon
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function Integrations() {
-  const [telegramConnected, setTelegramConnected] = useState(false);
-  const [whatsappConnected, setWhatsappConnected] = useState(false);
+  const [telegramConnected, setTelegramConnected] = useState(
+    localStorage.getItem('telegram_connected') === 'true'
+  );
+  const [whatsappConnected, setWhatsappConnected] = useState(
+    localStorage.getItem('whatsapp_connected') === 'true'
+  );
+
+  const handleTelegramConnect = () => {
+    const newState = !telegramConnected;
+    setTelegramConnected(newState);
+    localStorage.setItem('telegram_connected', newState.toString());
+  };
+
+  const handleWhatsappConnect = () => {
+    const newState = !whatsappConnected;
+    setWhatsappConnected(newState);
+    localStorage.setItem('whatsapp_connected', newState.toString());
+  };
 
   return (
     <div className="space-y-6">
@@ -55,7 +71,7 @@ export function Integrations() {
                       <Label htmlFor="telegram-username">Telegram Username</Label>
                       <Input id="telegram-username" placeholder="@yourusername" />
                     </div>
-                    <Button className="w-full" onClick={() => setTelegramConnected(true)}>
+                    <Button className="w-full" onClick={handleTelegramConnect}>
                       Connect Telegram
                     </Button>
                   </>
@@ -72,7 +88,7 @@ export function Integrations() {
                       <Button variant="outline" size="sm">
                         Test Connection
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={handleTelegramConnect}>
                         Disconnect
                       </Button>
                     </div>
@@ -109,7 +125,7 @@ export function Integrations() {
                       <Label htmlFor="whatsapp-number">Business Phone Number</Label>
                       <Input id="whatsapp-number" placeholder="+1 (555) 123-4567" />
                     </div>
-                    <Button className="w-full" onClick={() => setWhatsappConnected(true)}>
+                    <Button className="w-full" onClick={handleWhatsappConnect}>
                       Connect WhatsApp Business
                     </Button>
                   </>
@@ -126,7 +142,7 @@ export function Integrations() {
                       <Button variant="outline" size="sm">
                         Test Connection
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={handleWhatsappConnect}>
                         Disconnect
                       </Button>
                     </div>

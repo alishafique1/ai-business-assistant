@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Calendar, DollarSign, Mic, Plus, Receipt, Tag, Trash2, Edit3 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
@@ -29,6 +30,8 @@ export function ExpenseTracker() {
   const [isRecording, setIsRecording] = useState(false);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [formData, setFormData] = useState({
     amount: '',
     title: '',
@@ -94,14 +97,8 @@ export function ExpenseTracker() {
         description: "Expense created successfully"
       });
       
-      setFormData({
-        amount: '',
-        title: '',
-        description: '',
-        category: '',
-        date: new Date().toISOString().split('T')[0]
-      });
-      
+      resetForm();
+      setShowAddDialog(false);
       await fetchExpenses();
     } catch (error) {
       console.error('Error creating expense:', error);
@@ -113,6 +110,73 @@ export function ExpenseTracker() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const updateExpense = async () => {
+    if (!editingExpense || !formData.amount || !formData.title || !formData.category) {
+      toast({
+        title: "Error", 
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.functions.invoke('update-expense', {
+        body: {
+          expenseId: editingExpense.id,
+          userId: user?.id,
+          amount: parseFloat(formData.amount),
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
+          date: formData.date
+        }
+      });
+
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Expense updated successfully"
+      });
+      
+      resetForm();
+      setEditingExpense(null);
+      await fetchExpenses();
+    } catch (error) {
+      console.error('Error updating expense:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update expense",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      amount: '',
+      title: '',
+      description: '',
+      category: '',
+      date: new Date().toISOString().split('T')[0]
+    });
+  };
+
+  const handleEdit = (expense: Expense) => {
+    setEditingExpense(expense);
+    setFormData({
+      amount: expense.amount.toString(),
+      title: expense.title,
+      description: expense.description || '',
+      category: expense.category,
+      date: expense.date
+    });
   };
 
   const deleteExpense = async (expenseId: string) => {
@@ -142,9 +206,44 @@ export function ExpenseTracker() {
     }
   };
 
-  const handleVoiceRecord = () => {
+  const handleVoiceRecord = async () => {
+    // Check if integrations are set up
+    const integrationConnected = localStorage.getItem('telegram_connected') === 'true' || 
+                                localStorage.getItem('whatsapp_connected') === 'true';
+    
+    if (!integrationConnected) {
+      toast({
+        title: "Integration Required",
+        description: "Please set up Telegram or WhatsApp integration first",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsRecording(!isRecording);
-    // Voice recording logic will be implemented later
+    
+    if (!isRecording) {
+      toast({
+        title: "Voice Recording Started",
+        description: "Send a voice message via your connected app or speak now"
+      });
+      
+      // Simulate voice recording timeout
+      setTimeout(() => {
+        if (isRecording) {
+          setIsRecording(false);
+          toast({
+            title: "Recording Stopped",
+            description: "Processing your voice command..."
+          });
+        }
+      }, 30000); // 30 second timeout
+    } else {
+      toast({
+        title: "Recording Stopped",
+        description: "Processing your voice command..."
+      });
+    }
   };
 
   return (
@@ -154,10 +253,108 @@ export function ExpenseTracker() {
           <h2 className="text-3xl font-bold text-foreground">Expense Tracker</h2>
           <p className="text-muted-foreground">Track and categorize your business expenses with AI assistance</p>
         </div>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Expense
-        </Button>
+        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+          <DialogTrigger asChild>
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Expense
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Add New Expense</DialogTitle>
+              <DialogDescription>
+                Quick expense entry with voice or photo options
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  className="flex-1 gap-2"
+                  onClick={handleVoiceRecord}
+                >
+                  <Mic className="h-4 w-4" />
+                  Voice Entry
+                </Button>
+                <Button variant="outline" className="flex-1 gap-2">
+                  <Receipt className="h-4 w-4" />
+                  Photo Upload
+                </Button>
+              </div>
+              
+              <div className="text-center text-sm text-muted-foreground">
+                or fill out manually below
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="modal-amount">Amount</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      id="modal-amount" 
+                      placeholder="0.00" 
+                      className="pl-9"
+                      value={formData.amount}
+                      onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="modal-category">Category</Label>
+                  <Select 
+                    value={formData.category} 
+                    onValueChange={(value) => setFormData({...formData, category: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="meals">Meals</SelectItem>
+                      <SelectItem value="travel">Travel</SelectItem>
+                      <SelectItem value="office">Office</SelectItem>
+                      <SelectItem value="marketing">Marketing</SelectItem>
+                      <SelectItem value="software">Software</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="modal-title">Title</Label>
+                <Input 
+                  id="modal-title" 
+                  placeholder="Expense title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    setShowAddDialog(false);
+                    resetForm();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  className="flex-1" 
+                  onClick={createExpense}
+                  disabled={loading}
+                >
+                  {loading ? "Adding..." : "Add Expense"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Tabs defaultValue="add" className="space-y-6">
@@ -333,7 +530,11 @@ export function ExpenseTracker() {
                           <div className="font-bold text-lg">${expense.amount.toFixed(2)}</div>
                         </div>
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleEdit(expense)}
+                          >
                             <Edit3 className="h-4 w-4" />
                           </Button>
                           <Button 
@@ -382,6 +583,114 @@ export function ExpenseTracker() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Expense Dialog */}
+      <Dialog open={!!editingExpense} onOpenChange={(open) => {
+        if (!open) {
+          setEditingExpense(null);
+          resetForm();
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Expense</DialogTitle>
+            <DialogDescription>
+              Update expense details
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-amount">Amount</Label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    id="edit-amount" 
+                    placeholder="0.00" 
+                    className="pl-9"
+                    value={formData.amount}
+                    onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-category">Category</Label>
+                <Select 
+                  value={formData.category} 
+                  onValueChange={(value) => setFormData({...formData, category: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="meals">Meals</SelectItem>
+                    <SelectItem value="travel">Travel</SelectItem>
+                    <SelectItem value="office">Office</SelectItem>
+                    <SelectItem value="marketing">Marketing</SelectItem>
+                    <SelectItem value="software">Software</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-title">Title</Label>
+              <Input 
+                id="edit-title" 
+                placeholder="Expense title"
+                value={formData.title}
+                onChange={(e) => setFormData({...formData, title: e.target.value})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Input 
+                id="edit-description" 
+                placeholder="What was this expense for?"
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="edit-date">Date</Label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  id="edit-date" 
+                  type="date" 
+                  className="pl-9"
+                  value={formData.date}
+                  onChange={(e) => setFormData({...formData, date: e.target.value})}
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => {
+                  setEditingExpense(null);
+                  resetForm();
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                className="flex-1" 
+                onClick={updateExpense}
+                disabled={loading}
+              >
+                {loading ? "Updating..." : "Update Expense"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

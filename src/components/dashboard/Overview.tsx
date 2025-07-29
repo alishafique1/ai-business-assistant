@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,11 @@ import { BarChart3, Bot, DollarSign, MessageSquare, Smartphone, TrendingUp, Book
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-export function Overview() {
+interface OverviewProps {
+  onViewChange: (view: "overview" | "expenses" | "knowledge" | "assistant" | "integrations" | "settings") => void;
+}
+
+export function Overview({ onViewChange }: OverviewProps) {
   const { user } = useAuth();
   const [stats, setStats] = useState({
     monthlyExpenses: 0,
@@ -14,14 +18,36 @@ export function Overview() {
     knowledgeEntries: 0,
     aiInteractions: 0
   });
+  const [integrationCount, setIntegrationCount] = useState(0);
 
   useEffect(() => {
     if (user) {
       fetchStats();
     }
-  }, [user]);
+    
+    // Check integration status
+    const checkIntegrations = () => {
+      let count = 0;
+      if (localStorage.getItem('telegram_connected') === 'true') count++;
+      if (localStorage.getItem('whatsapp_connected') === 'true') count++;
+      setIntegrationCount(count);
+    };
+    
+    checkIntegrations();
+    
+    // Listen for storage changes
+    const handleStorageChange = () => {
+      checkIntegrations();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [user, fetchStats]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       // Fetch expenses
       const expensesResponse = await supabase.functions.invoke('get-user-expenses', {
@@ -39,11 +65,11 @@ export function Overview() {
         const currentYear = new Date().getFullYear();
         
         const monthlyExpenses = expenses
-          .filter((expense: any) => {
+          .filter((expense: { date: string }) => {
             const expenseDate = new Date(expense.date);
             return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
           })
-          .reduce((sum: number, expense: any) => sum + expense.amount, 0);
+          .reduce((sum: number, expense: { amount: number }) => sum + expense.amount, 0);
           
         setStats(prev => ({
           ...prev,
@@ -62,7 +88,7 @@ export function Overview() {
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
-  };
+  }, [user]);
 
   return (
     <div className="space-y-6">
@@ -72,7 +98,11 @@ export function Overview() {
         <p className="text-white/90 mb-4">
           Get started by setting up your Telegram or WhatsApp integration, then begin tracking expenses with voice commands.
         </p>
-        <Button variant="secondary" className="bg-white text-primary hover:bg-white/90">
+        <Button 
+          variant="secondary" 
+          className="bg-white text-primary hover:bg-white/90"
+          onClick={() => onViewChange("integrations")}
+        >
           Set Up Integration
         </Button>
       </div>
@@ -107,8 +137,12 @@ export function Overview() {
             <Smartphone className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">Set up Telegram or WhatsApp</p>
+            <div className="text-2xl font-bold">{integrationCount}</div>
+            <p className="text-xs text-muted-foreground">
+              {integrationCount === 0 ? "Set up Telegram or WhatsApp" : 
+               integrationCount === 1 ? "1 platform connected" : 
+               "2 platforms connected"}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -128,17 +162,26 @@ export function Overview() {
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm">Connect Telegram</span>
-              <Badge variant="outline">Pending</Badge>
+              <Badge variant={localStorage.getItem('telegram_connected') === 'true' ? "default" : "outline"}>
+                {localStorage.getItem('telegram_connected') === 'true' ? "Connected" : "Pending"}
+              </Badge>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm">Configure Voice Commands</span>
-              <Badge variant="outline">Pending</Badge>
+              <Badge variant={integrationCount > 0 ? "default" : "outline"}>
+                {integrationCount > 0 ? "Ready" : "Pending"}
+              </Badge>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm">Set Expense Categories</span>
-              <Badge variant="outline">Pending</Badge>
+              <Badge variant="default">Complete</Badge>
             </div>
-            <Button className="w-full mt-4">Start Setup Guide</Button>
+            <Button 
+              className="w-full mt-4"
+              onClick={() => onViewChange("integrations")}
+            >
+              Start Setup Guide
+            </Button>
           </CardContent>
         </Card>
 

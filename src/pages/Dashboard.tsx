@@ -19,7 +19,7 @@ const Dashboard = () => {
   const renderContent = () => {
     switch (activeView) {
       case "overview":
-        return <Overview />;
+        return <Overview onViewChange={setActiveView} />;
       case "expenses":
         return <ExpenseTracker />;
       case "knowledge":

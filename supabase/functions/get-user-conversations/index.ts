@@ -12,48 +12,29 @@ serve(async (req) => {
   }
 
   try {
-    const { entryId, userId, title, content, category, tags } = await req.json();
+    const { userId } = await req.json();
     
-    console.log('Updating knowledge base entry:', { entryId, userId, title, category });
-
-    if (!entryId || !userId || !title || !content) {
-      throw new Error('Missing required fields: entryId, userId, title, or content');
-    }
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Update the knowledge base entry
-    const { data, error } = await supabase
-      .from('knowledge_base')
-      .update({
-        title: title,
-        content: content,
-        category: category || 'general',
-        tags: tags || []
-      })
-      .eq('id', entryId)
-      .eq('user_id', userId) // Ensure user can only update their own entries
-      .select()
-      .single();
+    const { data: conversations, error } = await supabase
+      .from('conversations')
+      .select('*')
+      .eq('user_id', userId)
+      .order('updated_at', { ascending: false });
 
     if (error) {
       throw error;
     }
 
-    console.log('Knowledge base entry updated successfully');
-
     return new Response(
-      JSON.stringify({ 
-        entry: data,
-        success: true 
-      }),
+      JSON.stringify({ conversations }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error updating knowledge base entry:', error);
+    console.error('Error fetching conversations:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

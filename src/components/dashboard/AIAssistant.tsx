@@ -3,15 +3,74 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Bot, MessageSquare, Mic, Settings, Volume2 } from "lucide-react";
+import { Bot, MessageSquare, Mic, Settings, Volume2, Send, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
 
 export function AIAssistant() {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [autoExpenseDetection, setAutoExpenseDetection] = useState(true);
+
+  const sendMessage = async () => {
+    if (!message.trim() || isLoading || !user) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: message.trim(),
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setMessage('');
+    setIsLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-chat', {
+        body: {
+          message: userMessage.content,
+          conversationId: `dashboard-${user.id}-${Date.now()}`,
+          userId: user.id
+        }
+      });
+
+      if (error) throw error;
+
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: data.message,
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -48,12 +107,38 @@ export function AIAssistant() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex-1 flex flex-col">
-                  <div className="flex-1 border rounded-lg p-4 mb-4 bg-muted/20">
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Bot className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                      <p>Start a conversation with your AI assistant</p>
-                      <p className="text-sm">Try asking about expense categories or business insights</p>
-                    </div>
+                  <div className="flex-1 border rounded-lg p-4 mb-4 bg-muted/20 overflow-y-auto max-h-[300px]">
+                    {messages.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Bot className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                        <p>Start a conversation with your AI assistant</p>
+                        <p className="text-sm">Try asking about expense categories or business insights</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {messages.map((msg) => (
+                          <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[80%] rounded-lg px-3 py-2 ${
+                              msg.role === 'user' 
+                                ? 'bg-primary text-primary-foreground' 
+                                : 'bg-muted'
+                            }`}>
+                              <p className="text-sm">{msg.content}</p>
+                            </div>
+                          </div>
+                        ))}
+                        {isLoading && (
+                          <div className="flex gap-3 justify-start">
+                            <div className="bg-muted rounded-lg px-3 py-2">
+                              <div className="flex items-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span className="text-sm">Thinking...</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <Textarea 
@@ -61,9 +146,17 @@ export function AIAssistant() {
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       className="min-h-[60px]"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          sendMessage();
+                        }
+                      }}
                     />
                     <div className="flex flex-col gap-2">
-                      <Button size="sm">Send</Button>
+                      <Button size="sm" onClick={sendMessage} disabled={!message.trim() || isLoading}>
+                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      </Button>
                       <Button size="sm" variant="outline">
                         <Mic className="h-4 w-4" />
                       </Button>

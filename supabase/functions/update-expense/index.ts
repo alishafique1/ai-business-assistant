@@ -30,22 +30,23 @@ serve(async (req) => {
       throw new Error('Invalid user');
     }
 
-    const { title, amount, category, description, receipt_url, date } = await req.json();
+    const { expenseId, title, amount, category, description, date } = await req.json();
 
     // Validate required fields
-    if (!title || !amount) {
-      throw new Error('Title and amount are required');
+    if (!expenseId || !title || !amount) {
+      throw new Error('Expense ID, title and amount are required');
     }
 
     const { data: expense, error } = await supabase
       .from('expenses')
-      .insert({
-        user_id: user.id,
+      .update({
         description: title, // Map title to description field
         amount: parseFloat(amount),
         category: category || 'other',
         created_at: date || new Date().toISOString()
       })
+      .eq('id', expenseId)
+      .eq('user_id', user.id) // Ensure user can only update their own expenses
       .select()
       .single();
 
@@ -60,7 +61,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error creating expense:', error);
+    console.error('Error updating expense:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

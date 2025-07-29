@@ -29,10 +29,10 @@ serve(async (req) => {
       .from('knowledge_base')
       .insert({
         user_id: userId,
-        business_name: title, // Using title as business_name for now
-        industry: category || 'general',
-        target_audience: content.substring(0, 255), // Store first part of content as target_audience
-        products_services: tags ? tags.join(', ') : null
+        title: title,
+        content: content,
+        category: category || 'general',
+        tags: tags || []
       })
       .select()
       .single();
