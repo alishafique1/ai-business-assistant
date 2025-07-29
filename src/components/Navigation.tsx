@@ -1,5 +1,5 @@
 
-import { Brain, Menu, X, LogOut, User } from "lucide-react";
+import { Brain, Menu, X, LogOut, User, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,6 +17,7 @@ export default function Navigation() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [sparkleAnimation, setSparkleAnimation] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -61,51 +62,78 @@ export default function Navigation() {
   };
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border/50 shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-transform duration-300 ease-in-out ${
-      isVisible ? 'translate-y-0' : '-translate-y-full'
-    }`}>
+    <nav className={`fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border/50 shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all duration-500 ease-out ${
+      isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-90'
+    } hover:bg-background/98 hover:shadow-[0_12px_40px_rgb(0,0,0,0.15)] relative overflow-hidden`}>
+      {/* Animated background particles */}
+      <div className="absolute inset-0 opacity-30 transition-opacity duration-1000">
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-1 h-1 bg-primary/30 rounded-full animate-gentle-breathe"
+            style={{
+              left: `${10 + i * 15}%`,
+              top: `${20 + (i % 2) * 60}%`,
+              animationDelay: `${i * 0.8}s`,
+              animationDuration: `${8 + i}s`,
+            }}
+          />
+        ))}
+      </div>
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between h-16">
-          <button 
-            onClick={handleLogoClick}
-            disabled={isRefreshing}
-            className={`flex items-center space-x-3 hover:opacity-80 transition-all duration-200 ${
-              isRefreshing ? 'opacity-60 cursor-not-allowed' : ''
-            }`}
-          >
-            <Brain className={`h-8 w-8 text-primary transition-transform duration-200 ${
-              isRefreshing ? 'animate-spin' : ''
-            }`} />
-            <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+          <div className="group">
+            <button 
+              onClick={handleLogoClick}
+              disabled={isRefreshing}
+              className={`flex items-center space-x-3 hover:opacity-80 transition-all duration-300 hover:scale-105 ${
+                isRefreshing ? 'opacity-60 cursor-not-allowed' : ''
+              }`}
+            >
+            <div className="relative">
+              <Brain className={`h-8 w-8 text-primary transition-all duration-500 ${
+                isRefreshing ? 'animate-spin' : 'group-hover:rotate-12 group-hover:scale-110'
+              }`} />
+              {/* Sparkle effect on hover */}
+              <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-accent opacity-0 group-hover:opacity-100 group-hover:animate-gentle-breathe transition-all duration-500" />
+            </div>
+            <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent group-hover:drop-shadow-sm transition-all duration-500 group-hover:scale-105 relative">
               AI Business Hub
+              {/* Subtle glow effect */}
+              <span className="absolute inset-0 bg-gradient-primary bg-clip-text text-transparent opacity-0 group-hover:opacity-50 blur-sm transition-all duration-500">
+                AI Business Hub
+              </span>
             </span>
           </button>
+          </div>
 
           <div className="hidden md:flex items-center">
-            <div className="bg-background/90 backdrop-blur-sm border border-border/40 rounded-full p-1 flex items-center space-x-1 shadow-md">
+            <div className="bg-background/90 backdrop-blur-sm border border-border/40 rounded-full p-1 flex items-center space-x-1 shadow-md hover:shadow-lg transition-all duration-500 hover:scale-105 relative group/nav overflow-hidden">
+              {/* Animated background gradient */}
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 opacity-0 group-hover/nav:opacity-100 transition-all duration-500 animate-gradient"></div>
               <button 
                 onClick={scrollToTop}
-                className="relative px-4 py-2 rounded-full text-foreground/80 hover:text-foreground transition-colors hover:bg-background/50 before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-8 before:h-1 before:bg-primary before:rounded-full before:opacity-0 hover:before:opacity-100 before:transition-opacity"
+                className="relative px-4 py-2 rounded-full text-foreground/80 hover:text-foreground transition-all duration-500 hover:bg-background/70 hover:scale-110 group/btn z-10 before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-8 before:h-1 before:bg-primary before:rounded-full before:opacity-0 hover:before:opacity-100 before:transition-all before:duration-500 after:content-[''] after:absolute after:inset-0 after:bg-gradient-to-r after:from-primary/10 after:to-accent/10 after:rounded-full after:opacity-0 after:scale-75 hover:after:opacity-100 hover:after:scale-100 after:transition-all after:duration-500"
               >
-                Home
+                <span className="group-hover/btn:drop-shadow-sm relative z-10">Home</span>
               </button>
               <button 
                 onClick={() => scrollToSection('features')}
-                className="relative px-4 py-2 rounded-full text-foreground/80 hover:text-foreground transition-colors hover:bg-background/50 before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-8 before:h-1 before:bg-primary before:rounded-full before:opacity-0 hover:before:opacity-100 before:transition-opacity"
+                className="relative px-4 py-2 rounded-full text-foreground/80 hover:text-foreground transition-all duration-500 hover:bg-background/70 hover:scale-110 group/btn z-10 before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-8 before:h-1 before:bg-primary before:rounded-full before:opacity-0 hover:before:opacity-100 before:transition-all before:duration-500 after:content-[''] after:absolute after:inset-0 after:bg-gradient-to-r after:from-primary/10 after:to-accent/10 after:rounded-full after:opacity-0 after:scale-75 hover:after:opacity-100 hover:after:scale-100 after:transition-all after:duration-500"
               >
-                Features
+                <span className="group-hover/btn:drop-shadow-sm relative z-10">Features</span>
               </button>
               <button 
                 onClick={() => scrollToSection('benefits')}
-                className="relative px-4 py-2 rounded-full text-foreground/80 hover:text-foreground transition-colors hover:bg-background/50 before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-8 before:h-1 before:bg-primary before:rounded-full before:opacity-0 hover:before:opacity-100 before:transition-opacity"
+                className="relative px-4 py-2 rounded-full text-foreground/80 hover:text-foreground transition-all duration-500 hover:bg-background/70 hover:scale-110 group/btn z-10 before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-8 before:h-1 before:bg-primary before:rounded-full before:opacity-0 hover:before:opacity-100 before:transition-all before:duration-500 after:content-[''] after:absolute after:inset-0 after:bg-gradient-to-r after:from-primary/10 after:to-accent/10 after:rounded-full after:opacity-0 after:scale-75 hover:after:opacity-100 hover:after:scale-100 after:transition-all after:duration-500"
               >
-                Benefits
+                <span className="group-hover/btn:drop-shadow-sm relative z-10">Benefits</span>
               </button>
               <button 
                 onClick={() => scrollToSection('pricing')}
-                className="relative px-4 py-2 rounded-full text-foreground/80 hover:text-foreground transition-colors hover:bg-background/50 before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-8 before:h-1 before:bg-primary before:rounded-full before:opacity-0 hover:before:opacity-100 before:transition-opacity"
+                className="relative px-4 py-2 rounded-full text-foreground/80 hover:text-foreground transition-all duration-500 hover:bg-background/70 hover:scale-110 group/btn z-10 before:content-[''] before:absolute before:top-0 before:left-1/2 before:-translate-x-1/2 before:w-8 before:h-1 before:bg-primary before:rounded-full before:opacity-0 hover:before:opacity-100 before:transition-all before:duration-500 after:content-[''] after:absolute after:inset-0 after:bg-gradient-to-r after:from-primary/10 after:to-accent/10 after:rounded-full after:opacity-0 after:scale-75 hover:after:opacity-100 hover:after:scale-100 after:transition-all after:duration-500"
               >
-                Pricing
+                <span className="group-hover/btn:drop-shadow-sm relative z-10">Pricing</span>
               </button>
             </div>
           </div>
@@ -114,42 +142,45 @@ export default function Navigation() {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <User className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" className="hover:scale-110 transition-all duration-300 hover:bg-primary/10">
+                    <User className="h-4 w-4 transition-transform duration-300 hover:rotate-12" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-background border-border">
-                  <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+                <DropdownMenuContent align="end" className="bg-background border-border animate-in slide-in-from-top-2 duration-200">
+                  <DropdownMenuItem onClick={() => navigate("/dashboard")} className="hover:bg-primary/10 transition-colors duration-200">
                     <User className="mr-2 h-4 w-4" />
                     Dashboard
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={signOut}>
+                  <DropdownMenuItem onClick={signOut} className="hover:bg-destructive/10 transition-colors duration-200">
                     <LogOut className="mr-2 h-4 w-4" />
                     Sign Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <>
-                <Button variant="ghost" onClick={() => navigate("/auth")}>
+              <div className="flex items-center space-x-4">
+                <Button variant="ghost" onClick={() => navigate("/auth")} className="hover:scale-105 transition-all duration-300 hover:bg-primary/5 hover:text-foreground relative z-10">
                   Sign In
                 </Button>
-                <Button variant="hero" showHoverArrows onClick={() => navigate("/auth")}>
-                  Get Started
-                </Button>
-              </>
+                <div className="group">
+                  <Button variant="hero" showHoverArrows onClick={() => navigate("/auth?tab=signup")} className="hover:scale-105 transition-all duration-300 hover:shadow-lg relative overflow-hidden">
+                    <span className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                    <span className="relative z-10">Get Started</span>
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
 
           <button
-            className="md:hidden p-2"
+            className="md:hidden p-2 hover:bg-primary/10 rounded-lg transition-all duration-300 hover:scale-110"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? (
-              <X className="h-6 w-6 text-foreground" />
+              <X className="h-6 w-6 text-foreground transition-transform duration-200 rotate-90" />
             ) : (
-              <Menu className="h-6 w-6 text-foreground" />
+              <Menu className="h-6 w-6 text-foreground transition-transform duration-200" />
             )}
           </button>
         </div>
@@ -196,7 +227,7 @@ export default function Navigation() {
                     <Button variant="ghost" onClick={() => navigate("/auth")}>
                       Sign In
                     </Button>
-                    <Button variant="hero" showHoverArrows onClick={() => navigate("/auth")}>
+                    <Button variant="hero" showHoverArrows onClick={() => navigate("/auth?tab=signup")}>
                       Get Started
                     </Button>
                   </>

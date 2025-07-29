@@ -21,6 +21,10 @@ export default function Auth() {
   
   // Get the intended destination from location state
   const from = location.state?.from || "/dashboard";
+  
+  // Check URL search params for default tab
+  const searchParams = new URLSearchParams(location.search);
+  const defaultTab = searchParams.get('tab') === 'signup' ? 'signup' : 'signin';
 
   useEffect(() => {
     // Check if user is already logged in
@@ -241,7 +245,7 @@ export default function Auth() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
+            <Tabs defaultValue={defaultTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
