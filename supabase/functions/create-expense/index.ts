@@ -41,12 +41,10 @@ serve(async (req) => {
       .from('expenses')
       .insert({
         user_id: user.id,
-        title,
+        description: title, // Map title to description field
         amount: parseFloat(amount),
         category: category || 'other',
-        description,
-        receipt_url,
-        date: date || new Date().toISOString().split('T')[0]
+        created_at: date || new Date().toISOString().split('T')[0]
       })
       .select()
       .single();
