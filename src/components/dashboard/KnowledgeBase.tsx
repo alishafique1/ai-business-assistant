@@ -42,10 +42,12 @@ export function KnowledgeBase() {
   }, [user]);
 
   const fetchKnowledgeBase = async () => {
+    if (!user?.id) return;
+    
     try {
       setLoading(true);
       const { data, error } = await supabase.functions.invoke('get-knowledge-base-by-user', {
-        body: { userId: user?.id }
+        body: { userId: user.id }
       });
       
       if (error) throw error;
@@ -186,9 +188,9 @@ export function KnowledgeBase() {
   };
 
   const filteredEntries = entries.filter(entry =>
-    entry.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+    entry.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    entry.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    entry.tags?.some(tag => tag?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (

@@ -9,7 +9,7 @@ const corsHeaders = {
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const openAIApiKey = Deno.env.get('OpenAI_api');
+const customModelUrl = Deno.env.get('CUSTOM_MODEL_URL') || 'YOUR_CUSTOM_MODEL_ENDPOINT_HERE';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -21,14 +21,14 @@ serve(async (req) => {
     
     console.log('Processing chat message:', { conversationId, userId });
 
-    if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
+    if (!customModelUrl || customModelUrl === 'YOUR_CUSTOM_MODEL_ENDPOINT_HERE') {
+      throw new Error('Custom model URL not configured');
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get conversation history if conversationId exists
-    let messages = [
+    let conversationMessages = [
       {
         role: 'system',
         content: 'You are a helpful AI business assistant. You help users with document management, business questions, and general assistance. Be concise and professional.'
@@ -44,12 +44,12 @@ serve(async (req) => {
         .limit(20); // Last 20 messages for context
 
       if (history) {
-        messages.push(...history);
+        conversationMessages.push(...history);
       }
     }
 
     // Add the current user message
-    messages.push({ role: 'user', content: message });
+    conversationMessages.push({ role: 'user', content: message });
 
     // Save user message to database
     if (conversationId) {
@@ -62,23 +62,32 @@ serve(async (req) => {
         });
     }
 
-    // Get AI response
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Get AI response from custom model
+    const response = await fetch(customModelUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
+        // Add any authentication headers your custom model requires
+        // 'Authorization': 'Bearer YOUR_CUSTOM_API_KEY',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: messages,
+        // Adapt this payload to match your custom model's API format
+        messages: conversationMessages,
+        // Add any custom parameters your model needs
         temperature: 0.7,
         max_tokens: 1000,
       }),
     });
 
+    if (!response.ok) {
+      throw new Error(`Custom model API error: ${response.status} ${response.statusText}`);
+    }
+
     const aiResponse = await response.json();
-    const assistantMessage = aiResponse.choices[0].message.content;
+    
+    // Adapt this to match your custom model's response format
+    // You may need to change this line based on how your model returns responses
+    const assistantMessage = aiResponse.message || aiResponse.response || aiResponse.choices?.[0]?.message?.content || 'Sorry, I could not process your request.';
 
     // Save assistant message to database
     if (conversationId) {

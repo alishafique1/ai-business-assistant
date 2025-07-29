@@ -9,7 +9,7 @@ const corsHeaders = {
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const openAIApiKey = Deno.env.get('OpenAI_api');
+const customModelUrl = Deno.env.get('CUSTOM_MODEL_URL') || 'YOUR_CUSTOM_MODEL_ENDPOINT_HERE';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -21,21 +21,22 @@ serve(async (req) => {
     
     console.log('Categorizing document:', { fileName, fileType, fileSize });
 
-    if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
+    if (!customModelUrl || customModelUrl === 'YOUR_CUSTOM_MODEL_ENDPOINT_HERE') {
+      throw new Error('Custom model URL not configured');
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Use AI to categorize the document based on filename and type
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Use custom AI model to categorize the document based on filename and type
+    const response = await fetch(customModelUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
+        // Add any authentication headers your custom model requires
+        // 'Authorization': 'Bearer YOUR_CUSTOM_API_KEY',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        // Adapt this payload to match your custom model's API format
         messages: [
           {
             role: 'system',
@@ -66,8 +67,14 @@ serve(async (req) => {
       }),
     });
 
+    if (!response.ok) {
+      throw new Error(`Custom model API error: ${response.status} ${response.statusText}`);
+    }
+
     const aiResponse = await response.json();
-    const category = aiResponse.choices[0].message.content.trim().toLowerCase();
+    
+    // Adapt this to match your custom model's response format
+    const category = (aiResponse.message || aiResponse.response || aiResponse.choices?.[0]?.message?.content || 'other').trim().toLowerCase();
 
     console.log('AI categorization result:', category);
 

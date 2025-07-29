@@ -14,17 +14,26 @@ export default function ProtectedRoute({ children, fallback = "/auth" }: Protect
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    console.log('ProtectedRoute: Auth state changed', { 
+      hasUser: !!user, 
+      loading, 
+      pathname: location.pathname,
+      userId: user?.id 
+    });
+
     // Give a brief moment for auth to settle
     if (!loading) {
       const timer = setTimeout(() => {
+        console.log('ProtectedRoute: Setting ready to true');
         setIsReady(true);
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [loading]);
+  }, [loading, user, location.pathname]);
 
   // Show loading spinner while auth is being determined
   if (loading || !isReady) {
+    console.log('ProtectedRoute: Showing loading spinner', { loading, isReady });
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -37,6 +46,7 @@ export default function ProtectedRoute({ children, fallback = "/auth" }: Protect
 
   // Redirect to login if not authenticated, preserving the intended destination
   if (!user) {
+    console.log('ProtectedRoute: No user, redirecting to auth');
     return (
       <Navigate 
         to={fallback} 
@@ -46,6 +56,7 @@ export default function ProtectedRoute({ children, fallback = "/auth" }: Protect
     );
   }
 
+  console.log('ProtectedRoute: User authenticated, rendering children');
   return <>{children}</>;
 }
 

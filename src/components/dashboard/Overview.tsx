@@ -20,33 +20,6 @@ export function Overview({ onViewChange }: OverviewProps) {
   });
   const [integrationCount, setIntegrationCount] = useState(0);
 
-  useEffect(() => {
-    if (user) {
-      fetchStats();
-    }
-    
-    // Check integration status
-    const checkIntegrations = () => {
-      let count = 0;
-      if (localStorage.getItem('telegram_connected') === 'true') count++;
-      if (localStorage.getItem('whatsapp_connected') === 'true') count++;
-      setIntegrationCount(count);
-    };
-    
-    checkIntegrations();
-    
-    // Listen for storage changes
-    const handleStorageChange = () => {
-      checkIntegrations();
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [user, fetchStats]);
-
   const fetchStats = useCallback(async () => {
     try {
       // Fetch expenses
@@ -89,6 +62,33 @@ export function Overview({ onViewChange }: OverviewProps) {
       console.error('Error fetching stats:', error);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchStats();
+    }
+    
+    // Check integration status
+    const checkIntegrations = () => {
+      let count = 0;
+      if (localStorage.getItem('telegram_connected') === 'true') count++;
+      if (localStorage.getItem('whatsapp_connected') === 'true') count++;
+      setIntegrationCount(count);
+    };
+    
+    checkIntegrations();
+    
+    // Listen for storage changes
+    const handleStorageChange = () => {
+      checkIntegrations();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [user, fetchStats]);
 
   return (
     <div className="space-y-6">
