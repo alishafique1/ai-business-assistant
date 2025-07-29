@@ -16,12 +16,26 @@ export function DashboardHeader() {
     return email.substring(0, 2).toUpperCase();
   };
 
+  const getUserName = (email: string) => {
+    // Extract name from email (part before @)
+    const name = email.split('@')[0];
+    // Capitalize first letter and replace dots/underscores with spaces
+    return name.charAt(0).toUpperCase() + name.slice(1).replace(/[._]/g, ' ');
+  };
+
   return (
-    <header className="border-b bg-card/60 backdrop-blur-sm px-6 py-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Welcome back to your AI business assistant</p>
+    <header className="relative border-b bg-gradient-to-r from-card/80 to-primary/5 backdrop-blur-sm px-6 py-4 overflow-hidden">
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 opacity-[0.02] bg-[radial-gradient(circle_at_1px_1px,_rgb(var(--foreground))_1px,_transparent_0)] bg-[length:24px_24px]"></div>
+      
+      <div className="relative flex items-center justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
+            Dashboard
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Welcome back, <span className="font-medium text-primary">{user?.email ? getUserName(user.email) : 'there'}</span> ✨
+          </p>
         </div>
         
         <DropdownMenu>
