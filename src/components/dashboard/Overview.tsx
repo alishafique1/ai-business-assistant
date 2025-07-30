@@ -81,14 +81,19 @@ export function Overview({ onViewChange }: OverviewProps) {
         console.error('Failed to fetch expenses:', expensesResponse.status, expensesResponse.statusText);
       }
       
+      console.log('Knowledge response full object:', knowledgeResponse);
+      console.log('Knowledge response data:', knowledgeResponse.data);
+      console.log('Knowledge response error:', knowledgeResponse.error);
+      
       if (knowledgeResponse.data?.entries) {
-        console.log('Knowledge entries:', knowledgeResponse.data.entries);
+        console.log('Knowledge entries array:', knowledgeResponse.data.entries);
+        console.log('Knowledge entries count:', knowledgeResponse.data.entries.length);
         setStats(prev => ({
           ...prev,
           knowledgeEntries: knowledgeResponse.data.entries.length
         }));
       } else {
-        console.log('No knowledge entries found or API error:', knowledgeResponse.error);
+        console.log('No knowledge entries found or API error - setting to 0');
         setStats(prev => ({
           ...prev,
           knowledgeEntries: 0
