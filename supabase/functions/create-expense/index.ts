@@ -41,7 +41,8 @@ serve(async (req) => {
       .from('expenses')
       .insert({
         user_id: user.id,
-        description: title, // Map title to description field
+        title: title, // Store title in title field
+        description: description, // Store description in description field
         amount: parseFloat(amount),
         category: category || 'other',
         created_at: date || new Date().toISOString()
