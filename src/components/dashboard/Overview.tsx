@@ -37,21 +37,48 @@ export function Overview({ onViewChange }: OverviewProps) {
       
       if (expensesResponse.ok) {
         const expenses = await expensesResponse.json();
+        console.log('Fetched expenses from ML API:', expenses);
+        console.log('Number of expenses:', expenses.length);
+        
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
+        console.log('Current month:', currentMonth, 'Current year:', currentYear);
+        
+        // Debug each expense
+        expenses.forEach((expense: any, index: number) => {
+          const dateStr = expense.date || expense.created_at;
+          const expenseDate = new Date(dateStr);
+          console.log(`Expense ${index + 1}:`, {
+            title: expense.title,
+            amount: expense.amount,
+            date: expense.date,
+            created_at: expense.created_at,
+            usedDate: dateStr,
+            expenseMonth: expenseDate.getMonth(),
+            expenseYear: expenseDate.getFullYear(),
+            isCurrentMonth: expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear
+          });
+        });
         
         const monthlyExpenses = expenses
-          .filter((expense: { date: string }) => {
-            const expenseDate = new Date(expense.date);
+          .filter((expense: { date?: string; created_at?: string }) => {
+            // Use date field if available, otherwise use created_at
+            const dateStr = expense.date || expense.created_at;
+            if (!dateStr) return false;
+            const expenseDate = new Date(dateStr);
             return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
           })
           .reduce((sum: number, expense: { amount: number }) => sum + expense.amount, 0);
-          
+        
+        console.log('Monthly expenses total:', monthlyExpenses);
+        
         setStats(prev => ({
           ...prev,
           monthlyExpenses,
           totalExpenses: expenses.length
         }));
+      } else {
+        console.error('Failed to fetch expenses:', expensesResponse.status, expensesResponse.statusText);
       }
       
       if (knowledgeResponse.data?.entries) {
