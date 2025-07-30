@@ -24,24 +24,34 @@ const InstagramIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+interface FooterLink {
+  label: string;
+  href: string;
+  external?: boolean;
+  isEmail?: boolean;
+}
+
+interface FooterSection {
+  title: string;
+  links: FooterLink[];
+}
+
 export const Footer = () => {
-  const footerSections = [
+  const footerSections: FooterSection[] = [
     {
       title: "Product",
       links: [
         { label: "Features", href: "#features" },
         { label: "Pricing", href: "#pricing" },
-        { label: "API", href: "#api" },
         { label: "Security", href: "#security" }
       ]
     },
     {
       title: "Company",
       links: [
-        { label: "About", href: "#about" },
-        { label: "Blog", href: "#blog" },
-        { label: "Careers", href: "#careers" },
-        { label: "Contact", href: "#contact" }
+        { label: "About", href: "https://socialdots.ca/about/", external: true },
+        { label: "Blog", href: "https://socialdots.ca/blog/", external: true },
+        { label: "Contact", href: "mailto:hr@socialdots.ca", isEmail: true }
       ]
     },
     {
@@ -123,12 +133,28 @@ export const Footer = () => {
               <ul className="space-y-3">
                 {section.links.map((link) => (
                   <li key={link.label}>
-                    <a 
-                      href={link.href}
-                      className="text-background/70 hover:text-background transition-colors"
-                    >
-                      {link.label}
-                    </a>
+                    {link.external ? (
+                      <button
+                        onClick={() => window.open(link.href, '_blank')}
+                        className="text-background/70 hover:text-background transition-colors cursor-pointer"
+                      >
+                        {link.label}
+                      </button>
+                    ) : link.isEmail ? (
+                      <button
+                        onClick={() => window.open('https://mail.google.com/mail/?view=cm&fs=1&to=hr@socialdots.ca', '_blank')}
+                        className="text-background/70 hover:text-background transition-colors cursor-pointer"
+                      >
+                        {link.label}
+                      </button>
+                    ) : (
+                      <a 
+                        href={link.href}
+                        className="text-background/70 hover:text-background transition-colors"
+                      >
+                        {link.label}
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>
