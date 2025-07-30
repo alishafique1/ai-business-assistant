@@ -1,8 +1,57 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, DollarSign, Clock, TrendingUp } from "lucide-react";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function PricingSection() {
+  const [isContactingSupport, setIsContactingSupport] = useState(false);
+  const { toast } = useToast();
+
+  // Auto caller webhook URL - you can customize this
+  const AUTO_CALLER_WEBHOOK_URL = import.meta.env.VITE_AUTO_CALLER_WEBHOOK || 'https://your-auto-caller-webhook.com/api/call';
+
+  const handleContactSales = async () => {
+    setIsContactingSupport(true);
+    
+    try {
+      const response = await fetch(AUTO_CALLER_WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'enterprise_contact_sales',
+          timestamp: new Date().toISOString(),
+          source: 'pricing_page',
+          plan: 'Enterprise',
+          user_agent: navigator.userAgent,
+          referrer: document.referrer || 'direct'
+        })
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Call Request Initiated! 📞",
+          description: "Our sales team will contact you within 15 minutes during business hours.",
+          duration: 5000,
+        });
+      } else {
+        throw new Error('Failed to initiate call');
+      }
+    } catch (error) {
+      console.error('Error contacting sales:', error);
+      toast({
+        title: "Call Request Error",
+        description: "Unable to initiate call. Please email hr@socialdots.ca or call (555) 123-4567",
+        variant: "destructive",
+        duration: 7000,
+      });
+    } finally {
+      setIsContactingSupport(false);
+    }
+  };
+
   const plans = [
     {
       name: "Free Forever",
@@ -153,8 +202,10 @@ export default function PricingSection() {
                   variant={plan.popular ? "hero" : index === 0 ? "secondary" : "outline"} 
                   className={`w-full ${index === 0 ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : ''}`}
                   size="lg"
+                  onClick={plan.name === "Enterprise" ? handleContactSales : undefined}
+                  disabled={plan.name === "Enterprise" && isContactingSupport}
                 >
-                  {plan.cta}
+                  {plan.name === "Enterprise" && isContactingSupport ? "Initiating Call..." : plan.cta}
                 </Button>
 
                 {index === 0 && (

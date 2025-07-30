@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { ArrowRight, CheckCircle, Sparkles, Star, Zap } from "lucide-react";
+import { ArrowRight, CheckCircle, Sparkles, Star, Zap, Calendar } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
@@ -12,6 +12,14 @@ export const CTASection = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [sparklePositions, setSparklePositions] = useState<Array<{x: number, y: number, id: number}>>([]);
   const sectionRef = useRef<HTMLElement>(null);
+
+  // Google Calendar configuration - you can customize this
+  const BOSS_CALENDAR_URL = import.meta.env.VITE_BOSS_CALENDAR_URL || 'https://calendly.com/your-boss-calendar';
+
+  const handleScheduleDemo = () => {
+    // Open the calendar in a new tab
+    window.open(BOSS_CALENDAR_URL, '_blank');
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -197,7 +205,9 @@ export const CTASection = () => {
               variant="outline" 
               size="lg" 
               className="border-white/30 text-white bg-white/10 hover:bg-white/20 text-lg px-8 py-4 hover:scale-105 hover:border-white/50 transition-all duration-500 relative overflow-hidden group"
+              onClick={handleScheduleDemo}
             >
+              <Calendar className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500" />
               <span className="relative z-10 group-hover:drop-shadow-sm transition-all duration-300">Schedule a Demo</span>
               {/* Subtle shimmer */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"></div>
