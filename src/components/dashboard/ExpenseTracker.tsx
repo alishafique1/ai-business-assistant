@@ -350,18 +350,37 @@ export function ExpenseTracker() {
         cat.toLowerCase().replace(/ & | /g, '') === formData.category
       ) || formData.category;
       
-      const { data, error } = await supabase.functions.invoke('create-expense', {
-        body: {
-          userId: user?.id,
-          amount: parseFloat(formData.amount),
-          title: formData.title,
-          description: formData.description,
-          category: fullCategoryName,
-          date: formData.date
-        }
+      console.log('Creating manual expense directly to ML API via text processing');
+      
+      // Create a text-based receipt format for the ML API to process
+      const receiptText = `
+MANUAL EXPENSE ENTRY
+${formData.title}
+Amount: $${formData.amount}
+Category: ${fullCategoryName}
+Description: ${formData.description || 'Manual entry'}
+Date: ${formData.date}
+      `.trim();
+      
+      // Create a text file blob to simulate receipt upload
+      const textBlob = new Blob([receiptText], { type: 'text/plain' });
+      const textFile = new File([textBlob], 'manual-expense.txt', { type: 'text/plain' });
+      
+      // Use the same upload endpoint as receipt processing
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', textFile);
+      
+      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/upload', {
+        method: 'POST',
+        body: uploadFormData,
       });
-
-      if (error) throw error;
+      
+      if (!response.ok) {
+        throw new Error('Failed to create expense via ML API');
+      }
+      
+      const data = await response.json();
+      console.log('ML API response for manual expense:', data);
       
       toast({
         title: "Success",
