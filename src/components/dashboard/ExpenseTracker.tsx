@@ -15,14 +15,15 @@ import { useToast } from "@/components/ui/use-toast";
 interface Expense {
   id: string;
   amount: number;
-  title: string;
+  title?: string;
   description?: string;
   category: string;
   originalCategory?: string;
-  date: string;
+  date?: string;
+  created_at?: string;
   receipt_url?: string;
-  status: string;
-  created_at: string;
+  status?: string;
+  user_id?: string;
 }
 
 export function ExpenseTracker() {
@@ -389,6 +390,16 @@ export function ExpenseTracker() {
         cat.toLowerCase().replace(/ & | /g, '') === formData.category
       ) || formData.category;
       
+      console.log('Updating expense with data:', {
+        expenseId: editingExpense.id,
+        userId: user?.id,
+        amount: parseFloat(formData.amount),
+        title: formData.title,
+        description: formData.description,
+        category: fullCategoryName,
+        date: formData.date
+      });
+      
       const { data, error } = await supabase.functions.invoke('update-expense', {
         body: {
           expenseId: editingExpense.id,
@@ -400,6 +411,8 @@ export function ExpenseTracker() {
           date: formData.date
         }
       });
+
+      console.log('Update response:', { data, error });
 
       if (error) throw error;
       
@@ -435,13 +448,26 @@ export function ExpenseTracker() {
   };
 
   const handleEdit = (expense: Expense) => {
+    console.log('Editing expense:', expense);
     setEditingExpense(expense);
+    
+    // Handle date field - use date if available, otherwise use created_at
+    const dateValue = expense.date || expense.created_at || new Date().toISOString().split('T')[0];
+    
     setFormData({
       amount: expense.amount.toString(),
-      title: expense.title,
+      title: expense.title || '',
       description: expense.description || '',
-      category: expense.category,
-      date: expense.date
+      category: expense.category || '',
+      date: dateValue
+    });
+    
+    console.log('Form data set to:', {
+      amount: expense.amount.toString(),
+      title: expense.title || '',
+      description: expense.description || '',
+      category: expense.category || '',
+      date: dateValue
     });
   };
 
