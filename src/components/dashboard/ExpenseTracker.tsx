@@ -390,19 +390,23 @@ export function ExpenseTracker() {
         cat.toLowerCase().replace(/ & | /g, '') === formData.category
       ) || formData.category;
       
-      console.log('Updating expense with data:', {
-        expenseId: editingExpense.id,
-        userId: user?.id,
-        amount: parseFloat(formData.amount),
-        title: formData.title,
-        description: formData.description,
-        category: fullCategoryName,
-        date: formData.date
-      });
+      console.log('Updating expense via ML API - delete and recreate approach');
       
-      const { data, error } = await supabase.functions.invoke('update-expense', {
+      // Step 1: Delete the existing expense from ML API
+      const deleteResponse = await fetch(`https://dawoodAhmad12-ai-expense-backend.hf.space/expenses/${editingExpense.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!deleteResponse.ok) {
+        throw new Error('Failed to delete old expense');
+      }
+
+      // Step 2: Create a new expense with updated data via Supabase function
+      const { data, error } = await supabase.functions.invoke('create-expense', {
         body: {
-          expenseId: editingExpense.id,
           userId: user?.id,
           amount: parseFloat(formData.amount),
           title: formData.title,
@@ -411,8 +415,6 @@ export function ExpenseTracker() {
           date: formData.date
         }
       });
-
-      console.log('Update response:', { data, error });
 
       if (error) throw error;
       
