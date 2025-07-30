@@ -1,6 +1,8 @@
 
 import { Button } from "@/components/ui/button";
 import { Mail, Linkedin } from "lucide-react";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 // Custom X (Twitter) icon component
 const XIcon = ({ className }: { className?: string }) => (
@@ -37,6 +39,107 @@ interface FooterSection {
 }
 
 export const Footer = () => {
+  const [email, setEmail] = useState('');
+  const [isSubscribing, setIsSubscribing] = useState(false);
+  const { toast } = useToast();
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email.trim()) {
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubscribing(true);
+
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      console.log('Environment check:', {
+        hasUrl: !!supabaseUrl,
+        hasKey: !!supabaseKey,
+        url: supabaseUrl?.substring(0, 30) + '...',
+      });
+
+      // Check if environment variables are set
+      if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('your_supabase_url_here')) {
+        console.log('Newsletter subscription (demo mode):', email.toLowerCase().trim());
+        toast({
+          title: "Demo Mode - Subscription Received! 🎉",
+          description: "Environment variables not configured. Check console for details.",
+          duration: 5000,
+        });
+        setEmail('');
+        return;
+      }
+
+      // Real Supabase integration
+      console.log('Attempting Supabase connection...');
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      console.log('Inserting subscription for:', email.toLowerCase().trim());
+      
+      const { data, error } = await supabase
+        .from('newsletter_subscriptions')
+        .insert({
+          email: email.toLowerCase().trim(),
+          source: 'website_footer',
+          user_agent: navigator.userAgent,
+        })
+        .select();
+
+      console.log('Supabase response:', { data, error });
+
+      if (error) {
+        console.error('Supabase error details:', error);
+        
+        if (error.code === '23505' || error.message?.includes('duplicate')) {
+          toast({
+            title: "Already Subscribed",
+            description: "This email is already subscribed to our newsletter.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        if (error.message?.includes('relation "newsletter_subscriptions" does not exist')) {
+          toast({
+            title: "Database Setup Required",
+            description: "The newsletter table hasn't been created yet. Please run the SQL script in Supabase.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        throw error;
+      }
+
+      toast({
+        title: "Successfully Subscribed! 🎉",
+        description: "Thank you for subscribing to our newsletter. You'll hear from us soon!",
+        duration: 5000,
+      });
+      setEmail('');
+
+    } catch (error) {
+      console.error('Newsletter subscription error:', error);
+      toast({
+        title: "Subscription Failed",
+        description: `Error: ${error.message || 'Unknown error'}. Check console for details.`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
+
   const footerSections: FooterSection[] = [
     {
       title: "Product",
@@ -169,19 +272,25 @@ export const Footer = () => {
             <p className="text-background/70 mb-4">
               Get the latest updates on new features and AI innovations.
             </p>
-            <div className="flex gap-2">
+            <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
               <input
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 className="flex-1 px-4 py-2 rounded-md bg-background/10 text-background placeholder-background/50 border border-background/20 focus:outline-none focus:border-background/40"
+                disabled={isSubscribing}
+                required
               />
               <Button 
+                type="submit"
                 variant="outline" 
                 className="border-background text-foreground bg-background hover:bg-foreground hover:text-background hover:border-background transition-all duration-300"
+                disabled={isSubscribing}
               >
-                Subscribe
+                {isSubscribing ? 'Subscribing...' : 'Subscribe'}
               </Button>
-            </div>
+            </form>
           </div>
         </div>
 

@@ -67,7 +67,6 @@ export default function PricingSection() {
       ],
       limitations: [
         "Limited to 5 receipts monthly",
-        "No voice assistant access",
         "Basic analytics only",
         "No export features"
       ],

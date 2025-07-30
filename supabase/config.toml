@@ -53,6 +53,12 @@ verify_jwt = false
 [functions.telegram-webhook]
 verify_jwt = false
 
+[functions.newsletter-subscribe]
+verify_jwt = false
+
+[functions.check-receipt-limit]
+verify_jwt = true
+
 [edge-runtime]
 enabled = true
 port = 54327

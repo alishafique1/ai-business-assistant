@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
 import { useCurrency } from "@/hooks/useCurrency";
+import { useReceiptLimit } from "@/hooks/useReceiptLimit";
 
 interface Expense {
   id: string;
@@ -31,6 +32,7 @@ export function ExpenseTracker() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { formatAmount } = useCurrency();
+  const { canAddReceipt, remainingReceipts, incrementCount, limitData } = useReceiptLimit();
   const [isRecording, setIsRecording] = useState(false);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categorySummary, setCategorySummary] = useState<Record<string, { total: number; count: number }>>({});
@@ -410,6 +412,7 @@ export function ExpenseTracker() {
       return;
     }
 
+
     try {
       setLoading(true);
       
@@ -446,6 +449,9 @@ export function ExpenseTracker() {
         title: "Success",
         description: "Expense created successfully"
       });
+      
+      // Increment receipt count for free users
+      await incrementCount();
       
       resetForm();
       setShowAddDialog(false);
@@ -639,6 +645,18 @@ export function ExpenseTracker() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Check receipt limit for free users
+    if (!canAddReceipt) {
+      toast({
+        title: "Receipt Limit Reached",
+        description: `You've reached your monthly limit of ${limitData?.monthly_limit} receipts. Upgrade to Business Pro for unlimited receipts.`,
+        variant: "destructive"
+      });
+      // Clear the file input
+      if (event.target) event.target.value = '';
+      return;
+    }
+
     // Validate file type
     if (!file.type.startsWith('image/')) {
       toast({
@@ -707,6 +725,9 @@ export function ExpenseTracker() {
             description: `New expense added: ${formatAmount(data.amount)} - ${categoryResult.categoryName}${categoryResult.isNewCategory ? ' (New Category!)' : ''}`,
           });
         }
+        
+        // Increment receipt count for free users
+        await incrementCount();
         
         // Always refresh expenses list and category summary (expense should be added regardless)
         await fetchExpenses();
@@ -859,6 +880,14 @@ export function ExpenseTracker() {
         <div>
           <h2 className="text-3xl font-bold text-foreground">Expense Tracker</h2>
           <p className="text-muted-foreground">Track and categorize your business expenses with AI assistance</p>
+          {limitData && limitData.monthly_limit !== 'unlimited' && (
+            <div className="mt-2">
+              <Badge variant={canAddReceipt ? "secondary" : "destructive"} className="text-xs">
+                {limitData.current_count}/{limitData.monthly_limit} receipts used this month
+                {!canAddReceipt && " - Limit reached!"}
+              </Badge>
+            </div>
+          )}
         </div>
         <Dialog open={showAddDialog} onOpenChange={(open) => {
           setShowAddDialog(open);
@@ -868,9 +897,21 @@ export function ExpenseTracker() {
           }
         }}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button 
+              className="gap-2" 
+              disabled={!canAddReceipt}
+              onClick={() => {
+                if (!canAddReceipt) {
+                  toast({
+                    title: "Expense Limit Reached",
+                    description: `You've reached your monthly limit of ${limitData?.monthly_limit} expenses. Upgrade to Business Pro for unlimited access.`,
+                    variant: "destructive"
+                  });
+                }
+              }}
+            >
               <Plus className="h-4 w-4" />
-              Add Expense
+              {canAddReceipt ? 'Add Expense' : `Limit Reached (${limitData?.current_count}/${limitData?.monthly_limit})`}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
@@ -888,22 +929,29 @@ export function ExpenseTracker() {
                   variant="outline" 
                   className="h-20 flex-col gap-2"
                   onClick={handleVoiceRecord}
-                  disabled={isRecording}
+                  disabled={isRecording || !canAddReceipt}
                 >
-                  <Mic className={`h-6 w-6 ${isRecording ? 'animate-pulse text-red-500' : ''}`} />
-                  <span className="text-sm">{isRecording ? 'Recording...' : 'Voice Entry'}</span>
+                  <Mic className={`h-6 w-6 ${isRecording ? 'animate-pulse text-red-500' : !canAddReceipt ? 'opacity-50' : ''}`} />
+                  <span className="text-sm">
+                    {isRecording ? 'Recording...' : !canAddReceipt ? 'Limit Reached' : 'Voice Entry'}
+                  </span>
                 </Button>
                 
                 <Button 
                   variant="outline" 
                   className="h-20 flex-col gap-2"
                   onClick={handlePhotoUpload}
-                  disabled={uploadingReceipt}
+                  disabled={uploadingReceipt || !canAddReceipt}
                 >
                   {uploadingReceipt ? (
                     <>
                       <Upload className="h-6 w-6 animate-spin" />
                       <span className="text-sm">Processing...</span>
+                    </>
+                  ) : !canAddReceipt ? (
+                    <>
+                      <Camera className="h-6 w-6 opacity-50" />
+                      <span className="text-sm">Limit Reached</span>
                     </>
                   ) : (
                     <>
