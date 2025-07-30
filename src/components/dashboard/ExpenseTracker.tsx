@@ -59,18 +59,45 @@ export function ExpenseTracker() {
     
     try {
       setLoading(true);
-      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/expenses', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
       
-      if (!response.ok) throw new Error('Failed to fetch expenses');
-      const data = await response.json();
+      // Fetch expenses from both ML API and Supabase
+      const [mlApiResponse, supabaseResponse] = await Promise.all([
+        fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/expenses', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }),
+        supabase.functions.invoke('get-user-expenses', {
+          body: { userId: user?.id }
+        })
+      ]);
+      
+      let allExpenses: Expense[] = [];
+      
+      // Process ML API expenses
+      if (mlApiResponse.ok) {
+        const mlExpenses = await mlApiResponse.json();
+        console.log('ML API expenses:', mlExpenses);
+        allExpenses = [...allExpenses, ...mlExpenses];
+      }
+      
+      // Process Supabase expenses
+      if (supabaseResponse.data?.expenses) {
+        const supabaseExpenses = supabaseResponse.data.expenses;
+        console.log('Supabase expenses:', supabaseExpenses);
+        allExpenses = [...allExpenses, ...supabaseExpenses];
+      }
+      
+      console.log('Combined expenses:', allExpenses);
+      
+      // Remove duplicates based on ID and amount (in case same expense exists in both)
+      const uniqueExpenses = allExpenses.filter((expense, index, arr) => 
+        arr.findIndex(e => e.id === expense.id || (e.amount === expense.amount && e.title === expense.title)) === index
+      );
       
       // Map the categories and fix title/description field issues
-      const mappedExpenses = data.map((expense: Expense) => {
+      const mappedExpenses = uniqueExpenses.map((expense: Expense) => {
         // Fix title/description mapping issue - if title is empty but description exists, swap them
         let fixedExpense = { ...expense };
         if (!expense.title && expense.description) {
@@ -350,37 +377,29 @@ export function ExpenseTracker() {
         cat.toLowerCase().replace(/ & | /g, '') === formData.category
       ) || formData.category;
       
-      console.log('Creating manual expense directly to ML API via text processing');
-      
-      // Create a text-based receipt format for the ML API to process
-      const receiptText = `
-MANUAL EXPENSE ENTRY
-${formData.title}
-Amount: $${formData.amount}
-Category: ${fullCategoryName}
-Description: ${formData.description || 'Manual entry'}
-Date: ${formData.date}
-      `.trim();
-      
-      // Create a text file blob to simulate receipt upload
-      const textBlob = new Blob([receiptText], { type: 'text/plain' });
-      const textFile = new File([textBlob], 'manual-expense.txt', { type: 'text/plain' });
-      
-      // Use the same upload endpoint as receipt processing
-      const uploadFormData = new FormData();
-      uploadFormData.append('file', textFile);
-      
-      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/upload', {
-        method: 'POST',
-        body: uploadFormData,
+      console.log('Creating manual expense via Supabase function:', {
+        userId: user?.id,
+        amount: parseFloat(formData.amount),
+        title: formData.title,
+        description: formData.description,
+        category: fullCategoryName,
+        date: formData.date
       });
-      
-      if (!response.ok) {
-        throw new Error('Failed to create expense via ML API');
-      }
-      
-      const data = await response.json();
-      console.log('ML API response for manual expense:', data);
+
+      const { data, error } = await supabase.functions.invoke('create-expense', {
+        body: {
+          userId: user?.id,
+          amount: parseFloat(formData.amount),
+          title: formData.title,
+          description: formData.description,
+          category: fullCategoryName,
+          date: formData.date
+        }
+      });
+
+      console.log('Supabase create-expense response:', { data, error });
+
+      if (error) throw error;
       
       toast({
         title: "Success",
