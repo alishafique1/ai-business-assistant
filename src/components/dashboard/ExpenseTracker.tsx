@@ -60,6 +60,12 @@ export function ExpenseTracker() {
     try {
       setLoading(true);
       
+      // Ensure user categories are loaded before fetching expenses
+      if (userCategories.length === 0) {
+        console.log('User categories not loaded yet, fetching categories first...');
+        await fetchUserCategories();
+      }
+      
       // Fetch expenses from both ML API and Supabase
       const [mlApiResponse, supabaseResponse] = await Promise.all([
         fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/expenses', {
@@ -91,9 +97,9 @@ export function ExpenseTracker() {
       
       console.log('Combined expenses:', allExpenses);
       
-      // Remove duplicates based on ID and amount (in case same expense exists in both)
+      // Remove duplicates based only on exact ID match (not amount/title)
       const uniqueExpenses = allExpenses.filter((expense, index, arr) => 
-        arr.findIndex(e => e.id === expense.id || (e.amount === expense.amount && e.title === expense.title)) === index
+        arr.findIndex(e => e.id === expense.id) === index
       );
       
       // Map the categories and fix title/description field issues
@@ -116,7 +122,14 @@ export function ExpenseTracker() {
         };
       });
       
-      setExpenses(mappedExpenses || []);
+      // Sort expenses by date (latest first - newest at top)
+      const sortedExpenses = mappedExpenses.sort((a, b) => {
+        const dateA = new Date(a.date || a.created_at || 0);
+        const dateB = new Date(b.date || b.created_at || 0);
+        return dateB.getTime() - dateA.getTime(); // Descending order (latest first)
+      });
+      
+      setExpenses(sortedExpenses || []);
     } catch (error) {
       console.error('Error fetching expenses:', error);
       toast({
@@ -626,39 +639,56 @@ export function ExpenseTracker() {
       formData.append('file', file);
 
       // Call ML model to extract expense data
+      console.log('Uploading receipt to ML API...');
       const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/upload', {
         method: 'POST',
         body: formData,
       });
 
+      console.log('ML API upload response status:', response.status);
+      
       if (!response.ok) throw new Error('Failed to process receipt');
       const data = await response.json();
+      
+      console.log('ML API upload response data:', data);
 
       if (data?.amount && data?.category) {
         // Process the ML category and potentially create a new category
         const categoryResult = await mapCategoryFromML(data.category);
         
-        toast({
-          title: "Receipt Processed",
-          description: `Extracted: $${data.amount} - ${categoryResult.categoryName}${categoryResult.isNewCategory ? ' (New Category!)' : ''}`,
-        });
-
         // Log the extraction for debugging
         console.log('Receipt extraction result:', data);
         console.log('Category mapping result:', categoryResult);
         
-        // If a new category was created, we need to refresh categories and then expenses
+        // Check for potential duplicates in existing expenses
+        const isDuplicate = expenses.some(expense => 
+          expense.amount === data.amount && 
+          expense.title === data.title &&
+          Math.abs(new Date(expense.created_at || expense.date || '').getTime() - new Date().getTime()) < 24 * 60 * 60 * 1000 // Within 24 hours
+        );
+        
+        if (isDuplicate) {
+          toast({
+            title: "⚠️ Duplicate Receipt Warning",
+            description: `Similar expense found, but added anyway: $${data.amount} - ${categoryResult.categoryName}`,
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Receipt Processed Successfully",
+            description: `New expense added: $${data.amount} - ${categoryResult.categoryName}${categoryResult.isNewCategory ? ' (New Category!)' : ''}`,
+          });
+        }
+        
+        // Always refresh expenses list and category summary (expense should be added regardless)
+        await fetchExpenses();
+        await fetchCategorySummary();
+        
+        // If a new category was created, refresh categories
         if (categoryResult.isNewCategory) {
-          // Wait a moment for the category to be fully processed
           setTimeout(async () => {
             await fetchUserCategories();
-            await fetchExpenses();
-            await fetchCategorySummary();
           }, 500);
-        } else {
-          // Refresh expenses list and category summary since ML API already created the expense
-          await fetchExpenses();
-          await fetchCategorySummary();
         }
       } else {
         toast({
