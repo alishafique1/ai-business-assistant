@@ -7,7 +7,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 
@@ -28,32 +27,33 @@ const menuItems = [
 ];
 
 export function DashboardSidebar({ activeView, onViewChange }: DashboardSidebarProps) {
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
 
   return (
     <Sidebar 
       className={`${state === "collapsed" ? "w-16" : "w-64"} bg-gradient-to-b from-sidebar-background via-sidebar-background/95 to-sidebar-background/90 backdrop-blur-xl border-r border-sidebar-border/50`} 
       collapsible="icon"
     >
-      {/* Decorative header */}
+      {/* Clickable header for toggle */}
       <div className="relative p-4 border-b border-sidebar-border/30">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg"></div>
-        <div className="relative flex items-center gap-2">
+        <button 
+          onClick={toggleSidebar}
+          className="relative flex items-center gap-2 w-full text-left hover:bg-sidebar-accent/20 rounded-lg p-2 -m-2 transition-colors"
+          aria-label="Toggle sidebar"
+        >
+          <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-accent text-white shadow-lg">
+            <Sparkles className="h-4 w-4" />
+          </div>
           {state !== "collapsed" && (
-            <>
-              <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-accent text-white shadow-lg">
-                <Sparkles className="h-4 w-4" />
-              </div>
-              <div className="flex flex-col">
-                <h2 className="text-sm font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  AI Hub
-                </h2>
-                <p className="text-xs text-muted-foreground">Business Assistant</p>
-              </div>
-            </>
+            <div className="flex flex-col">
+              <h2 className="text-sm font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                AI Hub
+              </h2>
+              <p className="text-xs text-muted-foreground">Business Assistant</p>
+            </div>
           )}
-        </div>
-        <SidebarTrigger className="absolute top-2 right-2 h-6 w-6" />
+        </button>
       </div>
       
       <SidebarContent className="px-2 pt-6">
