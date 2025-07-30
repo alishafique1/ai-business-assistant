@@ -157,7 +157,7 @@ export function ExpenseTracker() {
       return existingCategory.toLowerCase().replace(/ & | /g, '');
     }
     
-    // Map common ML categories to existing user categories
+    // Enhanced mapping for common ML categories to existing user categories
     const categoryMap: Record<string, string> = {
       // Food & Dining variations
       'food & dining': 'meals',
@@ -168,28 +168,54 @@ export function ExpenseTracker() {
       'grocery': 'meals',
       'groceries': 'meals',
       'supermarket': 'meals',
+      'meals & entertainment': 'meals',
+      
+      // Travel variations
+      'travel': 'travel',
+      'transportation': 'travel',
+      'hotel': 'travel',
+      'flights': 'travel',
+      'accommodation': 'travel',
+      
+      // Health & Wellness variations
+      'health & wellness': 'other', // Map to other since it's not in default categories
+      'health': 'other',
+      'wellness': 'other',
+      'medical': 'other',
+      
+      // Office/Business variations
+      'office supplies': 'officesupplies',
+      'supplies': 'officesupplies',
+      'business': 'other',
+      
+      // Software variations
+      'software': 'software',
+      'technology': 'software',
+      'tech': 'software',
+      'subscription': 'software',
+      
+      // Marketing variations
+      'marketing': 'marketing',
+      'advertising': 'marketing',
+      'promotion': 'marketing'
     };
     
     const normalizedCategory = normalizedMLCategory.toLowerCase();
     const mappedCategory = categoryMap[normalizedCategory];
     
-    // If we have a mapping and the mapped category exists in user categories, use it
+    // If we have a mapping, use it
     if (mappedCategory) {
-      const mappedExists = userCategories.find(
-        cat => cat.toLowerCase().replace(/ & | /g, '') === mappedCategory
-      );
-      if (mappedExists) {
-        return mappedCategory;
-      }
+      return mappedCategory;
     }
     
-    // If the category was created dynamically, return its key
-    const dynamicCategory = userCategories.find(
-      cat => cat.toLowerCase() === normalizedMLCategory.toLowerCase()
+    // Check if the category name matches any user category when spaces/symbols are removed
+    const categoryKeyFromML = normalizedMLCategory.toLowerCase().replace(/[ &]/g, '');
+    const matchingUserCategory = userCategories.find(
+      cat => cat.toLowerCase().replace(/[ &]/g, '') === categoryKeyFromML
     );
     
-    if (dynamicCategory) {
-      return dynamicCategory.toLowerCase().replace(/ & | /g, '');
+    if (matchingUserCategory) {
+      return matchingUserCategory.toLowerCase().replace(/[ &]/g, '');
     }
     
     // Fallback to other
@@ -726,40 +752,78 @@ export function ExpenseTracker() {
     if (existingCategory) {
       // Return the exact case from user's categories
       return { 
-        categoryKey: existingCategory.toLowerCase().replace(/ & | /g, ''), 
+        categoryKey: existingCategory.toLowerCase().replace(/[ &]/g, ''), 
         categoryName: existingCategory,
         isNewCategory: false 
       };
     }
     
-    // Map common ML categories to existing user categories
-    const categoryMap: Record<string, string> = {
+    // Enhanced mapping for common ML categories to existing user categories
+    const categoryMap: Record<string, { key: string; name: string }> = {
       // Food & Dining variations
-      'food & dining': 'meals',
-      'food': 'meals',
-      'restaurant': 'meals',
-      'dining': 'meals',
-      'meal': 'meals',
-      'grocery': 'meals',
-      'groceries': 'meals',
-      'supermarket': 'meals',
+      'food & dining': { key: 'meals', name: 'Meals & Entertainment' },
+      'food': { key: 'meals', name: 'Meals & Entertainment' },
+      'restaurant': { key: 'meals', name: 'Meals & Entertainment' },
+      'dining': { key: 'meals', name: 'Meals & Entertainment' },
+      'meal': { key: 'meals', name: 'Meals & Entertainment' },
+      'grocery': { key: 'meals', name: 'Meals & Entertainment' },
+      'groceries': { key: 'meals', name: 'Meals & Entertainment' },
+      'supermarket': { key: 'meals', name: 'Meals & Entertainment' },
+      
+      // Travel variations
+      'travel': { key: 'travel', name: 'Travel' },
+      'transportation': { key: 'travel', name: 'Travel' },
+      'hotel': { key: 'travel', name: 'Travel' },
+      'flights': { key: 'travel', name: 'Travel' },
+      'accommodation': { key: 'travel', name: 'Travel' },
+      
+      // Office/Business variations
+      'office supplies': { key: 'officesupplies', name: 'Office Supplies' },
+      'supplies': { key: 'officesupplies', name: 'Office Supplies' },
+      
+      // Software variations
+      'software': { key: 'software', name: 'Software' },
+      'technology': { key: 'software', name: 'Software' },
+      'tech': { key: 'software', name: 'Software' },
+      'subscription': { key: 'software', name: 'Software' },
+      
+      // Marketing variations
+      'marketing': { key: 'marketing', name: 'Marketing' },
+      'advertising': { key: 'marketing', name: 'Marketing' },
+      'promotion': { key: 'marketing', name: 'Marketing' }
     };
     
     const normalizedCategory = normalizedMLCategory.toLowerCase();
     const mappedCategory = categoryMap[normalizedCategory];
     
-    // If we have a mapping and the mapped category exists in user categories, use it
+    // If we have a mapping, use it
     if (mappedCategory) {
-      const mappedExists = userCategories.find(
-        cat => cat.toLowerCase().replace(/ & | /g, '') === mappedCategory
+      // Find the corresponding user category name
+      const userCategory = userCategories.find(
+        cat => cat.toLowerCase().replace(/[ &]/g, '') === mappedCategory.key
       );
-      if (mappedExists) {
+      
+      if (userCategory) {
         return { 
-          categoryKey: mappedCategory, 
-          categoryName: mappedExists,
+          categoryKey: mappedCategory.key, 
+          categoryName: userCategory,
           isNewCategory: false 
         };
       }
+    }
+    
+    // Check if the category name matches any user category when spaces/symbols are removed
+    const categoryKeyFromML = normalizedMLCategory.toLowerCase().replace(/[ &]/g, '');
+    const matchingUserCategory = userCategories.find(
+      cat => cat.toLowerCase().replace(/[ &]/g, '') === categoryKeyFromML
+    );
+    
+    if (matchingUserCategory) {
+      return { 
+        categoryKey: categoryKeyFromML, 
+        categoryName: matchingUserCategory,
+        isNewCategory: false 
+      };
     }
     
     // If no mapping exists, create a new category with the original ML category name
@@ -773,7 +837,7 @@ export function ExpenseTracker() {
       
       // Return the normalized key for the new category
       return { 
-        categoryKey: normalizedMLCategory.toLowerCase().replace(/ & | /g, ''), 
+        categoryKey: normalizedMLCategory.toLowerCase().replace(/[ &]/g, ''), 
         categoryName: normalizedMLCategory,
         isNewCategory: true 
       };
