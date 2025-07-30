@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
+import { useCurrency } from "@/hooks/useCurrency";
 
 interface Expense {
   id: string;
@@ -29,6 +30,7 @@ interface Expense {
 export function ExpenseTracker() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { formatAmount } = useCurrency();
   const [isRecording, setIsRecording] = useState(false);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categorySummary, setCategorySummary] = useState<Record<string, { total: number; count: number }>>({});
@@ -696,13 +698,13 @@ export function ExpenseTracker() {
         if (isDuplicate) {
           toast({
             title: "⚠️ Duplicate Receipt Warning",
-            description: `Similar expense found, but added anyway: $${data.amount} - ${categoryResult.categoryName}`,
+            description: `Similar expense found, but added anyway: ${formatAmount(data.amount)} - ${categoryResult.categoryName}`,
             variant: "destructive"
           });
         } else {
           toast({
             title: "Receipt Processed Successfully",
-            description: `New expense added: $${data.amount} - ${categoryResult.categoryName}${categoryResult.isNewCategory ? ' (New Category!)' : ''}`,
+            description: `New expense added: ${formatAmount(data.amount)} - ${categoryResult.categoryName}${categoryResult.isNewCategory ? ' (New Category!)' : ''}`,
           });
         }
         
@@ -1197,7 +1199,7 @@ export function ExpenseTracker() {
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="text-right">
-                          <div className="font-bold text-lg">${expense.amount.toFixed(2)}</div>
+                          <div className="font-bold text-lg">{formatAmount(expense.amount)}</div>
                         </div>
                         <div className="flex gap-2">
                           <Button 
@@ -1249,7 +1251,7 @@ export function ExpenseTracker() {
                   return (
                     <div key={category} className="p-3 border rounded-lg hover:bg-muted/50">
                       <div className="font-medium">{category}</div>
-                      <div className="text-sm text-muted-foreground">${displayTotal.toFixed(2)} total</div>
+                      <div className="text-sm text-muted-foreground">{formatAmount(displayTotal)} total</div>
                       <div className="text-xs text-muted-foreground">{displayCount} expenses</div>
                     </div>
                   );

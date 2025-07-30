@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { BarChart3, Bot, DollarSign, MessageSquare, Smartphone, TrendingUp, BookOpen, Sparkles, Stars, Zap, Brain } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useCurrency } from "@/hooks/useCurrency";
 
 interface OverviewProps {
   onViewChange: (view: "overview" | "expenses" | "knowledge" | "assistant" | "integrations" | "settings") => void;
@@ -12,6 +13,7 @@ interface OverviewProps {
 
 export function Overview({ onViewChange }: OverviewProps) {
   const { user } = useAuth();
+  const { formatAmount } = useCurrency();
   const [stats, setStats] = useState({
     monthlyExpenses: 0,
     totalExpenses: 0,
@@ -196,7 +198,7 @@ export function Overview({ onViewChange }: OverviewProps) {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-green-700 dark:text-green-300 mb-1">
-              ${stats.monthlyExpenses.toFixed(2)}
+              {formatAmount(stats.monthlyExpenses)}
             </div>
             <p className="text-xs text-muted-foreground flex items-center gap-1">
               <TrendingUp className="h-3 w-3" />
