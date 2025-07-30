@@ -69,13 +69,25 @@ export function ExpenseTracker() {
       if (!response.ok) throw new Error('Failed to fetch expenses');
       const data = await response.json();
       
-      // Map the categories from ML API to our frontend category keys
-      const mappedExpenses = data.map((expense: Expense) => ({
-        ...expense,
-        // Keep the original category for reference and create a mapped version
-        originalCategory: expense.category,
-        category: mapCategoryForDisplay(expense.category)
-      }));
+      // Map the categories and fix title/description field issues
+      const mappedExpenses = data.map((expense: Expense) => {
+        // Fix title/description mapping issue - if title is empty but description exists, swap them
+        let fixedExpense = { ...expense };
+        if (!expense.title && expense.description) {
+          fixedExpense = {
+            ...expense,
+            title: expense.description,
+            description: ''
+          };
+        }
+        
+        return {
+          ...fixedExpense,
+          // Keep the original category for reference and create a mapped version
+          originalCategory: fixedExpense.category,
+          category: mapCategoryForDisplay(fixedExpense.category)
+        };
+      });
       
       setExpenses(mappedExpenses || []);
     } catch (error) {
