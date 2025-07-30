@@ -172,6 +172,44 @@ export function KnowledgeBase() {
     }
   };
 
+  const deleteAllEntries = async () => {
+    if (!entries.length) return;
+    
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete all ${entries.length} knowledge entries? This action cannot be undone.`
+    );
+    
+    if (!confirmDelete) return;
+
+    try {
+      setLoading(true);
+      
+      // Delete all entries one by one
+      for (const entry of entries) {
+        const { error } = await supabase.functions.invoke('delete-knowledge-base-entry', {
+          body: { entryId: entry.id, userId: user?.id }
+        });
+        if (error) throw error;
+      }
+      
+      toast({
+        title: "Success",
+        description: `All ${entries.length} knowledge entries deleted successfully`
+      });
+      
+      await fetchKnowledgeBase();
+    } catch (error) {
+      console.error('Error deleting all entries:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete all knowledge entries",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const startEditing = (entry: KnowledgeEntry) => {
     setEditingEntry(entry);
     setFormData({
@@ -200,10 +238,23 @@ export function KnowledgeBase() {
           <h2 className="text-3xl font-bold text-foreground">Knowledge Base</h2>
           <p className="text-muted-foreground">Store and organize your business knowledge and documentation</p>
         </div>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Entry
-        </Button>
+        <div className="flex gap-2">
+          {entries.length > 0 && (
+            <Button 
+              variant="destructive" 
+              className="gap-2"
+              onClick={deleteAllEntries}
+              disabled={loading}
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete All ({entries.length})
+            </Button>
+          )}
+          <Button className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Entry
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="browse" className="space-y-6">
