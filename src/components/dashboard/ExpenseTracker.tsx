@@ -126,7 +126,7 @@ export function ExpenseTracker() {
       const sortedExpenses = mappedExpenses.sort((a, b) => {
         const dateA = new Date(a.date || a.created_at || 0);
         const dateB = new Date(b.date || b.created_at || 0);
-        return dateB.getTime() - dateA.getTime(); // Descending order (latest first)
+        return dateA.getTime() - dateB.getTime(); // Reverse sort to fix display order
       });
       
       setExpenses(sortedExpenses || []);
