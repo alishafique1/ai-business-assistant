@@ -22,9 +22,12 @@ export function Overview({ onViewChange }: OverviewProps) {
 
   const fetchStats = useCallback(async () => {
     try {
-      // Fetch expenses
-      const expensesResponse = await supabase.functions.invoke('get-user-expenses', {
-        body: { userId: user?.id }
+      // Fetch expenses directly from ML API
+      const expensesResponse = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/expenses', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
       
       // Fetch knowledge base entries
@@ -32,8 +35,8 @@ export function Overview({ onViewChange }: OverviewProps) {
         body: { userId: user?.id }
       });
       
-      if (expensesResponse.data?.expenses) {
-        const expenses = expensesResponse.data.expenses;
+      if (expensesResponse.ok) {
+        const expenses = await expensesResponse.json();
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
         
@@ -52,9 +55,16 @@ export function Overview({ onViewChange }: OverviewProps) {
       }
       
       if (knowledgeResponse.data?.entries) {
+        console.log('Knowledge entries:', knowledgeResponse.data.entries);
         setStats(prev => ({
           ...prev,
           knowledgeEntries: knowledgeResponse.data.entries.length
+        }));
+      } else {
+        console.log('No knowledge entries found or API error:', knowledgeResponse.error);
+        setStats(prev => ({
+          ...prev,
+          knowledgeEntries: 0
         }));
       }
       
@@ -214,7 +224,7 @@ export function Overview({ onViewChange }: OverviewProps) {
           
           <CardHeader className="relative z-10">
             <CardTitle className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 text-white shadow-lg group-hover:shadow-orange-500/25 transition-all duration-300 animate-float">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 text-white shadow-lg group-hover:shadow-orange-500/25 transition-all duration-300">
                 <Zap className="h-5 w-5" />
               </div>
               <div className="flex flex-col">
@@ -273,7 +283,7 @@ export function Overview({ onViewChange }: OverviewProps) {
           
           <CardHeader className="relative z-10">
             <CardTitle className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-lg group-hover:shadow-indigo-500/25 transition-all duration-300 animate-float">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-lg group-hover:shadow-indigo-500/25 transition-all duration-300">
                 <TrendingUp className="h-5 w-5" />
               </div>
               <div className="flex flex-col">
@@ -287,7 +297,7 @@ export function Overview({ onViewChange }: OverviewProps) {
           <CardContent className="relative z-10">
             <div className="text-center py-8">
               <div className="relative inline-block mb-4">
-                <BarChart3 className="h-16 w-16 mx-auto text-indigo-400 animate-float" />
+                <BarChart3 className="h-16 w-16 mx-auto text-indigo-400" />
                 <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-full flex items-center justify-center animate-pulse-slow">
                   <Stars className="h-3 w-3 text-white" />
                 </div>

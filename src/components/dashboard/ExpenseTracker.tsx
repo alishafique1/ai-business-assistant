@@ -331,13 +331,19 @@ export function ExpenseTracker() {
 
     try {
       setLoading(true);
+      
+      // Convert category key back to full category name
+      const fullCategoryName = userCategories.find(cat => 
+        cat.toLowerCase().replace(/ & | /g, '') === formData.category
+      ) || formData.category;
+      
       const { data, error } = await supabase.functions.invoke('create-expense', {
         body: {
           userId: user?.id,
           amount: parseFloat(formData.amount),
           title: formData.title,
           description: formData.description,
-          category: formData.category,
+          category: fullCategoryName,
           date: formData.date
         }
       });
@@ -377,6 +383,12 @@ export function ExpenseTracker() {
 
     try {
       setLoading(true);
+      
+      // Convert category key back to full category name
+      const fullCategoryName = userCategories.find(cat => 
+        cat.toLowerCase().replace(/ & | /g, '') === formData.category
+      ) || formData.category;
+      
       const { data, error } = await supabase.functions.invoke('update-expense', {
         body: {
           expenseId: editingExpense.id,
@@ -384,7 +396,7 @@ export function ExpenseTracker() {
           amount: parseFloat(formData.amount),
           title: formData.title,
           description: formData.description,
-          category: formData.category,
+          category: fullCategoryName,
           date: formData.date
         }
       });

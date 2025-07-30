@@ -39,16 +39,18 @@ export function DashboardSidebar({ activeView, onViewChange }: DashboardSidebarP
       <div className="relative p-4 border-b border-sidebar-border/30">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 rounded-lg"></div>
         <div className="relative flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-accent text-white shadow-lg">
-            <Sparkles className="h-4 w-4" />
-          </div>
           {state !== "collapsed" && (
-            <div className="flex flex-col">
-              <h2 className="text-sm font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                AI Hub
-              </h2>
-              <p className="text-xs text-muted-foreground">Business Assistant</p>
-            </div>
+            <>
+              <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-accent text-white shadow-lg">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col">
+                <h2 className="text-sm font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  AI Hub
+                </h2>
+                <p className="text-xs text-muted-foreground">Business Assistant</p>
+              </div>
+            </>
           )}
         </div>
         <SidebarTrigger className="absolute top-2 right-2 h-6 w-6" />
