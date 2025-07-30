@@ -47,6 +47,12 @@ verify_jwt = true
 [functions.delete-knowledge-base-entry]
 verify_jwt = true
 
+[functions.whatsapp-webhook]
+verify_jwt = false
+
+[functions.telegram-webhook]
+verify_jwt = false
+
 [edge-runtime]
 enabled = true
 port = 54327

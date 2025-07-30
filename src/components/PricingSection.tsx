@@ -28,7 +28,7 @@ export default function PricingSection() {
     },
     {
       name: "Business Pro",
-      price: "$39",
+      price: "$29",
       period: "/month",
       description: "Everything you need to scale your business efficiently",
       features: [

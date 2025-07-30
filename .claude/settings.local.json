@@ -5,7 +5,10 @@
       "Bash(npm run lint)",
       "Bash(curl:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(ls:*)",
+      "Bash(npm run lint:*)"
     ],
     "deny": []
   }

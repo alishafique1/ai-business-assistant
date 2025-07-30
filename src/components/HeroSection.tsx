@@ -131,7 +131,12 @@ export const HeroSection = () => {
               <span className="relative z-10">{user ? 'Go to Dashboard' : 'Start Your Free Trial'}</span>
               <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-4 hover:scale-105 transition-all duration-300 hover:bg-primary/5 hover:border-primary/30">
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="text-lg px-8 py-4 hover:scale-105 transition-all duration-300 hover:bg-primary/5 hover:border-primary/30"
+              onClick={() => window.open('https://www.youtube.com/watch?v=t1DUYoLwYmU', '_blank')}
+            >
               Watch Demo
             </Button>
           </div>

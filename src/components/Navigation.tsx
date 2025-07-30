@@ -1,16 +1,9 @@
 
-import { Brain, Menu, X, LogOut, User, Sparkles } from "lucide-react";
+import { Brain, Menu, X, LogOut, User, Sparkles, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -18,8 +11,10 @@ export default function Navigation() {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [sparkleAnimation, setSparkleAnimation] = useState(false);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -40,6 +35,17 @@ export default function Navigation() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsUserDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -62,9 +68,9 @@ export default function Navigation() {
   };
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border/50 shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all duration-500 ease-out ${
+    <nav className={`fixed top-0 left-0 right-0 z-[9999] bg-background/95 backdrop-blur-md border-b border-border/50 shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all duration-500 ease-out ${
       isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-90'
-    } hover:bg-background/98 hover:shadow-[0_12px_40px_rgb(0,0,0,0.15)] relative overflow-hidden`}>
+    } hover:bg-background/98 hover:shadow-[0_12px_40px_rgb(0,0,0,0.15)] relative overflow-visible`}>
       {/* Animated background particles */}
       <div className="absolute inset-0 opacity-30 transition-opacity duration-1000">
         {[...Array(6)].map((_, i) => (
@@ -140,24 +146,52 @@ export default function Navigation() {
 
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="hover:scale-110 transition-all duration-300 hover:bg-primary/10">
-                    <User className="h-4 w-4 transition-transform duration-300 hover:rotate-12" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-background border-border animate-in slide-in-from-top-2 duration-200">
-                  <DropdownMenuItem onClick={() => navigate("/dashboard")} className="hover:bg-primary/10 transition-colors duration-200">
-                    <User className="mr-2 h-4 w-4" />
-                    Dashboard
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={signOut} className="hover:bg-destructive/10 transition-colors duration-200">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="relative" ref={dropdownRef}>
+                <button 
+                  className="flex items-center space-x-2 hover:scale-105 transition-all duration-300 hover:bg-primary/10 px-3 py-2 rounded-md cursor-pointer border border-transparent hover:border-primary/20"
+                  onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                >
+                  <User className="h-4 w-4 transition-transform duration-300" />
+                  <span className="text-sm font-medium">{user.email?.split('@')[0] || 'User'}</span>
+                  <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${isUserDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {isUserDropdownOpen && (
+                  <div 
+                    className="w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg" 
+                    style={{
+                      zIndex: 999999, 
+                      position: 'fixed',
+                      top: '60px',
+                      right: '16px'
+                    }}
+                  >
+                    <div className="py-2">
+                      <button
+                        onClick={() => {
+                          navigate("/dashboard");
+                          setIsUserDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 flex items-center"
+                      >
+                        <User className="mr-2 h-4 w-4" />
+                        Dashboard
+                      </button>
+                      <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div>
+                      <button
+                        onClick={() => {
+                          signOut();
+                          setIsUserDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 flex items-center"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="flex items-center space-x-4">
                 <Button variant="ghost" onClick={() => navigate("/auth")} className="hover:scale-105 transition-all duration-300 hover:bg-primary/5 hover:text-foreground relative z-10">
@@ -215,6 +249,10 @@ export default function Navigation() {
               <div className="flex flex-col space-y-2 pt-4 border-t border-border/50">
                 {user ? (
                   <>
+                    <div className="flex items-center space-x-2 px-3 py-2 text-sm text-muted-foreground">
+                      <User className="h-4 w-4" />
+                      <span>{user.email?.split('@')[0] || 'User'}</span>
+                    </div>
                     <Button variant="ghost" onClick={() => navigate("/dashboard")}>
                       Dashboard
                     </Button>
