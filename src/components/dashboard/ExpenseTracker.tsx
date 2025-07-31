@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useReceiptLimit } from "@/hooks/useReceiptLimit";
+import { usePlan } from "@/hooks/usePlan";
 
 interface Expense {
   id: string;
@@ -32,7 +33,8 @@ export function ExpenseTracker() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { formatAmount } = useCurrency();
-  const { canAddReceipt, remainingReceipts, incrementCount, limitData } = useReceiptLimit();
+  const { planData } = usePlan();
+  const { canAddReceipt, remainingReceipts, incrementCount, limitData, loading: limitLoading, error: limitError, liveTimer, formatTimeRemaining, shouldShowTimer } = useReceiptLimit();
   const [isRecording, setIsRecording] = useState(false);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categorySummary, setCategorySummary] = useState<Record<string, { total: number; count: number }>>({});
@@ -451,7 +453,9 @@ export function ExpenseTracker() {
       });
       
       // Increment receipt count for free users
-      await incrementCount();
+      console.log('Calling incrementCount() for manual expense...');
+      const incrementResult = await incrementCount();
+      console.log('incrementCount() result:', incrementResult);
       
       resetForm();
       setShowAddDialog(false);
@@ -648,8 +652,8 @@ export function ExpenseTracker() {
     // Check receipt limit for free users
     if (!canAddReceipt) {
       toast({
-        title: "Receipt Limit Reached",
-        description: `You've reached your monthly limit of ${limitData?.monthly_limit} receipts. Upgrade to Business Pro for unlimited receipts.`,
+        title: "Expense Limit Reached",
+        description: `You've reached your limit of ${limitData?.monthly_limit} expenses. The counter resets every 10 minutes for testing. Upgrade to Pro for unlimited access.`,
         variant: "destructive"
       });
       // Clear the file input
@@ -727,7 +731,9 @@ export function ExpenseTracker() {
         }
         
         // Increment receipt count for free users
-        await incrementCount();
+        console.log('Calling incrementCount() for photo upload...');
+        const incrementResult = await incrementCount();
+        console.log('incrementCount() result for photo:', incrementResult);
         
         // Always refresh expenses list and category summary (expense should be added regardless)
         await fetchExpenses();
@@ -880,12 +886,41 @@ export function ExpenseTracker() {
         <div>
           <h2 className="text-3xl font-bold text-foreground">Expense Tracker</h2>
           <p className="text-muted-foreground">Track and categorize your business expenses with AI assistance</p>
-          {limitData && limitData.monthly_limit !== 'unlimited' && (
-            <div className="mt-2">
-              <Badge variant={canAddReceipt ? "secondary" : "destructive"} className="text-xs">
-                {limitData.current_count}/{limitData.monthly_limit} receipts used this month
-                {!canAddReceipt && " - Limit reached!"}
-              </Badge>
+          {user && (
+            <div className="mt-2 space-y-1">
+              <div className="flex items-center gap-2">
+                <Badge 
+                  variant={planData.plan === 'pro' ? 'default' : 'secondary'} 
+                  className={`text-xs px-2 py-1 ${
+                    planData.plan === 'pro' 
+                      ? 'bg-gradient-to-r from-primary to-accent text-white' 
+                      : 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {planData.planLabel} Plan
+                </Badge>
+                {planData.plan === 'free' && (
+                  <Badge variant={canAddReceipt ? "secondary" : "destructive"} className="text-sm font-medium">
+                    {limitData?.current_count || 0}/{limitData?.monthly_limit || 5} expenses used
+                    {!canAddReceipt && " - Limit reached!"}
+                  </Badge>
+                )}
+              </div>
+              {shouldShowTimer && (
+                <p className="text-xs text-muted-foreground animate-pulse">
+                  ⏰ Resets in {formatTimeRemaining(liveTimer)}
+                </p>
+              )}
+              {limitLoading && (
+                <p className="text-xs text-muted-foreground">
+                  Loading limit data...
+                </p>
+              )}
+              {limitError && (
+                <p className="text-xs text-red-500">
+                  Error: {limitError}
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -904,7 +939,7 @@ export function ExpenseTracker() {
                 if (!canAddReceipt) {
                   toast({
                     title: "Expense Limit Reached",
-                    description: `You've reached your monthly limit of ${limitData?.monthly_limit} expenses. Upgrade to Business Pro for unlimited access.`,
+                    description: `You've reached your limit of ${limitData?.monthly_limit} expenses. The counter resets every 10 minutes for testing. Upgrade to Pro for unlimited access.`,
                     variant: "destructive"
                   });
                 }

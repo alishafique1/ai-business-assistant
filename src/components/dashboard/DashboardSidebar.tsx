@@ -9,6 +9,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Badge } from "@/components/ui/badge";
+import { usePlan } from "@/hooks/usePlan";
 
 type DashboardView = "overview" | "expenses" | "knowledge" | "assistant" | "integrations" | "settings";
 
@@ -28,6 +30,7 @@ const menuItems = [
 
 export function DashboardSidebar({ activeView, onViewChange }: DashboardSidebarProps) {
   const { state, toggleSidebar } = useSidebar();
+  const { planData } = usePlan();
 
   return (
     <Sidebar 
@@ -47,9 +50,21 @@ export function DashboardSidebar({ activeView, onViewChange }: DashboardSidebarP
           </div>
           {state !== "collapsed" && (
             <div className="flex flex-col">
-              <h2 className="text-sm font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                AI Hub
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  AI Hub
+                </h2>
+                <Badge 
+                  variant={planData.plan === 'pro' ? 'default' : 'secondary'} 
+                  className={`text-xs px-2 py-0.5 ${
+                    planData.plan === 'pro' 
+                      ? 'bg-gradient-to-r from-primary to-accent text-white' 
+                      : 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {planData.planLabel}
+                </Badge>
+              </div>
               <p className="text-xs text-muted-foreground">Business Assistant</p>
             </div>
           )}

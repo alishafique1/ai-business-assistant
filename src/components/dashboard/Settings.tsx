@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Bell, CreditCard, Lock, User, Trash2, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
+import { usePlan } from "@/hooks/usePlan";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -30,6 +31,7 @@ interface NotificationPreferences {
 
 export function Settings() {
   const { user } = useAuth();
+  const { planData, upgradeToPro, downgradeToFree } = usePlan();
   const { toast } = useToast();
   
   // Profile state
@@ -213,10 +215,29 @@ export function Settings() {
   };
 
   const handleUpgradePlan = () => {
-    toast({
-      title: "Upgrade Plan",
-      description: "Upgrade functionality will be available soon. Contact support for premium features.",
-    });
+    if (planData.plan === 'free') {
+      upgradeToPro();
+      toast({
+        title: "Upgraded to Pro!",
+        description: "You now have access to unlimited receipts and premium features.",
+      });
+    } else {
+      toast({
+        title: "Already Pro",
+        description: "You're already on the Pro plan with all premium features.",
+      });
+    }
+  };
+
+  const handleDowngradePlan = () => {
+    if (planData.plan === 'pro') {
+      downgradeToFree();
+      toast({
+        title: "Downgraded to Free",
+        description: "You've been downgraded to the Free plan.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleAddPayment = () => {
@@ -487,12 +508,34 @@ export function Settings() {
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h4 className="font-medium">Free Plan</h4>
-                    <Badge variant="outline">Current Plan</Badge>
+                    <h4 className="font-medium">{planData.planLabel} Plan</h4>
+                    <Badge 
+                      variant={planData.plan === 'pro' ? 'default' : 'outline'}
+                      className={planData.plan === 'pro' 
+                        ? 'bg-gradient-to-r from-primary to-accent text-white' 
+                        : ''
+                      }
+                    >
+                      Current Plan
+                    </Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">Basic features with limited usage</p>
+                  <p className="text-sm text-muted-foreground">
+                    {planData.plan === 'pro' 
+                      ? 'Premium features with unlimited usage' 
+                      : 'Basic features with limited usage'
+                    }
+                  </p>
                 </div>
-                <Button onClick={handleUpgradePlan}>Upgrade Plan</Button>
+                <div className="flex gap-2">
+                  {planData.plan === 'free' ? (
+                    <Button onClick={handleUpgradePlan}>Upgrade to Pro</Button>
+                  ) : (
+                    <>
+                      <Button variant="outline" onClick={handleDowngradePlan}>Downgrade</Button>
+                      <Button disabled>Current Plan</Button>
+                    </>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-4">

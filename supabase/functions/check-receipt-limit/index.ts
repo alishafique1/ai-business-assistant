@@ -54,21 +54,19 @@ serve(async (req) => {
       const currentCount = profile?.receipt_count || 0
       const resetDate = profile?.receipt_count_reset_date
       
-      // Check if we need to reset (new month)
+      // Check if we need to reset (every 10 minutes for testing)
       const now = new Date()
-      const currentMonth = now.getFullYear() * 12 + now.getMonth()
-      const resetMonth = resetDate ? 
-        new Date(resetDate).getFullYear() * 12 + new Date(resetDate).getMonth() : 
-        currentMonth
+      const resetDateTime = resetDate ? new Date(resetDate) : new Date()
+      const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000)
 
       let actualCount = currentCount
-      if (currentMonth > resetMonth) {
-        // Reset count for new month
+      if (resetDateTime < tenMinutesAgo) {
+        // Reset count every 10 minutes for testing
         await supabaseClient
           .from('profiles')
           .update({ 
             receipt_count: 0, 
-            receipt_count_reset_date: now.toISOString().split('T')[0] 
+            receipt_count_reset_date: now.toISOString()
           })
           .eq('id', user.id)
         actualCount = 0
@@ -90,7 +88,7 @@ serve(async (req) => {
           monthly_limit: limit === 999999 ? 'unlimited' : limit,
           can_add_receipt: canAdd,
           plan: plan,
-          days_until_reset: 30 - now.getDate()
+          minutes_until_reset: Math.max(0, Math.ceil((10 * 60 * 1000 - (now.getTime() - resetDateTime.getTime())) / (60 * 1000)))
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
