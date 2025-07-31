@@ -19,15 +19,23 @@ serve(async (req) => {
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    
+    // Use anon key and set JWT for proper RLS
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: authHeader
+        }
+      }
+    });
 
-    // Set the auth context for RLS
+    // Verify the user with the provided JWT
     const jwt = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(jwt);
     
     if (userError || !user) {
-      throw new Error('Invalid user');
+      throw new Error(`Invalid user: ${userError?.message || 'Unknown error'}`);
     }
 
     const { expenseId, title, amount, category, description, date } = await req.json();
@@ -37,14 +45,39 @@ serve(async (req) => {
       throw new Error('Expense ID, title and amount are required');
     }
 
+    // Map category to enum values
+    const categoryMapping: { [key: string]: string } = {
+      'office supplies': 'office_supplies',
+      'office_supplies': 'office_supplies',
+      'travel': 'travel',
+      'meals': 'meals',
+      'food': 'meals',
+      'food & dining': 'meals',
+      'software': 'software',
+      'technology': 'software',
+      'marketing': 'marketing',
+      'equipment': 'equipment',
+      'professional services': 'professional_services',
+      'professional_services': 'professional_services',
+      'utilities': 'utilities',
+      'health & wellness': 'other',
+      'healthcare': 'other',
+      'entertainment': 'other',
+      'education': 'other',
+      'other': 'other'
+    };
+
+    const mappedCategory = categoryMapping[category?.toLowerCase()] || 'other';
+    console.log('Category mapping:', { original: category, mapped: mappedCategory });
+
     const { data: expense, error } = await supabase
       .from('expenses')
       .update({
         title: title, // Store title in title field
         description: description, // Store description in description field
         amount: parseFloat(amount),
-        category: category || 'other',
-        created_at: date || new Date().toISOString()
+        category: mappedCategory,
+        date: date || new Date().toISOString().split('T')[0] // Store date in date field as YYYY-MM-DD
       })
       .eq('id', expenseId)
       .eq('user_id', user.id) // Ensure user can only update their own expenses

@@ -24,64 +24,122 @@ export function Overview({ onViewChange }: OverviewProps) {
 
   const fetchStats = useCallback(async () => {
     try {
-      // Fetch expenses directly from ML API
-      const expensesResponse = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/expenses', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      // Fetch expenses from ML API, business_expenses table, and knowledge base
+      const [mlApiResponse, businessExpensesResponse, knowledgeResponse] = await Promise.all([
+        fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/expenses', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }),
+        supabase
+          .from('business_expenses')
+          .select('*')
+          .eq('user_id', user?.id)
+          .order('created_at', { ascending: false }),
+        supabase.functions.invoke('get-knowledge-base-by-user', {
+          body: { userId: user?.id }
+        })
+      ]);
       
-      // Fetch knowledge base entries
-      const knowledgeResponse = await supabase.functions.invoke('get-knowledge-base-by-user', {
-        body: { userId: user?.id }
-      });
+      let allExpenses: Array<Record<string, unknown>> = [];
       
-      if (expensesResponse.ok) {
-        const expenses = await expensesResponse.json();
-        console.log('Fetched expenses from ML API:', expenses);
-        console.log('Number of expenses:', expenses.length);
+      // Process ML API expenses
+      if (mlApiResponse.ok) {
+        const mlExpenses = await mlApiResponse.json();
+        console.log('ML API expenses:', mlExpenses);
         
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
-        console.log('Current month:', currentMonth, 'Current year:', currentYear);
-        
-        // Debug each expense
-        expenses.forEach((expense: Record<string, unknown>, index: number) => {
-          const dateStr = expense.date || expense.created_at;
-          const expenseDate = new Date(dateStr);
-          console.log(`Expense ${index + 1}:`, {
-            title: expense.title,
-            amount: expense.amount,
-            date: expense.date,
-            created_at: expense.created_at,
-            usedDate: dateStr,
-            expenseMonth: expenseDate.getMonth(),
-            expenseYear: expenseDate.getFullYear(),
-            isCurrentMonth: expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear
-          });
+        // Fix ML API expenses dates to always use today's date
+        const todayDate = new Date().toISOString().split('T')[0];
+        const fixedMLExpenses = mlExpenses.map((expense: Record<string, unknown>) => {
+          if (!expense.date || new Date(expense.created_at || expense.date).toDateString() !== new Date().toDateString()) {
+            return {
+              ...expense,
+              date: todayDate, // Use consistent date format
+              created_at: expense.created_at || new Date().toISOString()
+            };
+          }
+          return expense;
         });
+        
+        allExpenses = [...allExpenses, ...fixedMLExpenses];
+      }
+      
+      // Process business_expenses from Supabase
+      if (businessExpensesResponse.data) {
+        const businessExpenses = businessExpensesResponse.data.map((expense: Record<string, unknown>) => ({
+          ...expense,
+          // Map business_expenses fields to match ML API format for consistency
+          date: expense.expense_date,
+          title: expense.description,
+          amount: expense.amount
+        }));
+        console.log('Business expenses for overview:', businessExpenses);
+        allExpenses = [...allExpenses, ...businessExpenses];
+      }
+      
+      // Remove duplicates based on ID
+      const expenses = allExpenses.filter((expense, index, arr) => 
+        arr.findIndex(e => e.id === expense.id) === index
+      );
+      
+      console.log('Combined expenses for overview:', expenses);
+      console.log('Number of total expenses:', expenses.length);
+      
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      console.log('Current month:', currentMonth, 'Current year:', currentYear);
+      
+      // Debug each expense
+      expenses.forEach((expense: Record<string, unknown>, index: number) => {
+        const dateStr = expense.date || expense.created_at;
+        let expenseDate;
+        if (expense.date) {
+          // If it's a date field (YYYY-MM-DD), parse it as local date
+          expenseDate = new Date(dateStr + 'T00:00:00');
+        } else {
+          // If it's created_at timestamp, use as is
+          expenseDate = new Date(dateStr);
+        }
+        
+        console.log(`Expense ${index + 1}:`, {
+          title: expense.title,
+          amount: expense.amount,
+          date: expense.date,
+          created_at: expense.created_at,
+          usedDate: dateStr,
+          expenseMonth: expenseDate.getMonth(),
+          expenseYear: expenseDate.getFullYear(),
+          isCurrentMonth: expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear
+        });
+      });
         
         const monthlyExpenses = expenses
           .filter((expense: { date?: string; created_at?: string }) => {
             // Use date field if available, otherwise use created_at
             const dateStr = expense.date || expense.created_at;
             if (!dateStr) return false;
-            const expenseDate = new Date(dateStr);
+            
+            let expenseDate;
+            if (expense.date) {
+              // If it's a date field (YYYY-MM-DD), parse it as local date
+              expenseDate = new Date(dateStr + 'T00:00:00');
+            } else {
+              // If it's created_at timestamp, use as is
+              expenseDate = new Date(dateStr);
+            }
+            
             return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
           })
           .reduce((sum: number, expense: { amount: number }) => sum + expense.amount, 0);
         
         console.log('Monthly expenses total:', monthlyExpenses);
         
-        setStats(prev => ({
-          ...prev,
-          monthlyExpenses,
-          totalExpenses: expenses.length
-        }));
-      } else {
-        console.error('Failed to fetch expenses:', expensesResponse.status, expensesResponse.statusText);
-      }
+      setStats(prev => ({
+        ...prev,
+        monthlyExpenses,
+        totalExpenses: expenses.length
+      }));
       
       console.log('Knowledge response full object:', knowledgeResponse);
       console.log('Knowledge response data:', knowledgeResponse.data);

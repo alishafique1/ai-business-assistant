@@ -12,48 +12,104 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Create expense function called');
+    
     // Get the authorization header
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
+      console.error('No authorization header provided');
       throw new Error('No authorization header');
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    
+    // Use anon key and set JWT for proper RLS
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: authHeader
+        }
+      }
+    });
 
-    // Set the auth context for RLS
+    // Verify the user with the provided JWT
     const jwt = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(jwt);
     
     if (userError || !user) {
-      throw new Error('Invalid user');
+      console.error('User authentication failed:', userError);
+      throw new Error(`Invalid user: ${userError?.message || 'Unknown error'}`);
     }
 
-    const { title, amount, category, description, receipt_url, date } = await req.json();
+    console.log('User authenticated:', user.id);
+
+    const requestBody = await req.json();
+    console.log('Request body received:', requestBody);
+    
+    const { title, amount, category, description, receipt_url, date } = requestBody;
 
     // Validate required fields
     if (!title || !amount) {
+      console.error('Missing required fields:', { title, amount });
       throw new Error('Title and amount are required');
     }
 
+    console.log('Validated fields:', { title, amount, category, description, date });
+
+    // Map category to enum values
+    const categoryMapping: { [key: string]: string } = {
+      'office supplies': 'office_supplies',
+      'office_supplies': 'office_supplies',
+      'travel': 'travel',
+      'meals': 'meals',
+      'food': 'meals',
+      'food & dining': 'meals',
+      'software': 'software',
+      'technology': 'software',
+      'marketing': 'marketing',
+      'equipment': 'equipment',
+      'professional services': 'professional_services',
+      'professional_services': 'professional_services',
+      'utilities': 'utilities',
+      'health & wellness': 'other',
+      'healthcare': 'other',
+      'entertainment': 'other',
+      'education': 'other',
+      'other': 'other'
+    };
+
+    const mappedCategory = categoryMapping[category?.toLowerCase()] || 'other';
+    console.log('Category mapping:', { original: category, mapped: mappedCategory });
+
+    const insertData = {
+      user_id: user.id,
+      title: title,
+      description: description || null,
+      amount: parseFloat(amount),
+      category: mappedCategory,
+      date: date || new Date().toISOString().split('T')[0]
+    };
+
+    console.log('Inserting expense data:', insertData);
+
     const { data: expense, error } = await supabase
       .from('expenses')
-      .insert({
-        user_id: user.id,
-        title: title, // Store title in title field
-        description: description, // Store description in description field
-        amount: parseFloat(amount),
-        category: category || 'other',
-        created_at: date || new Date().toISOString()
-      })
+      .insert(insertData)
       .select()
       .single();
 
     if (error) {
-      console.error('Database error:', error);
-      throw error;
+      console.error('Database error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      throw new Error(`Database error: ${error.message}`);
     }
+
+    console.log('Expense created successfully:', expense);
 
     return new Response(
       JSON.stringify({ expense }),

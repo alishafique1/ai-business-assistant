@@ -47,12 +47,21 @@ export function ExpenseTracker() {
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Helper function to get today's date in local timezone
+  const getTodayDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [formData, setFormData] = useState({
     amount: '',
     title: '',
     description: '',
     category: '',
-    date: new Date().toISOString().split('T')[0]
+    date: getTodayDate()
   });
 
   useEffect(() => {
@@ -75,7 +84,7 @@ export function ExpenseTracker() {
         await fetchUserCategories();
       }
       
-      // Fetch expenses from both ML API and Supabase
+      // Fetch expenses from both ML API and business_expenses table
       const [mlApiResponse, supabaseResponse] = await Promise.all([
         fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/expenses', {
           method: 'GET',
@@ -83,9 +92,11 @@ export function ExpenseTracker() {
             'Content-Type': 'application/json',
           },
         }),
-        supabase.functions.invoke('get-user-expenses', {
-          body: { userId: user?.id }
-        })
+        supabase
+          .from('business_expenses')
+          .select('*')
+          .eq('user_id', user?.id)
+          .order('created_at', { ascending: false })
       ]);
       
       let allExpenses: Expense[] = [];
@@ -97,11 +108,26 @@ export function ExpenseTracker() {
         allExpenses = [...allExpenses, ...mlExpenses];
       }
       
-      // Process Supabase expenses
-      if (supabaseResponse.data?.expenses) {
-        const supabaseExpenses = supabaseResponse.data.expenses;
-        console.log('Supabase expenses:', supabaseExpenses);
-        allExpenses = [...allExpenses, ...supabaseExpenses];
+      // Process business_expenses from Supabase
+      if (supabaseResponse.data) {
+        const businessExpenses = supabaseResponse.data.map((expense: {
+          id: string;
+          amount: number;
+          expense_date: string;
+          description: string;
+          category: string;
+          created_at: string;
+          user_id: string;
+        }) => ({
+          ...expense,
+          // Map business_expenses fields to match expected Expense interface
+          date: expense.expense_date,
+          title: expense.description,
+          amount: expense.amount,
+          category: expense.category
+        }));
+        console.log('Business expenses:', businessExpenses);
+        allExpenses = [...allExpenses, ...businessExpenses];
       }
       
       console.log('Combined expenses:', allExpenses);
@@ -123,11 +149,15 @@ export function ExpenseTracker() {
           };
         }
         
+        // Determine if this expense is from business_expenses (manual entry) or ML API
+        const isManualExpense = typeof fixedExpense.id === 'string' && fixedExpense.id.length > 10;
+        
         return {
           ...fixedExpense,
-          // Keep the original category for reference and create a mapped version
+          // Keep the original category for reference
           originalCategory: fixedExpense.category,
-          category: mapCategoryForDisplay(fixedExpense.category)
+          // Only map categories for ML/AI expenses, preserve manual categories as-is
+          category: isManualExpense ? fixedExpense.category : mapCategoryForDisplay(fixedExpense.category)
         };
       });
       
@@ -426,27 +456,41 @@ export function ExpenseTracker() {
         cat.toLowerCase().replace(/ & | /g, '') === formData.category
       ) || formData.category;
       
-      console.log('Creating manual expense via Supabase function:', {
-        userId: user?.id,
+      // Since business_expenses table accepts any string for category, 
+      // we should preserve the user's exact category selection
+      const categoryToStore = fullCategoryName;
+      
+      console.log('Category preservation:', { 
+        formDataCategory: formData.category, 
+        fullCategoryName, 
+        categoryToStore 
+      });
+
+      // Always use today's date for manual entries (fix timezone issues)
+      const todayDate = getTodayDate();
+      
+      console.log('Creating manual expense via business_expenses table:', {
+        description: `${formData.title}${formData.description ? ` - ${formData.description}` : ''}`,
         amount: parseFloat(formData.amount),
-        title: formData.title,
-        description: formData.description,
-        category: fullCategoryName,
-        date: formData.date
+        category: categoryToStore,
+        expense_date: todayDate,
+        user_id: user.id
       });
 
-      const { data, error } = await supabase.functions.invoke('create-expense', {
-        body: {
-          userId: user?.id,
+      // Create expense using business_expenses table
+      const { data, error } = await supabase
+        .from('business_expenses')
+        .insert({
+          description: `${formData.title}${formData.description ? ` - ${formData.description}` : ''}`,
           amount: parseFloat(formData.amount),
-          title: formData.title,
-          description: formData.description,
-          category: fullCategoryName,
-          date: formData.date
-        }
-      });
+          category: categoryToStore, // Use the preserved category name
+          expense_date: todayDate, // Always use today's date for manual entries
+          user_id: user.id
+        })
+        .select()
+        .single();
 
-      console.log('Supabase create-expense response:', { data, error });
+      console.log('Supabase business_expenses insert response:', { data, error });
 
       if (error) throw error;
       
@@ -494,6 +538,10 @@ export function ExpenseTracker() {
         cat.toLowerCase().replace(/ & | /g, '') === formData.category
       ) || formData.category;
       
+      // Since business_expenses table accepts any string for category, 
+      // we should preserve the user's exact category selection
+      const categoryToStore = fullCategoryName;
+      
       console.log('Updating expense via ML API - delete and recreate approach');
       
       // Step 1: Delete the existing expense from ML API
@@ -508,17 +556,21 @@ export function ExpenseTracker() {
         throw new Error('Failed to delete old expense');
       }
 
-      // Step 2: Create a new expense with updated data via Supabase function
-      const { data, error } = await supabase.functions.invoke('create-expense', {
-        body: {
-          userId: user?.id,
+      // Always use today's date for manual entries (fix timezone issues)
+      const todayDate = getTodayDate();
+
+      // Step 2: Create a new expense with updated data via business_expenses table
+      const { data, error } = await supabase
+        .from('business_expenses')
+        .insert({
+          description: `${formData.title}${formData.description ? ` - ${formData.description}` : ''}`,
           amount: parseFloat(formData.amount),
-          title: formData.title,
-          description: formData.description,
-          category: fullCategoryName,
-          date: formData.date
-        }
-      });
+          category: categoryToStore, // Use the preserved category name
+          expense_date: todayDate, // Always use today's date
+          user_id: user.id
+        })
+        .select()
+        .single();
 
       if (error) throw error;
       
@@ -544,12 +596,13 @@ export function ExpenseTracker() {
   };
 
   const resetForm = () => {
+    // Always use today's date when resetting the form
     setFormData({
       amount: '',
       title: '',
       description: '',
       category: '',
-      date: new Date().toISOString().split('T')[0]
+      date: getTodayDate()
     });
   };
 
@@ -557,8 +610,8 @@ export function ExpenseTracker() {
     console.log('Editing expense:', expense);
     setEditingExpense(expense);
     
-    // Handle date field - use date if available, otherwise use created_at
-    const dateValue = expense.date || expense.created_at || new Date().toISOString().split('T')[0];
+    // Handle date field - use date if available, otherwise use created_at, fallback to today
+    const dateValue = expense.date || expense.created_at || getTodayDate();
     
     setFormData({
       amount: expense.amount.toString(),
@@ -580,14 +633,34 @@ export function ExpenseTracker() {
   const deleteExpense = async (expenseId: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`https://dawoodAhmad12-ai-expense-backend.hf.space/expenses/${expenseId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      console.log('Attempting to delete expense with ID:', expenseId);
+      
+      // Try to delete from business_expenses table first (for manual expenses)
+      const { error: supabaseError } = await supabase
+        .from('business_expenses')
+        .delete()
+        .eq('id', expenseId);
 
-      if (!response.ok) throw new Error('Failed to delete expense');
+      if (supabaseError) {
+        console.log('Not found in business_expenses, trying ML API:', supabaseError);
+        
+        // If not found in Supabase, try ML API
+        const response = await fetch(`https://dawoodAhmad12-ai-expense-backend.hf.space/expenses/${expenseId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('ML API delete failed:', errorText);
+          throw new Error(`Failed to delete expense from both Supabase and ML API: ${errorText}`);
+        }
+        console.log('ML API expense deleted successfully');
+      } else {
+        console.log('Business expense deleted from Supabase successfully');
+      }
       
       toast({
         title: "Success",
@@ -600,7 +673,7 @@ export function ExpenseTracker() {
       console.error('Error deleting expense:', error);
       toast({
         title: "Error",
-        description: "Failed to delete expense",
+        description: `Failed to delete expense: ${error.message}`,
         variant: "destructive"
       });
     } finally {
@@ -952,6 +1025,9 @@ export function ExpenseTracker() {
           if (!open) {
             resetForm();
             setIsRecording(false);
+          } else {
+            // When opening the dialog, ensure form is reset to today's date
+            resetForm();
           }
         }}>
           <DialogTrigger asChild>
@@ -1313,7 +1389,12 @@ export function ExpenseTracker() {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {userCategories.map((category) => {
                     const categoryKey = category.toLowerCase().replace(/ & | /g, '');
-                    const categoryExpenses = expenses.filter(exp => exp.category === categoryKey);
+                    // Match expenses by both the full category name and the key format
+                    const categoryExpenses = expenses.filter(exp => 
+                      exp.category === categoryKey || 
+                      exp.category === category ||
+                      exp.category?.toLowerCase() === category.toLowerCase()
+                    );
                     const categoryTotal = categoryExpenses.reduce((sum, exp) => sum + exp.amount, 0);
                     
                     // Use API summary data if available, otherwise fallback to local calculation

@@ -48,7 +48,12 @@ export function CategoryExpenseHistory({
   // Filter expenses for this category
   const categoryExpenses = useMemo(() => {
     const categoryKey = category.toLowerCase().replace(/ & | /g, '');
-    return expenses.filter(expense => expense.category === categoryKey);
+    // Match expenses by both the full category name and the key format
+    return expenses.filter(expense => 
+      expense.category === categoryKey || 
+      expense.category === category ||
+      expense.category?.toLowerCase() === category.toLowerCase()
+    );
   }, [expenses, category]);
 
   // Group expenses by date
