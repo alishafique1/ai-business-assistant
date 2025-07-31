@@ -14,6 +14,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useReceiptLimit } from "@/hooks/useReceiptLimit";
 import { usePlan } from "@/hooks/usePlan";
+import { ExpenseHistory } from "./ExpenseHistory";
 
 interface Expense {
   id: string;
@@ -1245,69 +1246,12 @@ export function ExpenseTracker() {
         </TabsContent>
 
         <TabsContent value="history">
-          <Card>
-            <CardHeader>
-              <CardTitle>Expense History</CardTitle>
-              <CardDescription>Your recent business expenses</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-center py-8">
-                  <p>Loading expenses...</p>
-                </div>
-              ) : expenses.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Receipt className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>No expenses tracked yet</p>
-                  <p className="text-sm">Add your first expense to see it here</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {expenses.map((expense) => (
-                    <div key={expense.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3">
-                          <div>
-                            <h4 className="font-medium">{expense.title}</h4>
-                            <p className="text-sm text-muted-foreground">{expense.description}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4 mt-2">
-                          <Badge variant="outline">{expense.category}</Badge>
-                          <span className="text-sm text-muted-foreground">{expense.date}</span>
-                          <Badge variant={expense.status === 'approved' ? 'default' : 'secondary'}>
-                            {expense.status}
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <div className="font-bold text-lg">{formatAmount(expense.amount)}</div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleEdit(expense)}
-                          >
-                            <Edit3 className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            onClick={() => deleteExpense(expense.id)}
-                            disabled={loading}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <ExpenseHistory 
+            expenses={expenses}
+            loading={loading}
+            onEdit={handleEdit}
+            onDelete={deleteExpense}
+          />
         </TabsContent>
 
         <TabsContent value="categories">
