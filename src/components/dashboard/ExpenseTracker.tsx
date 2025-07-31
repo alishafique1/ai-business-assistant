@@ -15,6 +15,7 @@ import { useCurrency } from "@/hooks/useCurrency";
 import { useReceiptLimit } from "@/hooks/useReceiptLimit";
 import { usePlan } from "@/hooks/usePlan";
 import { ExpenseHistory } from "./ExpenseHistory";
+import { CategoryExpenseHistory } from "./CategoryExpenseHistory";
 
 interface Expense {
   id: string;
@@ -44,6 +45,7 @@ export function ExpenseTracker() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     amount: '',
@@ -1255,37 +1257,51 @@ export function ExpenseTracker() {
         </TabsContent>
 
         <TabsContent value="categories">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Tag className="h-5 w-5" />
-                Expense Categories
-              </CardTitle>
-              <CardDescription>Manage your expense categories</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {userCategories.map((category) => {
-                  const categoryKey = category.toLowerCase().replace(/ & | /g, '');
-                  const categoryExpenses = expenses.filter(exp => exp.category === categoryKey);
-                  const categoryTotal = categoryExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-                  
-                  // Use API summary data if available, otherwise fallback to local calculation
-                  const summaryData = categorySummary[categoryKey] || categorySummary[category];
-                  const displayTotal = summaryData?.total ?? categoryTotal;
-                  const displayCount = summaryData?.count ?? categoryExpenses.length;
-                  
-                  return (
-                    <div key={category} className="p-3 border rounded-lg hover:bg-muted/50">
-                      <div className="font-medium">{category}</div>
-                      <div className="text-sm text-muted-foreground">{formatAmount(displayTotal)} total</div>
-                      <div className="text-xs text-muted-foreground">{displayCount} expenses</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+          {selectedCategory ? (
+            <CategoryExpenseHistory 
+              category={selectedCategory}
+              expenses={expenses}
+              onBack={() => setSelectedCategory(null)}
+              onEdit={handleEdit}
+              onDelete={deleteExpense}
+            />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Tag className="h-5 w-5" />
+                  Expense Categories
+                </CardTitle>
+                <CardDescription>Click on a category to view detailed expense history</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {userCategories.map((category) => {
+                    const categoryKey = category.toLowerCase().replace(/ & | /g, '');
+                    const categoryExpenses = expenses.filter(exp => exp.category === categoryKey);
+                    const categoryTotal = categoryExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+                    
+                    // Use API summary data if available, otherwise fallback to local calculation
+                    const summaryData = categorySummary[categoryKey] || categorySummary[category];
+                    const displayTotal = summaryData?.total ?? categoryTotal;
+                    const displayCount = summaryData?.count ?? categoryExpenses.length;
+                    
+                    return (
+                      <div 
+                        key={category} 
+                        className="p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors hover:border-primary/50"
+                        onClick={() => setSelectedCategory(category)}
+                      >
+                        <div className="font-medium">{category}</div>
+                        <div className="text-sm text-muted-foreground">{formatAmount(displayTotal)} total</div>
+                        <div className="text-xs text-muted-foreground">{displayCount} expenses</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 

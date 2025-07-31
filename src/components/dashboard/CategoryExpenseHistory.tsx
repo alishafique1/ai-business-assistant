@@ -1,14 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, ChevronDown, ChevronRight, Filter, Receipt, Edit3, Trash2 } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, ChevronDown, ChevronRight, Tag, Edit3, Trash2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { format, startOfDay, endOfDay, startOfMonth, endOfMonth, startOfYear, endOfYear, isSameDay, parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { useCurrency } from "@/hooks/useCurrency";
 
 interface Expense {
@@ -23,14 +19,13 @@ interface Expense {
   status?: string;
 }
 
-interface ExpenseHistoryProps {
+interface CategoryExpenseHistoryProps {
+  category: string;
   expenses: Expense[];
-  loading: boolean;
+  onBack: () => void;
   onEdit: (expense: Expense) => void;
   onDelete: (id: string) => void;
 }
-
-type ViewMode = 'today' | 'week' | 'month' | 'year' | 'custom';
 
 interface GroupedExpenses {
   [date: string]: {
@@ -40,44 +35,27 @@ interface GroupedExpenses {
   };
 }
 
-export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseHistoryProps) {
+export function CategoryExpenseHistory({ 
+  category, 
+  expenses, 
+  onBack, 
+  onEdit, 
+  onDelete 
+}: CategoryExpenseHistoryProps) {
   const { formatAmount } = useCurrency();
-  const [viewMode, setViewMode] = useState<ViewMode>('today');
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
-  const [calendarOpen, setCalendarOpen] = useState(false);
 
-  // Filter expenses based on view mode and selected date
-  const filteredExpenses = useMemo(() => {
-    const now = new Date();
-    
-    return expenses.filter(expense => {
-      const expenseDate = expense.date ? parseISO(expense.date) : (expense.created_at ? new Date(expense.created_at) : now);
-      
-      switch (viewMode) {
-        case 'today':
-          return isSameDay(expenseDate, now);
-        case 'week':
-          const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
-          const weekEnd = new Date(now.setDate(now.getDate() - now.getDay() + 6));
-          return expenseDate >= startOfDay(weekStart) && expenseDate <= endOfDay(weekEnd);
-        case 'month':
-          return expenseDate >= startOfMonth(selectedDate) && expenseDate <= endOfMonth(selectedDate);
-        case 'year':
-          return expenseDate >= startOfYear(selectedDate) && expenseDate <= endOfYear(selectedDate);
-        case 'custom':
-          return isSameDay(expenseDate, selectedDate);
-        default:
-          return true;
-      }
-    });
-  }, [expenses, viewMode, selectedDate]);
+  // Filter expenses for this category
+  const categoryExpenses = useMemo(() => {
+    const categoryKey = category.toLowerCase().replace(/ & | /g, '');
+    return expenses.filter(expense => expense.category === categoryKey);
+  }, [expenses, category]);
 
   // Group expenses by date
   const groupedExpenses = useMemo(() => {
     const grouped: GroupedExpenses = {};
     
-    filteredExpenses.forEach(expense => {
+    categoryExpenses.forEach(expense => {
       const expenseDate = expense.date ? parseISO(expense.date) : (expense.created_at ? new Date(expense.created_at) : new Date());
       const dateKey = format(expenseDate, 'yyyy-MM-dd');
       
@@ -85,7 +63,7 @@ export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseH
         grouped[dateKey] = {
           expenses: [],
           total: 0,
-          expanded: viewMode === 'today' || expandedDates.has(dateKey)
+          expanded: expandedDates.has(dateKey)
         };
       }
       
@@ -100,11 +78,11 @@ export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseH
         acc[key] = grouped[key];
         return acc;
       }, {} as GroupedExpenses);
-  }, [filteredExpenses, viewMode, expandedDates]);
+  }, [categoryExpenses, expandedDates]);
 
   // Calculate totals
-  const totalAmount = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const totalCount = filteredExpenses.length;
+  const totalAmount = categoryExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const totalCount = categoryExpenses.length;
 
   const toggleDateExpansion = (dateKey: string) => {
     const newExpanded = new Set(expandedDates);
@@ -116,119 +94,38 @@ export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseH
     setExpandedDates(newExpanded);
   };
 
-  const getViewModeTitle = () => {
-    switch (viewMode) {
-      case 'today':
-        return 'Today\'s Expenses';
-      case 'week':
-        return 'This Week\'s Expenses';
-      case 'month':
-        return `${format(selectedDate, 'MMMM yyyy')} Expenses`;
-      case 'year':
-        return `${format(selectedDate, 'yyyy')} Expenses`;
-      case 'custom':
-        return `${format(selectedDate, 'MMMM d, yyyy')} Expenses`;
-      default:
-        return 'All Expenses';
-    }
-  };
-
-  // Auto-expand today's expenses
-  useEffect(() => {
-    if (viewMode === 'today') {
-      const today = format(new Date(), 'yyyy-MM-dd');
-      setExpandedDates(new Set([today]));
-    }
-  }, [viewMode]);
-
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Expense History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <p>Loading expenses...</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Receipt className="h-5 w-5" />
-              {getViewModeTitle()}
-            </CardTitle>
-            <CardDescription>
-              {totalCount > 0 
-                ? `${totalCount} expenses • ${formatAmount(totalAmount)} total`
-                : 'No expenses found for this period'
-              }
-            </CardDescription>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" onClick={onBack}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Tag className="h-5 w-5" />
+                {category} Expenses
+              </CardTitle>
+              <CardDescription>
+                {totalCount > 0 
+                  ? `${totalCount} expenses • ${formatAmount(totalAmount)} total`
+                  : 'No expenses found in this category'
+                }
+              </CardDescription>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Select value={viewMode} onValueChange={(value: ViewMode) => setViewMode(value)}>
-              <SelectTrigger className="w-32">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="week">This Week</SelectItem>
-                <SelectItem value="month">This Month</SelectItem>
-                <SelectItem value="year">This Year</SelectItem>
-                <SelectItem value="custom">Custom Date</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            {(viewMode === 'month' || viewMode === 'year' || viewMode === 'custom') && (
-              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                    <Calendar className="h-4 w-4" />
-                    {viewMode === 'custom' 
-                      ? format(selectedDate, 'MMM d, yyyy')
-                      : viewMode === 'year'
-                      ? format(selectedDate, 'yyyy')
-                      : format(selectedDate, 'MMM yyyy')
-                    }
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                  <CalendarComponent
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={(date) => {
-                      if (date) {
-                        setSelectedDate(date);
-                        setCalendarOpen(false);
-                      }
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            )}
-          </div>
+          <Badge variant="outline" className="text-sm px-3 py-1">
+            {category}
+          </Badge>
         </div>
       </CardHeader>
       <CardContent>
         {Object.keys(groupedExpenses).length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <Receipt className="h-12 w-12 mx-auto mb-3 opacity-50" />
+            <Tag className="h-12 w-12 mx-auto mb-3 opacity-50" />
             <p>No expenses found</p>
-            <p className="text-sm">
-              {viewMode === 'today' 
-                ? 'No expenses logged today'
-                : `No expenses found for ${getViewModeTitle().toLowerCase()}`
-              }
-            </p>
+            <p className="text-sm">No expenses logged in the {category} category</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -264,7 +161,6 @@ export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseH
                       <TableHeader>
                         <TableRow>
                           <TableHead>Description</TableHead>
-                          <TableHead>Category</TableHead>
                           <TableHead>Amount</TableHead>
                           <TableHead className="w-24">Actions</TableHead>
                         </TableRow>
@@ -281,9 +177,6 @@ export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseH
                                   </div>
                                 )}
                               </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{expense.category}</Badge>
                             </TableCell>
                             <TableCell className="font-semibold">
                               {formatAmount(expense.amount)}
