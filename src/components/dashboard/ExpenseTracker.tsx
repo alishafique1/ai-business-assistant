@@ -704,32 +704,39 @@ export function ExpenseTracker() {
       const data = await response.json();
       
       console.log('ML API upload response data:', data);
+      console.log('Data type:', typeof data, 'Is array:', Array.isArray(data));
+      
+      // Handle array response from ML API
+      const responseData = Array.isArray(data) ? data[0] : data;
+      console.log('Processed response data:', responseData);
 
-      if (data?.amount && data?.category) {
-        // Process the ML category and potentially create a new category
-        const categoryResult = await mapCategoryFromML(data.category);
+      if (responseData?.amount && responseData?.category) {
+        try {
+          // Process the ML category and potentially create a new category
+          console.log('Processing category:', responseData.category);
+          const categoryResult = await mapCategoryFromML(responseData.category);
         
         // Log the extraction for debugging
-        console.log('Receipt extraction result:', data);
+        console.log('Receipt extraction result:', responseData);
         console.log('Category mapping result:', categoryResult);
         
         // Check for potential duplicates in existing expenses
         const isDuplicate = expenses.some(expense => 
-          expense.amount === data.amount && 
-          expense.title === data.title &&
+          expense.amount === responseData.amount && 
+          expense.title === responseData.title &&
           Math.abs(new Date(expense.created_at || expense.date || '').getTime() - new Date().getTime()) < 24 * 60 * 60 * 1000 // Within 24 hours
         );
         
         if (isDuplicate) {
           toast({
             title: "⚠️ Duplicate Receipt Warning",
-            description: `Similar expense found, but added anyway: ${formatAmount(data.amount)} - ${categoryResult.categoryName}`,
+            description: `Similar expense found, but added anyway: ${formatAmount(responseData.amount)} - ${categoryResult.categoryName}`,
             variant: "destructive"
           });
         } else {
           toast({
             title: "Receipt Processed Successfully",
-            description: `New expense added: ${formatAmount(data.amount)} - ${categoryResult.categoryName}${categoryResult.isNewCategory ? ' (New Category!)' : ''}`,
+            description: `New expense added: ${formatAmount(responseData.amount)} - ${categoryResult.categoryName}${categoryResult.isNewCategory ? ' (New Category!)' : ''}`,
           });
         }
         
@@ -742,16 +749,29 @@ export function ExpenseTracker() {
         await fetchExpenses();
         await fetchCategorySummary();
         
-        // If a new category was created, refresh categories
-        if (categoryResult.isNewCategory) {
-          setTimeout(async () => {
-            await fetchUserCategories();
-          }, 500);
+          // If a new category was created, refresh categories
+          if (categoryResult.isNewCategory) {
+            setTimeout(async () => {
+              await fetchUserCategories();
+            }, 500);
+          }
+        } catch (processingError) {
+          console.error('Error processing receipt data:', processingError);
+          toast({
+            title: "Processing Error",
+            description: "Failed to process receipt data. Please try manual entry.",
+            variant: "destructive"
+          });
         }
       } else {
+        console.log('Missing required data:', {
+          hasAmount: !!responseData?.amount,
+          hasCategory: !!responseData?.category,
+          responseData
+        });
         toast({
           title: "No Data Found",
-          description: "Could not extract expense data from this receipt",
+          description: "Could not extract expense data from this receipt. Missing amount or category information.",
           variant: "destructive"
         });
       }
@@ -1165,6 +1185,16 @@ export function ExpenseTracker() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {!canAddReceipt && (
+                <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                  <p className="text-sm font-medium text-destructive">
+                    Manual entry disabled - Receipt limit reached ({limitData?.current_count}/{limitData?.monthly_limit})
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Upgrade to Pro for unlimited entries or wait for reset.
+                  </p>
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="amount">Amount</Label>
@@ -1176,6 +1206,7 @@ export function ExpenseTracker() {
                       className="pl-9"
                       value={formData.amount}
                       onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                      disabled={!canAddReceipt}
                     />
                   </div>
                 </div>
@@ -1184,6 +1215,7 @@ export function ExpenseTracker() {
                   <Select 
                     value={formData.category} 
                     onValueChange={(value) => setFormData({...formData, category: value})}
+                    disabled={!canAddReceipt}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
@@ -1209,6 +1241,7 @@ export function ExpenseTracker() {
                   placeholder="Expense title"
                   value={formData.title}
                   onChange={(e) => setFormData({...formData, title: e.target.value})}
+                  disabled={!canAddReceipt}
                 />
               </div>
               
@@ -1219,6 +1252,7 @@ export function ExpenseTracker() {
                   placeholder="What was this expense for?"
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  disabled={!canAddReceipt}
                 />
               </div>
 
@@ -1232,6 +1266,7 @@ export function ExpenseTracker() {
                     className="pl-9"
                     value={formData.date}
                     onChange={(e) => setFormData({...formData, date: e.target.value})}
+                    disabled={!canAddReceipt}
                   />
                 </div>
               </div>
@@ -1239,9 +1274,9 @@ export function ExpenseTracker() {
               <Button 
                 className="w-full" 
                 onClick={createExpense}
-                disabled={loading}
+                disabled={loading || !canAddReceipt}
               >
-                {loading ? "Adding..." : "Add Expense"}
+                {loading ? "Adding..." : !canAddReceipt ? `Limit Reached (${limitData?.current_count}/${limitData?.monthly_limit})` : "Add Expense"}
               </Button>
             </CardContent>
           </Card>

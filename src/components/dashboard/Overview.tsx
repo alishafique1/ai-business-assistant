@@ -47,7 +47,7 @@ export function Overview({ onViewChange }: OverviewProps) {
         console.log('Current month:', currentMonth, 'Current year:', currentYear);
         
         // Debug each expense
-        expenses.forEach((expense: any, index: number) => {
+        expenses.forEach((expense: Record<string, unknown>, index: number) => {
           const dateStr = expense.date || expense.created_at;
           const expenseDate = new Date(dateStr);
           console.log(`Expense ${index + 1}:`, {

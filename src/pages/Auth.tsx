@@ -104,17 +104,17 @@ export default function Auth() {
       setEmail("");
       setPassword("");
       setBusinessName("");
-    } catch (error: any) {
+    } catch (error: unknown) {
       let errorMessage = "An unexpected error occurred. Please try again.";
       
       // Provide user-friendly error messages
-      if (error.message.includes('already registered')) {
+      if (error instanceof Error && error.message.includes('already registered')) {
         errorMessage = "This email is already registered. Please sign in instead or use a different email.";
-      } else if (error.message.includes('Password should be at least 6 characters')) {
+      } else if (error instanceof Error && error.message.includes('Password should be at least 6 characters')) {
         errorMessage = "Password must be at least 6 characters long.";
-      } else if (error.message.includes('Invalid email')) {
+      } else if (error instanceof Error && error.message.includes('Invalid email')) {
         errorMessage = "Please enter a valid email address.";
-      } else if (error.message.includes('Network request failed')) {
+      } else if (error instanceof Error && error.message.includes('Network request failed')) {
         errorMessage = "Network error. Please check your connection and try again.";
       }
 
@@ -167,17 +167,17 @@ export default function Auth() {
         });
         navigate(from, { replace: true });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       let errorMessage = "An unexpected error occurred. Please try again.";
       
       // Provide user-friendly error messages
-      if (error.message.includes('Invalid login credentials')) {
+      if (error instanceof Error && error.message.includes('Invalid login credentials')) {
         errorMessage = "Invalid email or password. Please check your credentials and try again.";
-      } else if (error.message.includes('Email not confirmed')) {
+      } else if (error instanceof Error && error.message.includes('Email not confirmed')) {
         errorMessage = "Please check your email and click the confirmation link before signing in.";
-      } else if (error.message.includes('Too many requests')) {
+      } else if (error instanceof Error && error.message.includes('Too many requests')) {
         errorMessage = "Too many login attempts. Please wait a moment before trying again.";
-      } else if (error.message.includes('Network request failed')) {
+      } else if (error instanceof Error && error.message.includes('Network request failed')) {
         errorMessage = "Network error. Please check your connection and try again.";
       }
 
@@ -200,10 +200,10 @@ export default function Auth() {
         }
       });
       if (error) throw error;
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
     }
@@ -218,10 +218,10 @@ export default function Auth() {
         }
       });
       if (error) throw error;
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
     }

@@ -51,16 +51,30 @@ export const useReceiptLimit = () => {
         } catch (e) {
           console.warn('Failed to parse stored receipt data');
         }
+      } else {
+        // If no stored data exists, don't set resetTime yet (timer starts when limit is reached)
+        resetTime = new Date(0); // Set to epoch, indicating no timer started yet
       }
       
       // Check if we need to reset (every 10 minutes for testing)
+      // Only check if resetTime has been set (not epoch/0) and limit was reached
       const now = new Date();
-      const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
+      const tenMinutesFromReset = new Date(resetTime.getTime() + 10 * 60 * 1000);
+      
+      console.log('Timer check:', {
+        currentCount,
+        resetTime: resetTime.toISOString(),
+        resetTimeMs: resetTime.getTime(),
+        now: now.toISOString(),
+        tenMinutesFromReset: tenMinutesFromReset.toISOString(),
+        shouldReset: resetTime.getTime() > 0 && now >= tenMinutesFromReset,
+        minutesRemaining: resetTime.getTime() > 0 ? Math.ceil((tenMinutesFromReset.getTime() - now.getTime()) / (60 * 1000)) : 0
+      });
 
-      if (resetTime < tenMinutesAgo) {
-        console.log('Resetting counter due to time limit');
+      if (resetTime.getTime() > 0 && now >= tenMinutesFromReset) {
+        console.log('⏰ RESETTING COUNTER - 10 minutes expired!');
         currentCount = 0;
-        resetTime = now;
+        resetTime = new Date(0); // Reset to indicate no timer running
         localStorage.setItem(storageKey, JSON.stringify({
           count: currentCount,
           resetTime: resetTime.toISOString()
@@ -77,7 +91,7 @@ export const useReceiptLimit = () => {
         monthly_limit: limit,
         can_add_receipt: canAdd,
         plan: planData.planLabel,
-        minutes_until_reset: Math.max(0, Math.ceil((10 * 60 * 1000 - (now.getTime() - resetTime.getTime())) / (60 * 1000)))
+        minutes_until_reset: resetTime.getTime() > 0 ? Math.max(0, Math.ceil((tenMinutesFromReset.getTime() - now.getTime()) / (60 * 1000))) : 0
       });
 
     } catch (err) {
@@ -121,6 +135,9 @@ export const useReceiptLimit = () => {
         } catch (e) {
           console.warn('Failed to parse stored receipt data during increment');
         }
+      } else {
+        // If no stored data, this is the first expense, don't start timer yet
+        resetTime = new Date(0);
       }
       
       const limit = planData.features.receiptLimit;
@@ -133,6 +150,18 @@ export const useReceiptLimit = () => {
       
       // Increment the count
       const newCount = currentCount + 1;
+      
+      // If this increment reaches the limit, set resetTime to NOW (when limit is hit)
+      console.log('Checking if limit reached:', { limit, newCount, isLimitReached: (limit !== 'unlimited' && newCount >= limit) });
+      
+      if (limit !== 'unlimited' && newCount >= limit) {
+        resetTime = new Date(); // Start timer when limit is reached
+        console.log('🚨 LIMIT REACHED! Starting 10-minute timer from now:', resetTime);
+        console.log('Timer will expire at:', new Date(resetTime.getTime() + 10 * 60 * 1000));
+      } else {
+        console.log('Limit not reached yet, keeping original resetTime:', resetTime);
+      }
+      
       localStorage.setItem(storageKey, JSON.stringify({
         count: newCount,
         resetTime: resetTime.toISOString()
@@ -174,6 +203,11 @@ export const useReceiptLimit = () => {
       const parsed = JSON.parse(storedData);
       const resetTime = new Date(parsed.resetTime);
       
+      // Only start timer if resetTime is actually set (not epoch/0)
+      if (resetTime.getTime() <= 0) {
+        return;
+      }
+      
       // Update timer immediately
       const secondsLeft = updateLiveTimer(resetTime);
       
@@ -210,7 +244,7 @@ export const useReceiptLimit = () => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const shouldShowTimer = !canAddReceipt && planData.plan === 'free' && liveTimer > 0;
+  const shouldShowTimer = !canAddReceipt && planData.plan === 'free' && liveTimer > 0 && limitData?.minutes_until_reset && limitData.minutes_until_reset > 0;
 
   return {
     limitData,

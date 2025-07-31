@@ -57,10 +57,11 @@ export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseH
       switch (viewMode) {
         case 'today':
           return isSameDay(expenseDate, now);
-        case 'week':
+        case 'week': {
           const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
           const weekEnd = new Date(now.setDate(now.getDate() - now.getDay() + 6));
           return expenseDate >= startOfDay(weekStart) && expenseDate <= endOfDay(weekEnd);
+        }
         case 'month':
           return expenseDate >= startOfMonth(selectedDate) && expenseDate <= endOfMonth(selectedDate);
         case 'year':
