@@ -32,6 +32,7 @@ export function KnowledgeBase() {
     products_services: ''
   });
   const [editingEntry, setEditingEntry] = useState<KnowledgeEntry | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("browse");
   const [originalFormData, setOriginalFormData] = useState({
     business_name: '',
     industry: '',
@@ -286,8 +287,9 @@ export function KnowledgeBase() {
         description: "Business information updated successfully"
       });
       
-      // Clear editing state
+      // Clear editing state and switch back to browse tab
       setEditingEntry(null);
+      setActiveTab("browse");
       setFormData({ 
         business_name: '', 
         industry: '', 
@@ -325,6 +327,7 @@ export function KnowledgeBase() {
 
   const startEditing = (entry: KnowledgeEntry) => {
     setEditingEntry(entry);
+    setActiveTab("edit"); // Switch to edit tab
     const entryData = {
       business_name: entry.business_name,
       industry: entry.industry,
@@ -337,6 +340,7 @@ export function KnowledgeBase() {
 
   const cancelEditing = () => {
     setEditingEntry(null);
+    setActiveTab("browse"); // Switch back to browse tab
     setFormData({ 
       business_name: '', 
       industry: '', 
@@ -373,7 +377,7 @@ export function KnowledgeBase() {
       </div>
 
       {entries.length > 0 || editingEntry ? (
-        <Tabs defaultValue={editingEntry ? "edit" : "browse"} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList>
             {!editingEntry && (
               <TabsTrigger value="browse">Business Information</TabsTrigger>
