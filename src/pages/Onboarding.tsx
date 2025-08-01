@@ -174,34 +174,33 @@ export default function Onboarding() {
     }
 
     try {
-      console.log('Attempting to save knowledge base data:', {
+      console.log('Attempting to save knowledge base data to ML API:', {
         business_name: formData.knowledgeBusinessName,
         industry: formData.knowledgeIndustry,
         target_audience: formData.targetAudience,
         products_services: formData.productsServices,
-        user_id: user.id,
       });
 
-      // Save business information as knowledge base entries
-      const businessInfoEntry = {
-        userId: user.id,
-        title: `${formData.knowledgeBusinessName} - Business Information`,
-        content: `Business Name: ${formData.knowledgeBusinessName}\nIndustry: ${formData.knowledgeIndustry}\nTarget Audience: ${formData.targetAudience}\nProducts/Services: ${formData.productsServices}`,
-        category: 'business-info',
-        tags: ['onboarding', 'business-profile', formData.knowledgeIndustry.toLowerCase()]
-      };
-
-      // Create knowledge base entry using Supabase function
-      const { data, error } = await supabase.functions.invoke('create-knowledge-base-entry', {
-        body: businessInfoEntry
+      // Save business information using ML API
+      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/knowledge-base', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          business_name: formData.knowledgeBusinessName,
+          industry: formData.knowledgeIndustry,
+          target_audience: formData.targetAudience,
+          products_services: formData.productsServices
+        })
       });
 
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
+      if (!response.ok) {
+        throw new Error('Failed to save knowledge base entry to ML API');
       }
-
-      console.log('Knowledge base entry created successfully:', data);
+      
+      const result = await response.json();
+      console.log('Knowledge base entry created successfully via ML API:', result);
 
       toast({
         title: "Knowledge Base Saved!",

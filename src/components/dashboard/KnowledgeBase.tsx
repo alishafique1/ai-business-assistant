@@ -5,20 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Plus, Search, Edit3, Trash2, Link2 } from "lucide-react";
+import { BookOpen, Plus, Search, Edit3, Trash2, Link2, Building, Users, Package, Target } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
 
 interface KnowledgeEntry {
-  id: string;
-  title: string;
-  content: string;
-  tags?: string[];
-  category?: string;
-  created_at: string;
-  updated_at: string;
+  id?: string;
+  business_name: string;
+  industry: string;
+  target_audience: string;
+  products_services: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export function KnowledgeBase() {
@@ -28,10 +27,10 @@ export function KnowledgeBase() {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [formData, setFormData] = useState({
-    title: '',
-    content: '',
-    category: '',
-    tags: ''
+    business_name: '',
+    industry: '',
+    target_audience: '',
+    products_services: ''
   });
   const [editingEntry, setEditingEntry] = useState<KnowledgeEntry | null>(null);
 
@@ -46,12 +45,19 @@ export function KnowledgeBase() {
     
     try {
       setLoading(true);
-      const { data, error } = await supabase.functions.invoke('get-knowledge-base-by-user', {
-        body: { userId: user.id }
+      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/knowledge-base', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
       
-      if (error) throw error;
-      setEntries(data.entries || []);
+      if (!response.ok) {
+        throw new Error('Failed to fetch knowledge base');
+      }
+      
+      const data = await response.json();
+      setEntries(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching knowledge base:', error);
       toast({
@@ -59,16 +65,18 @@ export function KnowledgeBase() {
         description: "Failed to fetch knowledge base",
         variant: "destructive"
       });
+      // Initialize with empty array on error
+      setEntries([]);
     } finally {
       setLoading(false);
     }
   };
 
   const createEntry = async () => {
-    if (!formData.title || !formData.content) {
+    if (!formData.business_name || !formData.industry || !formData.target_audience || !formData.products_services) {
       toast({
         title: "Error", 
-        description: "Please fill in title and content",
+        description: "Please fill in all required fields",
         variant: "destructive"
       });
       return;
@@ -76,24 +84,37 @@ export function KnowledgeBase() {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase.functions.invoke('create-knowledge-base-entry', {
-        body: {
-          userId: user?.id,
-          title: formData.title,
-          content: formData.content,
-          category: formData.category,
-          tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean)
-        }
+      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/knowledge-base', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          business_name: formData.business_name,
+          industry: formData.industry,
+          target_audience: formData.target_audience,
+          products_services: formData.products_services
+        })
       });
 
-      if (error) throw error;
+      if (!response.ok) {
+        throw new Error('Failed to create knowledge entry');
+      }
+      
+      const result = await response.json();
+      console.log('Knowledge base entry created:', result);
       
       toast({
         title: "Success",
         description: "Knowledge entry created successfully"
       });
       
-      setFormData({ title: '', content: '', category: '', tags: '' });
+      setFormData({ 
+        business_name: '', 
+        industry: '', 
+        target_audience: '', 
+        products_services: '' 
+      });
       await fetchKnowledgeBase();
     } catch (error) {
       console.error('Error creating entry:', error);
@@ -107,161 +128,50 @@ export function KnowledgeBase() {
     }
   };
 
-  const updateEntry = async () => {
-    if (!editingEntry || !formData.title || !formData.content) return;
-
-    try {
-      setLoading(true);
-      const { error } = await supabase.functions.invoke('update-knowledge-base-entry', {
-        body: {
-          entryId: editingEntry.id,
-          userId: user?.id,
-          title: formData.title,
-          content: formData.content,
-          category: formData.category,
-          tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean)
-        }
-      });
-
-      if (error) throw error;
-      
-      toast({
-        title: "Success",
-        description: "Knowledge entry updated successfully"
-      });
-      
-      setEditingEntry(null);
-      setFormData({ title: '', content: '', category: '', tags: '' });
-      await fetchKnowledgeBase();
-    } catch (error) {
-      console.error('Error updating entry:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update knowledge entry",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const deleteEntry = async (entryId: string) => {
-    try {
-      setLoading(true);
-      const { error } = await supabase.functions.invoke('delete-knowledge-base-entry', {
-        body: { entryId, userId: user?.id }
-      });
-
-      if (error) throw error;
-      
-      toast({
-        title: "Success",
-        description: "Knowledge entry deleted successfully"
-      });
-      
-      await fetchKnowledgeBase();
-    } catch (error) {
-      console.error('Error deleting entry:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete knowledge entry",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const deleteAllEntries = async () => {
-    if (!entries.length) return;
-    
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete all ${entries.length} knowledge entries? This action cannot be undone.`
-    );
-    
-    if (!confirmDelete) return;
-
-    try {
-      setLoading(true);
-      
-      // Delete all entries one by one
-      for (const entry of entries) {
-        const { error } = await supabase.functions.invoke('delete-knowledge-base-entry', {
-          body: { entryId: entry.id, userId: user?.id }
-        });
-        if (error) throw error;
-      }
-      
-      toast({
-        title: "Success",
-        description: `All ${entries.length} knowledge entries deleted successfully`
-      });
-      
-      await fetchKnowledgeBase();
-    } catch (error) {
-      console.error('Error deleting all entries:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete all knowledge entries",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const startEditing = (entry: KnowledgeEntry) => {
     setEditingEntry(entry);
     setFormData({
-      title: entry.title,
-      content: entry.content,
-      category: entry.category || '',
-      tags: entry.tags?.join(', ') || ''
+      business_name: entry.business_name,
+      industry: entry.industry,
+      target_audience: entry.target_audience,
+      products_services: entry.products_services
     });
   };
 
   const cancelEditing = () => {
     setEditingEntry(null);
-    setFormData({ title: '', content: '', category: '', tags: '' });
+    setFormData({ 
+      business_name: '', 
+      industry: '', 
+      target_audience: '', 
+      products_services: '' 
+    });
   };
 
   const filteredEntries = entries.filter(entry =>
-    entry.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.tags?.some(tag => tag?.toLowerCase().includes(searchTerm.toLowerCase()))
+    entry.business_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    entry.industry?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    entry.target_audience?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    entry.products_services?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-foreground">Knowledge Base</h2>
-          <p className="text-muted-foreground">Store and organize your business knowledge and documentation</p>
+          <h2 className="text-3xl font-bold text-foreground">Business Knowledge Base</h2>
+          <p className="text-muted-foreground">Store your business information to help AI provide better assistance</p>
         </div>
-        <div className="flex gap-2">
-          {entries.length > 0 && (
-            <Button 
-              variant="destructive" 
-              className="gap-2"
-              onClick={deleteAllEntries}
-              disabled={loading}
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete All ({entries.length})
-            </Button>
-          )}
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Entry
-          </Button>
-        </div>
+        <Button className="gap-2">
+          <Plus className="h-4 w-4" />
+          Add Business Info
+        </Button>
       </div>
 
-      <Tabs defaultValue="browse" className="space-y-6">
+      <Tabs defaultValue="add" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="browse">Browse</TabsTrigger>
-          <TabsTrigger value="add">Add Entry</TabsTrigger>
-          <TabsTrigger value="linked">Linked to Expenses</TabsTrigger>
+          <TabsTrigger value="add">Add Business Info</TabsTrigger>
+          <TabsTrigger value="browse">View Entries</TabsTrigger>
         </TabsList>
 
         <TabsContent value="browse" className="space-y-6">
@@ -269,12 +179,12 @@ export function KnowledgeBase() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Search className="h-5 w-5" />
-                Search Knowledge Base
+                Search Business Information
               </CardTitle>
             </CardHeader>
             <CardContent>
               <Input
-                placeholder="Search entries, tags, or content..."
+                placeholder="Search business name, industry, audience, or services..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full"
@@ -284,30 +194,53 @@ export function KnowledgeBase() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Knowledge Entries</CardTitle>
-              <CardDescription>Your business knowledge and documentation</CardDescription>
+              <CardTitle>Business Information Entries</CardTitle>
+              <CardDescription>Your stored business knowledge for AI assistance</CardDescription>
             </CardHeader>
             <CardContent>
               {loading ? (
                 <div className="text-center py-8">
-                  <p>Loading knowledge base...</p>
+                  <p>Loading business information...</p>
                 </div>
               ) : filteredEntries.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>No knowledge entries found</p>
-                  <p className="text-sm">Add your first entry to build your knowledge base</p>
+                  <p>No business information found</p>
+                  <p className="text-sm">Add your business details to help AI provide better assistance</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {filteredEntries.map((entry) => (
-                    <div key={entry.id} className="p-4 border rounded-lg space-y-3">
+                  {filteredEntries.map((entry, index) => (
+                    <div key={entry.id || index} className="p-4 border rounded-lg space-y-3">
                       <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-lg">{entry.title}</h4>
-                          <p className="text-sm text-muted-foreground line-clamp-3 mt-1">
-                            {entry.content}
-                          </p>
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Building className="h-4 w-4" />
+                            <h4 className="font-medium text-lg">{entry.business_name}</h4>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                            <div className="flex items-start gap-2">
+                              <Target className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                              <div>
+                                <span className="font-medium">Industry:</span>
+                                <p className="text-muted-foreground">{entry.industry}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <Users className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                              <div>
+                                <span className="font-medium">Target Audience:</span>
+                                <p className="text-muted-foreground">{entry.target_audience}</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <Package className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                            <div>
+                              <span className="font-medium">Products & Services:</span>
+                              <p className="text-muted-foreground text-sm line-clamp-3">{entry.products_services}</p>
+                            </div>
+                          </div>
                         </div>
                         <div className="flex gap-2">
                           <Button 
@@ -317,27 +250,15 @@ export function KnowledgeBase() {
                           >
                             <Edit3 className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            onClick={() => deleteEntry(entry.id)}
-                            disabled={loading}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {entry.category && (
-                          <Badge variant="secondary">{entry.category}</Badge>
-                        )}
-                        {entry.tags?.map((tag, index) => (
-                          <Badge key={index} variant="outline">#{tag}</Badge>
-                        ))}
-                        <span className="text-xs text-muted-foreground ml-auto">
-                          {new Date(entry.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
+                      {entry.created_at && (
+                        <div className="flex justify-end">
+                          <span className="text-xs text-muted-foreground">
+                            Added {new Date(entry.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -351,59 +272,73 @@ export function KnowledgeBase() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5" />
-                {editingEntry ? "Edit Knowledge Entry" : "Add Knowledge Entry"}
+                {editingEntry ? "Edit Business Information" : "Add Business Information"}
               </CardTitle>
+              <CardDescription>
+                Provide details about your business to help AI give more personalized assistance
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
+                <Label htmlFor="business_name" className="flex items-center gap-2">
+                  <Building className="h-4 w-4" />
+                  Business Name
+                </Label>
                 <Input 
-                  id="title" 
-                  placeholder="Entry title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                  id="business_name" 
+                  placeholder="Your Company Name"
+                  value={formData.business_name}
+                  onChange={(e) => setFormData({...formData, business_name: e.target.value})}
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="content">Content</Label>
-                <Textarea 
-                  id="content" 
-                  placeholder="Enter your knowledge content..."
-                  value={formData.content}
-                  onChange={(e) => setFormData({...formData, content: e.target.value})}
-                  rows={6}
+                <Label htmlFor="industry" className="flex items-center gap-2">
+                  <Target className="h-4 w-4" />
+                  Industry
+                </Label>
+                <Input 
+                  id="industry" 
+                  placeholder="e.g., Technology, Healthcare, Retail, Consulting"
+                  value={formData.industry}
+                  onChange={(e) => setFormData({...formData, industry: e.target.value})}
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
-                  <Input 
-                    id="category" 
-                    placeholder="Category (optional)"
-                    value={formData.category}
-                    onChange={(e) => setFormData({...formData, category: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="tags">Tags</Label>
-                  <Input 
-                    id="tags" 
-                    placeholder="tag1, tag2, tag3"
-                    value={formData.tags}
-                    onChange={(e) => setFormData({...formData, tags: e.target.value})}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="target_audience" className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Target Audience
+                </Label>
+                <Input 
+                  id="target_audience" 
+                  placeholder="e.g., Small businesses, Students, Enterprise clients"
+                  value={formData.target_audience}
+                  onChange={(e) => setFormData({...formData, target_audience: e.target.value})}
+                />
               </div>
 
-              <div className="flex gap-2">
+              <div className="space-y-2">
+                <Label htmlFor="products_services" className="flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  Products & Services
+                </Label>
+                <Textarea 
+                  id="products_services" 
+                  placeholder="Describe your main products and services in detail..."
+                  value={formData.products_services}
+                  onChange={(e) => setFormData({...formData, products_services: e.target.value})}
+                  rows={4}
+                />
+              </div>
+
+              <div className="flex gap-2 pt-4">
                 <Button 
-                  onClick={editingEntry ? updateEntry : createEntry}
+                  onClick={createEntry}
                   disabled={loading}
                   className="flex-1"
                 >
-                  {loading ? "Saving..." : editingEntry ? "Update Entry" : "Add Entry"}
+                  {loading ? "Saving..." : editingEntry ? "Update Information" : "Add to Knowledge Base"}
                 </Button>
                 {editingEntry && (
                   <Button 
@@ -413,25 +348,6 @@ export function KnowledgeBase() {
                     Cancel
                   </Button>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="linked">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Link2 className="h-5 w-5" />
-                Expense-Linked Knowledge
-              </CardTitle>
-              <CardDescription>Knowledge entries linked to your expenses</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <Link2 className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p>No linked knowledge entries yet</p>
-                <p className="text-sm">Link knowledge entries to expenses for better organization</p>
               </div>
             </CardContent>
           </Card>
