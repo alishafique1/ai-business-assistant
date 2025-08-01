@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   id: string;
@@ -26,11 +27,18 @@ export function AIAssistant() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [autoExpenseDetection, setAutoExpenseDetection] = useState(true);
   const [knowledgeBaseContext, setKnowledgeBaseContext] = useState<string>("");
+  const [knowledgeBaseCached, setKnowledgeBaseCached] = useState<boolean>(false);
 
-  // Fetch knowledge base context for AI
+  // Fetch knowledge base context for AI with caching
   const fetchKnowledgeBaseContext = async (): Promise<string> => {
+    // Return cached context if available
+    if (knowledgeBaseCached && knowledgeBaseContext) {
+      console.log('📋 Using cached knowledge base context');
+      return knowledgeBaseContext;
+    }
+    
     try {
-      console.log('Fetching knowledge base context for AI...');
+      console.log('🔍 Fetching knowledge base context for AI...');
       const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/get-knowledge-base');
       
       if (!response.ok) {
@@ -39,12 +47,23 @@ export function AIAssistant() {
       }
       
       const data = await response.json();
-      console.log('Knowledge base context fetched:', data);
+      console.log('✅ Knowledge base context fetched successfully:', data);
       
       // The API might return different formats, handle gracefully
-      return data.formatted_knowledge || data.content || data.knowledge_base || JSON.stringify(data);
+      const context = data.formatted_knowledge || data.content || data.knowledge_base || JSON.stringify(data);
+      
+      if (context && context.length > 10) {
+        console.log('📝 Using knowledge base context (length:', context.length, 'chars)');
+        // Cache the context
+        setKnowledgeBaseContext(context);
+        setKnowledgeBaseCached(true);
+        return context;
+      } else {
+        console.warn('⚠️ Knowledge base context is empty or too short');
+        return '';
+      }
     } catch (error) {
-      console.warn('Failed to fetch knowledge base context:', error);
+      console.warn('❌ Failed to fetch knowledge base context:', error);
       return '';
     }
   };
@@ -93,7 +112,7 @@ export function AIAssistant() {
       
       // Enhanced prompt with knowledge base context
       const enhancedPrompt = knowledgeContext 
-        ? `Context about my business: ${knowledgeContext}\n\nUser request: ${userMessage.content}`
+        ? `BUSINESS CONTEXT: ${knowledgeContext}\n\n---\n\nUSER REQUEST: ${userMessage.content}\n\nPlease use the business context above to provide personalized, relevant responses.`
         : userMessage.content;
       
       const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/generate', {
@@ -138,20 +157,156 @@ export function AIAssistant() {
     }
   };
 
+  // Content creation prompts
+  const contentCreationPrompts = [
+    "Could you please provide more details about the topic you want me to create content on?",
+    "What is the main subject or theme you would like the content to focus on?", 
+    "Who is the target audience for this content?",
+    "What is the purpose of this content – to inform, persuade, entertain, or educate?",
+    "Do you have a preferred tone or style for the content (formal, casual, professional, etc.)?",
+    "How long should the content be – a short post, an article, or a detailed report?",
+    "Are there any key points, keywords, or ideas that must be included?",
+    "Do you want the content to be SEO-friendly, or just general writing?",
+    "Should the content include examples, statistics, or references to support the information?",
+    "When do you need the content to be completed, and will it be for online or offline use?"
+  ];
+
+  // Fetch expense data from both ML API and Supabase
+  const fetchExpenseData = async () => {
+    try {
+      console.log('Fetching expense data from ML API and Supabase...');
+      
+      const [mlApiResponse, summaryResponse, businessExpensesResponse] = await Promise.all([
+        fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/expenses'),
+        fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/summary'),
+        supabase
+          .from('business_expenses')
+          .select('*')
+          .eq('user_id', user?.id)
+          .order('created_at', { ascending: false })
+      ]);
+
+      let allExpenses: Array<Record<string, unknown>> = [];
+      let summaryData = {};
+
+      // Process ML API expenses
+      if (mlApiResponse.ok) {
+        const mlExpenses = await mlApiResponse.json();
+        console.log('ML API expenses:', mlExpenses);
+        allExpenses = [...allExpenses, ...mlExpenses];
+      } else {
+        console.warn('Failed to fetch ML API expenses:', mlApiResponse.status);
+      }
+
+      // Process business_expenses from Supabase
+      if (businessExpensesResponse.data) {
+        const businessExpenses = businessExpensesResponse.data.map((expense: Record<string, unknown>) => ({
+          ...expense,
+          // Map business_expenses fields to match ML API format for consistency
+          date: expense.expense_date,
+          title: expense.description,
+          amount: expense.amount
+        }));
+        console.log('Supabase business expenses:', businessExpenses);
+        allExpenses = [...allExpenses, ...businessExpenses];
+      }
+
+      // Remove duplicates based on ID
+      const expenses = allExpenses.filter((expense, index, arr) => 
+        arr.findIndex(e => e.id === expense.id) === index
+      );
+
+      // Process summary
+      if (summaryResponse.ok) {
+        summaryData = await summaryResponse.json();
+        console.log('Summary data:', summaryData);
+      } else {
+        console.warn('Failed to fetch summary:', summaryResponse.status);
+        // Generate summary from expenses if API summary is not available
+        if (expenses.length > 0) {
+          const categoryTotals: Record<string, number> = {};
+          expenses.forEach((expense: any) => {
+            const category = expense.category || 'Uncategorized';
+            categoryTotals[category] = (categoryTotals[category] || 0) + (expense.amount || 0);
+          });
+          summaryData = { categories: categoryTotals };
+        }
+      }
+
+      console.log('Combined expenses for AI:', expenses);
+      return { expenses, summary: summaryData };
+    } catch (error) {
+      console.error('Error fetching expense data:', error);
+      return { expenses: [], summary: {} };
+    }
+  };
+
   // Quick action handlers
   const handleQuickAction = async (actionType: string) => {
     let prompt = '';
     let contentType = '';
     
     switch (actionType) {
-      case 'expense-summary':
-        prompt = 'Please provide a summary of my recent expenses and spending patterns.';
-        contentType = 'report';
-        break;
-      case 'create-content':
-        prompt = 'Help me create engaging content for my business marketing.';
-        contentType = 'blog post';
-        break;
+      case 'expense-summary': {
+        // Fetch expense data and send directly as assistant message
+        const expenseData = await fetchExpenseData();
+        
+        let assistantContent = '';
+        
+        // Check if there are any expenses  
+        if (!expenseData.expenses || expenseData.expenses.length === 0) {
+          assistantContent = `I don't see any expenses logged in your system yet. To get started with expense tracking and analysis, you can:
+
+1. **Add your first expense** by going to the Expense Tracker section
+2. **Upload receipt images** for automatic categorization  
+3. **Manually log expenses** with categories like meals, travel, office supplies, etc.
+
+Once you have some expense data, I'll be able to provide detailed analysis including monthly spending patterns, category breakdowns, budget recommendations, cost optimization insights, and tax-deductible expense identification.
+
+Would you like me to help you set up your first expense entry or explain how the expense tracking system works?`;
+        } else {
+          // Create expense listing
+          const expensesList = expenseData.expenses.map((expense: any, index: number) => 
+            `${index + 1}. ${expense.title || expense.description || 'Unnamed expense'} - $${expense.amount} (${expense.category || 'Uncategorized'}) - ${expense.date || expense.created_at}`
+          ).join('\n');
+          
+          const totalAmount = expenseData.expenses.reduce((sum: number, expense: any) => sum + (expense.amount || 0), 0);
+          
+          // Generate comprehensive analysis based on the expense data
+          assistantContent = `Here are your current expenses:
+
+${expensesList}
+
+**Total: $${totalAmount.toFixed(2)}**
+
+Based on your expense analysis, you've spent $${totalAmount.toFixed(2)} total with your main category being ${expenseData.expenses[0]?.category || 'Uncategorized'}. This appears to be ${expenseData.expenses.length === 1 ? 'a single expense' : `${expenseData.expenses.length} expenses`} for this period. Consider tracking more expenses to get better insights into your spending patterns and identify areas for cost optimization.`;
+        }
+        
+        // Send the message directly from assistant
+        const assistantMessage: Message = {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: assistantContent,
+          timestamp: new Date()
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+        return; // Exit early, don't proceed with normal flow
+      }
+      case 'create-content': {
+        // Select random content creation prompt and send as assistant message
+        const randomPrompt = contentCreationPrompts[Math.floor(Math.random() * contentCreationPrompts.length)];
+        
+        const assistantMessage: Message = {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: randomPrompt,
+          timestamp: new Date()
+        };
+
+        setMessages(prev => [...prev, assistantMessage]);
+        return; // Exit early, don't proceed with normal flow
+      }
       case 'business-insights':
         prompt = 'Give me insights and recommendations for improving my business operations.';
         contentType = 'report';
@@ -187,7 +342,7 @@ export function AIAssistant() {
       
       // Enhanced prompt with knowledge base context
       const enhancedPrompt = knowledgeContext 
-        ? `Context about my business: ${knowledgeContext}\n\nUser request: ${prompt}`
+        ? `BUSINESS CONTEXT: ${knowledgeContext}\n\n---\n\nUSER REQUEST: ${prompt}\n\nPlease use the business context above to provide personalized, relevant responses.`
         : prompt;
       
       const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/generate', {
