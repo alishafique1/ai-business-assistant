@@ -201,18 +201,73 @@ export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseH
                     }
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                  <CalendarComponent
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={(date) => {
-                      if (date) {
-                        setSelectedDate(date);
-                        setCalendarOpen(false);
-                      }
-                    }}
-                    initialFocus
-                  />
+                <PopoverContent className="w-auto p-4" align="end">
+                  {viewMode === 'custom' ? (
+                    // Full date picker for custom dates
+                    <CalendarComponent
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={(date) => {
+                        if (date) {
+                          setSelectedDate(date);
+                          setCalendarOpen(false);
+                        }
+                      }}
+                      initialFocus
+                    />
+                  ) : viewMode === 'month' ? (
+                    // Month picker for current year
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm text-center">{new Date().getFullYear()}</h4>
+                      <div className="grid grid-cols-3 gap-2">
+                        {Array.from({ length: 12 }, (_, i) => {
+                          const monthDate = new Date(new Date().getFullYear(), i, 1);
+                          const isSelected = selectedDate.getMonth() === i && selectedDate.getFullYear() === new Date().getFullYear();
+                          return (
+                            <Button
+                              key={i}
+                              variant={isSelected ? "default" : "outline"}
+                              size="sm"
+                              className="h-8 text-xs"
+                              onClick={() => {
+                                const newDate = new Date(new Date().getFullYear(), i, 1);
+                                setSelectedDate(newDate);
+                                setCalendarOpen(false);
+                              }}
+                            >
+                              {format(monthDate, 'MMM')}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : viewMode === 'year' ? (
+                    // Year picker (current year and previous years)
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm text-center">Select Year</h4>
+                      <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                        {Array.from({ length: 10 }, (_, i) => {
+                          const year = new Date().getFullYear() - i;
+                          const isSelected = selectedDate.getFullYear() === year;
+                          return (
+                            <Button
+                              key={year}
+                              variant={isSelected ? "default" : "outline"}
+                              size="sm"
+                              className="h-8 text-xs"
+                              onClick={() => {
+                                const newDate = new Date(year, 0, 1);
+                                setSelectedDate(newDate);
+                                setCalendarOpen(false);
+                              }}
+                            >
+                              {year}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null}
                 </PopoverContent>
               </Popover>
             )}
