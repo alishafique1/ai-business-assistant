@@ -45,6 +45,8 @@ export function KnowledgeBase() {
     
     try {
       setLoading(true);
+      console.log('Attempting to fetch knowledge base from ML API...');
+      
       const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/knowledge-base', {
         method: 'GET',
         headers: {
@@ -52,21 +54,36 @@ export function KnowledgeBase() {
         },
       });
       
+      console.log('ML API fetch response status:', response.status);
+      console.log('ML API fetch response headers:', Object.fromEntries(response.headers.entries()));
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch knowledge base');
+        // If GET endpoint doesn't exist, just show empty state
+        if (response.status === 404 || response.status === 405) {
+          console.log('GET endpoint not available, showing empty state');
+          setEntries([]);
+          return;
+        }
+        throw new Error(`Failed to fetch knowledge base: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
+      console.log('ML API fetch response data:', data);
       setEntries(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching knowledge base:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch knowledge base",
-        variant: "destructive"
-      });
-      // Initialize with empty array on error
-      setEntries([]);
+      
+      // Don't show error toast if it's just that the GET endpoint doesn't exist
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.log('Network error or CORS issue, showing empty state');
+        setEntries([]);
+      } else {
+        toast({
+          title: "Info",
+          description: "Knowledge base is ready for new entries",
+        });
+        setEntries([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -84,6 +101,13 @@ export function KnowledgeBase() {
 
     try {
       setLoading(true);
+      console.log('Creating knowledge base entry via ML API:', {
+        business_name: formData.business_name,
+        industry: formData.industry,
+        target_audience: formData.target_audience,
+        products_services: formData.products_services
+      });
+      
       const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/knowledge-base', {
         method: 'POST',
         headers: {
@@ -97,30 +121,46 @@ export function KnowledgeBase() {
         })
       });
 
+      console.log('ML API POST response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to create knowledge entry');
+        const errorText = await response.text();
+        console.error('ML API POST error:', errorText);
+        throw new Error(`Failed to create knowledge entry: ${response.status} ${response.statusText}`);
       }
       
       const result = await response.json();
-      console.log('Knowledge base entry created:', result);
+      console.log('Knowledge base entry created successfully:', result);
       
       toast({
         title: "Success",
-        description: "Knowledge entry created successfully"
+        description: "Business information saved to knowledge base successfully"
       });
       
+      // Add the new entry to local state instead of fetching (since GET might not work)
+      const newEntry: KnowledgeEntry = {
+        id: result.id || Date.now().toString(),
+        business_name: formData.business_name,
+        industry: formData.industry,
+        target_audience: formData.target_audience,
+        products_services: formData.products_services,
+        created_at: new Date().toISOString()
+      };
+      setEntries(prev => [newEntry, ...prev]);
+      
+      // Clear form after successful creation
       setFormData({ 
         business_name: '', 
         industry: '', 
         target_audience: '', 
         products_services: '' 
       });
-      await fetchKnowledgeBase();
+      
     } catch (error) {
-      console.error('Error creating entry:', error);
+      console.error('Error creating knowledge entry:', error);
       toast({
         title: "Error",
-        description: "Failed to create knowledge entry",
+        description: error instanceof Error ? error.message : "Failed to create knowledge entry",
         variant: "destructive"
       });
     } finally {

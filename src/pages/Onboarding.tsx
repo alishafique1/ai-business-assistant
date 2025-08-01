@@ -195,8 +195,12 @@ export default function Onboarding() {
         })
       });
 
+      console.log('ML API POST response status:', response.status);
+
       if (!response.ok) {
-        throw new Error('Failed to save knowledge base entry to ML API');
+        const errorText = await response.text();
+        console.error('ML API POST error:', errorText);
+        throw new Error(`Failed to save knowledge base entry: ${response.status} ${response.statusText}`);
       }
       
       const result = await response.json();
