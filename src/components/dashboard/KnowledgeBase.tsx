@@ -25,7 +25,6 @@ export function KnowledgeBase() {
   const { toast } = useToast();
   const [entries, setEntries] = useState<KnowledgeEntry[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [formData, setFormData] = useState({
     business_name: '',
     industry: '',
@@ -322,12 +321,6 @@ export function KnowledgeBase() {
     });
   };
 
-  const filteredEntries = entries.filter(entry =>
-    entry.business_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.industry?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.target_audience?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.products_services?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
     <div className="space-y-6">
@@ -336,222 +329,280 @@ export function KnowledgeBase() {
           <h2 className="text-3xl font-bold text-foreground">Business Knowledge Base</h2>
           <p className="text-muted-foreground">
             {entries.length > 0 
-              ? "Edit your business information to help AI provide better assistance"
-              : "No business information found. Add your details during onboarding or create a new entry below."
+              ? "Edit or delete your business information. Business information is typically added during onboarding."
+              : "No business information found. Business information is added during the onboarding process, or you can add it manually below."
             }
           </p>
         </div>
         {entries.length === 0 && (
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={() => setEditingEntry(null)}>
             <Plus className="h-4 w-4" />
             Add Business Info
           </Button>
         )}
       </div>
 
-      <Tabs defaultValue={entries.length > 0 && !editingEntry ? "browse" : "add"} className="space-y-6">
-        <TabsList>
-          {entries.length > 0 && !editingEntry && (
-            <TabsTrigger value="browse">Business Information</TabsTrigger>
-          )}
-          {(entries.length === 0 || editingEntry) && (
-            <TabsTrigger value="add">
-              {editingEntry ? "Edit Business Info" : "Add Business Info"}
-            </TabsTrigger>
-          )}
-        </TabsList>
+      {entries.length > 0 || editingEntry ? (
+        <Tabs defaultValue={editingEntry ? "edit" : "browse"} className="space-y-6">
+          <TabsList>
+            {!editingEntry && (
+              <TabsTrigger value="browse">Business Information</TabsTrigger>
+            )}
+            {editingEntry && (
+              <TabsTrigger value="edit">Edit Business Information</TabsTrigger>
+            )}
+          </TabsList>
 
-        <TabsContent value="browse" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Search className="h-5 w-5" />
-                Search Business Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Input
-                placeholder="Search business name, industry, audience, or services..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Business Information Entries</CardTitle>
-              <CardDescription>Your stored business knowledge for AI assistance</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-center py-8">
-                  <p>Loading business information...</p>
-                </div>
-              ) : filteredEntries.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>No business information found</p>
-                  <p className="text-sm">Add your business details to help AI provide better assistance</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {filteredEntries.map((entry, index) => (
-                    <div key={entry.id || index} className="p-4 border rounded-lg space-y-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Building className="h-4 w-4" />
-                            <h4 className="font-medium text-lg">{entry.business_name}</h4>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                            <div className="flex items-start gap-2">
-                              <Target className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                              <div>
-                                <span className="font-medium">Industry:</span>
-                                <p className="text-muted-foreground">{entry.industry}</p>
+          <TabsContent value="browse" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Business Information</CardTitle>
+                <CardDescription>Your stored business knowledge for AI assistance</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="text-center py-8">
+                    <p>Loading business information...</p>
+                  </div>
+                ) : entries.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>No business information found</p>
+                    <p className="text-sm">Business information is added during onboarding</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {entries.map((entry, index) => (
+                      <div key={entry.id || index} className="p-4 border rounded-lg space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Building className="h-4 w-4" />
+                              <h4 className="font-medium text-lg">{entry.business_name}</h4>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                              <div className="flex items-start gap-2">
+                                <Target className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                                <div>
+                                  <span className="font-medium">Industry:</span>
+                                  <p className="text-muted-foreground">{entry.industry}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-start gap-2">
+                                <Users className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                                <div>
+                                  <span className="font-medium">Target Audience:</span>
+                                  <p className="text-muted-foreground">{entry.target_audience}</p>
+                                </div>
                               </div>
                             </div>
                             <div className="flex items-start gap-2">
-                              <Users className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                              <Package className="h-4 w-4 mt-0.5 text-muted-foreground" />
                               <div>
-                                <span className="font-medium">Target Audience:</span>
-                                <p className="text-muted-foreground">{entry.target_audience}</p>
+                                <span className="font-medium">Products & Services:</span>
+                                <p className="text-muted-foreground text-sm line-clamp-3">{entry.products_services}</p>
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-start gap-2">
-                            <Package className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                            <div>
-                              <span className="font-medium">Products & Services:</span>
-                              <p className="text-muted-foreground text-sm line-clamp-3">{entry.products_services}</p>
-                            </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => startEditing(entry)}
+                              className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                            >
+                              <Edit3 className="h-4 w-4" />
+                              Edit
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => deleteEntry(entry.id || '')}
+                              disabled={loading}
+                              className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => startEditing(entry)}
-                            className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
-                          >
-                            <Edit3 className="h-4 w-4" />
-                            Edit
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => deleteEntry(entry.id || '')}
-                            disabled={loading}
-                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Delete
-                          </Button>
-                        </div>
+                        {entry.created_at && (
+                          <div className="flex justify-end">
+                            <span className="text-xs text-muted-foreground">
+                              Added {new Date(entry.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                      {entry.created_at && (
-                        <div className="flex justify-end">
-                          <span className="text-xs text-muted-foreground">
-                            Added {new Date(entry.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="edit" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Edit3 className="h-5 w-5" />
+                  Edit Business Information
+                </CardTitle>
+                <CardDescription>
+                  Update your business details to help AI provide better assistance
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="business_name" className="flex items-center gap-2">
+                    <Building className="h-4 w-4" />
+                    Business Name
+                  </Label>
+                  <Input 
+                    id="business_name" 
+                    placeholder="Your Company Name"
+                    value={formData.business_name}
+                    onChange={(e) => setFormData({...formData, business_name: e.target.value})}
+                  />
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="industry" className="flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    Industry
+                  </Label>
+                  <Input 
+                    id="industry" 
+                    placeholder="e.g., Technology, Healthcare, Retail, Consulting"
+                    value={formData.industry}
+                    onChange={(e) => setFormData({...formData, industry: e.target.value})}
+                  />
+                </div>
 
-        <TabsContent value="add" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
-                {editingEntry ? "Edit Business Information" : "Add Business Information"}
-              </CardTitle>
-              <CardDescription>
-                Provide details about your business to help AI give more personalized assistance
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="business_name" className="flex items-center gap-2">
-                  <Building className="h-4 w-4" />
-                  Business Name
-                </Label>
-                <Input 
-                  id="business_name" 
-                  placeholder="Your Company Name"
-                  value={formData.business_name}
-                  onChange={(e) => setFormData({...formData, business_name: e.target.value})}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="industry" className="flex items-center gap-2">
-                  <Target className="h-4 w-4" />
-                  Industry
-                </Label>
-                <Input 
-                  id="industry" 
-                  placeholder="e.g., Technology, Healthcare, Retail, Consulting"
-                  value={formData.industry}
-                  onChange={(e) => setFormData({...formData, industry: e.target.value})}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="target_audience" className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Target Audience
+                  </Label>
+                  <Input 
+                    id="target_audience" 
+                    placeholder="e.g., Small businesses, Students, Enterprise clients"
+                    value={formData.target_audience}
+                    onChange={(e) => setFormData({...formData, target_audience: e.target.value})}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="target_audience" className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Target Audience
-                </Label>
-                <Input 
-                  id="target_audience" 
-                  placeholder="e.g., Small businesses, Students, Enterprise clients"
-                  value={formData.target_audience}
-                  onChange={(e) => setFormData({...formData, target_audience: e.target.value})}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="products_services" className="flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    Products & Services
+                  </Label>
+                  <Textarea 
+                    id="products_services" 
+                    placeholder="Describe your main products and services in detail..."
+                    value={formData.products_services}
+                    onChange={(e) => setFormData({...formData, products_services: e.target.value})}
+                    rows={4}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="products_services" className="flex items-center gap-2">
-                  <Package className="h-4 w-4" />
-                  Products & Services
-                </Label>
-                <Textarea 
-                  id="products_services" 
-                  placeholder="Describe your main products and services in detail..."
-                  value={formData.products_services}
-                  onChange={(e) => setFormData({...formData, products_services: e.target.value})}
-                  rows={4}
-                />
-              </div>
-
-              <div className="flex gap-2 pt-4">
-                <Button 
-                  onClick={editingEntry ? updateEntry : createEntry}
-                  disabled={loading}
-                  className="flex-1"
-                >
-                  {loading ? "Saving..." : editingEntry ? "Update Information" : "Add to Knowledge Base"}
-                </Button>
-                {editingEntry && (
+                <div className="flex gap-2 pt-4">
+                  <Button 
+                    onClick={updateEntry}
+                    disabled={loading}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    {loading ? "Updating..." : "Update Information"}
+                  </Button>
                   <Button 
                     onClick={cancelEditing}
                     variant="outline"
                   >
                     Cancel
                   </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      ) : (
+        // Show add form only when no entries exist
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Add Business Information
+            </CardTitle>
+            <CardDescription>
+              Add your business details to help AI provide personalized assistance
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="business_name" className="flex items-center gap-2">
+                <Building className="h-4 w-4" />
+                Business Name
+              </Label>
+              <Input 
+                id="business_name" 
+                placeholder="Your Company Name"
+                value={formData.business_name}
+                onChange={(e) => setFormData({...formData, business_name: e.target.value})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="industry" className="flex items-center gap-2">
+                <Target className="h-4 w-4" />
+                Industry
+              </Label>
+              <Input 
+                id="industry" 
+                placeholder="e.g., Technology, Healthcare, Retail, Consulting"
+                value={formData.industry}
+                onChange={(e) => setFormData({...formData, industry: e.target.value})}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="target_audience" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Target Audience
+              </Label>
+              <Input 
+                id="target_audience" 
+                placeholder="e.g., Small businesses, Students, Enterprise clients"
+                value={formData.target_audience}
+                onChange={(e) => setFormData({...formData, target_audience: e.target.value})}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="products_services" className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Products & Services
+              </Label>
+              <Textarea 
+                id="products_services" 
+                placeholder="Describe your main products and services in detail..."
+                value={formData.products_services}
+                onChange={(e) => setFormData({...formData, products_services: e.target.value})}
+                rows={4}
+              />
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button 
+                onClick={createEntry}
+                disabled={loading}
+                className="flex-1"
+              >
+                {loading ? "Saving..." : "Add to Knowledge Base"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
