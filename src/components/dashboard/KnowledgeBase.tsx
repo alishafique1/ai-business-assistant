@@ -143,14 +143,14 @@ export function KnowledgeBase() {
         description: "Business information saved to knowledge base successfully"
       });
       
-      // Add the new entry to local state instead of fetching (since GET might not work)
+      // Add the new entry to local state with the ID returned from API
       const newEntry: KnowledgeEntry = {
-        id: result.id || Date.now().toString(),
+        id: result.id || result.entry_id || Date.now().toString(), // Handle different possible ID field names
         business_name: formData.business_name,
         industry: formData.industry,
         target_audience: formData.target_audience,
         products_services: formData.products_services,
-        created_at: new Date().toISOString()
+        created_at: result.created_at || new Date().toISOString()
       };
       setEntries(prev => [newEntry, ...prev]);
       
@@ -187,10 +187,7 @@ export function KnowledgeBase() {
       setLoading(true);
       console.log('Attempting to delete knowledge base entry:', entryId);
       
-      // Note: If ML API doesn't have DELETE endpoint, we'll just remove from local state
-      // and show a warning that it might still exist on the server
-      
-      // Try to delete from ML API (if DELETE endpoint exists)
+      // Delete from ML API using DELETE endpoint
       try {
         const response = await fetch(`https://dawoodAhmad12-ai-expense-backend.hf.space/knowledge-base/${entryId}`, {
           method: 'DELETE',
@@ -199,11 +196,16 @@ export function KnowledgeBase() {
           }
         });
         
+        console.log('ML API DELETE response status:', response.status);
+        
         if (!response.ok && response.status !== 404) {
-          console.warn('ML API DELETE failed:', response.status, response.statusText);
+          const errorText = await response.text();
+          console.error('ML API DELETE error:', errorText);
+          // Continue with local removal even if API delete fails
         }
       } catch (deleteError) {
-        console.warn('ML API DELETE not available:', deleteError);
+        console.warn('ML API DELETE error:', deleteError);
+        // Continue with local removal even if API delete fails
       }
       
       // Remove from local state regardless of API success
@@ -246,27 +248,30 @@ export function KnowledgeBase() {
         products_services: formData.products_services
       });
       
-      // Try to update via ML API (if PUT/PATCH endpoint exists)
-      try {
-        const response = await fetch(`https://dawoodAhmad12-ai-expense-backend.hf.space/knowledge-base/${editingEntry.id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            business_name: formData.business_name,
-            industry: formData.industry,
-            target_audience: formData.target_audience,
-            products_services: formData.products_services
-          })
-        });
+      // Update via ML API using the PUT endpoint
+      const response = await fetch(`https://dawoodAhmad12-ai-expense-backend.hf.space/knowledge-base/${editingEntry.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          business_name: formData.business_name,
+          industry: formData.industry,
+          target_audience: formData.target_audience,
+          products_services: formData.products_services
+        })
+      });
 
-        if (!response.ok && response.status !== 404) {
-          console.warn('ML API PUT failed:', response.status, response.statusText);
-        }
-      } catch (updateError) {
-        console.warn('ML API PUT not available:', updateError);
+      console.log('ML API PUT response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('ML API PUT error:', errorText);
+        throw new Error(`Failed to update knowledge entry: ${response.status} ${response.statusText}`);
       }
+      
+      const result = await response.json();
+      console.log('Knowledge base entry updated successfully via ML API:', result);
       
       // Update local state regardless of API success
       const updatedEntry: KnowledgeEntry = {
