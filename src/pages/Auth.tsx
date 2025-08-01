@@ -15,6 +15,8 @@ export default function Auth() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [businessName, setBusinessName] = useState("");
+  const [showResendSection, setShowResendSection] = useState(false);
+  const [resendEmail, setResendEmail] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -80,7 +82,7 @@ export default function Auth() {
     setIsLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/`;
+      const redirectUrl = `${window.location.origin}/onboarding`;
       
       const { error } = await supabase.auth.signUp({
         email: email.trim(),
@@ -99,6 +101,10 @@ export default function Auth() {
         title: "Account created!",
         description: "Please check your email to confirm your account before signing in.",
       });
+      
+      // Show resend section and store email for resend
+      setShowResendSection(true);
+      setResendEmail(email.trim());
       
       // Clear form
       setEmail("");
@@ -196,7 +202,7 @@ export default function Auth() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`
+          redirectTo: `${window.location.origin}/onboarding`
         }
       });
       if (error) throw error;
@@ -214,7 +220,7 @@ export default function Auth() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `${window.location.origin}/`
+          redirectTo: `${window.location.origin}/onboarding`
         }
       });
       if (error) throw error;
@@ -224,6 +230,67 @@ export default function Auth() {
         description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleResendEmail = async () => {
+    if (!resendEmail) {
+      toast({
+        title: "Error",
+        description: "No email address found to resend to",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    console.log('Attempting to resend email to:', resendEmail);
+    
+    try {
+      const { data, error } = await supabase.auth.resend({
+        type: 'signup',
+        email: resendEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/onboarding`
+        }
+      });
+
+      console.log('Resend response:', { data, error });
+
+      if (error) {
+        console.error('Resend error:', error);
+        throw error;
+      }
+
+      toast({
+        title: "Email Resent!",
+        description: `A new confirmation link has been sent to ${resendEmail}. Please check your email and spam folder.`,
+      });
+    } catch (error: unknown) {
+      console.error('Resend failed:', error);
+      
+      let errorMessage = "Failed to resend email. Please try again.";
+      
+      if (error instanceof Error) {
+        // Handle specific Supabase errors
+        if (error.message.includes('rate limit')) {
+          errorMessage = "Too many attempts. Please wait a few minutes before trying again.";
+        } else if (error.message.includes('already confirmed')) {
+          errorMessage = "This email is already confirmed. You can sign in now.";
+        } else if (error.message.includes('not found')) {
+          errorMessage = "Email not found. Please try signing up again.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      toast({
+        title: "Resend Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -331,6 +398,42 @@ export default function Auth() {
                 </form>
               </TabsContent>
             </Tabs>
+
+            {/* Resend Email Section */}
+            {showResendSection && (
+              <div className="mt-6 p-4 bg-muted/50 rounded-lg border">
+                <div className="text-center space-y-3">
+                  <h3 className="font-medium text-sm">Didn't receive the email?</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Check your spam folder, or click below to resend the confirmation email to{" "}
+                    <span className="font-medium">{resendEmail}</span>
+                  </p>
+                  <div className="space-y-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleResendEmail}
+                      disabled={isLoading}
+                      className="w-full"
+                    >
+                      {isLoading ? "Resending..." : "Resend Confirmation Email"}
+                    </Button>
+                    <p className="text-xs text-muted-foreground">
+                      Still having issues? Try switching to the Sign In tab and use "Forgot Password" 
+                      or contact support.
+                    </p>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setShowResendSection(false)}
+                    className="w-full text-xs"
+                  >
+                    Hide this section
+                  </Button>
+                </div>
+              </div>
+            )}
 
             <div className="mt-6">
               <Separator className="my-4" />

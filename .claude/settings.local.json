@@ -9,8 +9,11 @@
       "Bash(git push:*)",
       "Bash(ls:*)",
       "Bash(npm run lint:*)",
-      "Bash(supabase functions:*)"
+      "Bash(supabase functions:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx eslint:*)"
     ],
     "deny": []
-  }
+  },
+  "$schema": "https://json.schemastore.org/claude-code-settings.json"
 }
