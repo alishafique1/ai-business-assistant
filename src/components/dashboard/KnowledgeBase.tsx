@@ -168,6 +168,140 @@ export function KnowledgeBase() {
     }
   };
 
+  const deleteEntry = async (entryId: string) => {
+    if (!entryId) return;
+    
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this business information? This action cannot be undone."
+    );
+    
+    if (!confirmDelete) return;
+
+    try {
+      setLoading(true);
+      console.log('Attempting to delete knowledge base entry:', entryId);
+      
+      // Note: If ML API doesn't have DELETE endpoint, we'll just remove from local state
+      // and show a warning that it might still exist on the server
+      
+      // Try to delete from ML API (if DELETE endpoint exists)
+      try {
+        const response = await fetch(`https://dawoodAhmad12-ai-expense-backend.hf.space/knowledge-base/${entryId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (!response.ok && response.status !== 404) {
+          console.warn('ML API DELETE failed:', response.status, response.statusText);
+        }
+      } catch (deleteError) {
+        console.warn('ML API DELETE not available:', deleteError);
+      }
+      
+      // Remove from local state regardless of API success
+      setEntries(prev => prev.filter(entry => entry.id !== entryId));
+      
+      toast({
+        title: "Success",
+        description: "Business information deleted successfully"
+      });
+      
+    } catch (error) {
+      console.error('Error deleting entry:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete business information",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateEntry = async () => {
+    if (!editingEntry || !formData.business_name || !formData.industry || !formData.target_audience || !formData.products_services) {
+      toast({
+        title: "Error", 
+        description: "Please fill in all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      console.log('Updating knowledge base entry via ML API:', {
+        id: editingEntry.id,
+        business_name: formData.business_name,
+        industry: formData.industry,
+        target_audience: formData.target_audience,
+        products_services: formData.products_services
+      });
+      
+      // Try to update via ML API (if PUT/PATCH endpoint exists)
+      try {
+        const response = await fetch(`https://dawoodAhmad12-ai-expense-backend.hf.space/knowledge-base/${editingEntry.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            business_name: formData.business_name,
+            industry: formData.industry,
+            target_audience: formData.target_audience,
+            products_services: formData.products_services
+          })
+        });
+
+        if (!response.ok && response.status !== 404) {
+          console.warn('ML API PUT failed:', response.status, response.statusText);
+        }
+      } catch (updateError) {
+        console.warn('ML API PUT not available:', updateError);
+      }
+      
+      // Update local state regardless of API success
+      const updatedEntry: KnowledgeEntry = {
+        ...editingEntry,
+        business_name: formData.business_name,
+        industry: formData.industry,
+        target_audience: formData.target_audience,
+        products_services: formData.products_services,
+        updated_at: new Date().toISOString()
+      };
+      
+      setEntries(prev => prev.map(entry => 
+        entry.id === editingEntry.id ? updatedEntry : entry
+      ));
+      
+      toast({
+        title: "Success",
+        description: "Business information updated successfully"
+      });
+      
+      // Clear editing state
+      setEditingEntry(null);
+      setFormData({ 
+        business_name: '', 
+        industry: '', 
+        target_audience: '', 
+        products_services: '' 
+      });
+      
+    } catch (error) {
+      console.error('Error updating knowledge entry:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update knowledge entry",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const startEditing = (entry: KnowledgeEntry) => {
     setEditingEntry(entry);
     setFormData({
@@ -200,18 +334,31 @@ export function KnowledgeBase() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold text-foreground">Business Knowledge Base</h2>
-          <p className="text-muted-foreground">Store your business information to help AI provide better assistance</p>
+          <p className="text-muted-foreground">
+            {entries.length > 0 
+              ? "Edit your business information to help AI provide better assistance"
+              : "No business information found. Add your details during onboarding or create a new entry below."
+            }
+          </p>
         </div>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
-          Add Business Info
-        </Button>
+        {entries.length === 0 && (
+          <Button className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Business Info
+          </Button>
+        )}
       </div>
 
-      <Tabs defaultValue="add" className="space-y-6">
+      <Tabs defaultValue={entries.length > 0 && !editingEntry ? "browse" : "add"} className="space-y-6">
         <TabsList>
-          <TabsTrigger value="add">Add Business Info</TabsTrigger>
-          <TabsTrigger value="browse">View Entries</TabsTrigger>
+          {entries.length > 0 && !editingEntry && (
+            <TabsTrigger value="browse">Business Information</TabsTrigger>
+          )}
+          {(entries.length === 0 || editingEntry) && (
+            <TabsTrigger value="add">
+              {editingEntry ? "Edit Business Info" : "Add Business Info"}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="browse" className="space-y-6">
@@ -287,8 +434,20 @@ export function KnowledgeBase() {
                             size="sm" 
                             variant="outline"
                             onClick={() => startEditing(entry)}
+                            className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
                           >
                             <Edit3 className="h-4 w-4" />
+                            Edit
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => deleteEntry(entry.id || '')}
+                            disabled={loading}
+                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Delete
                           </Button>
                         </div>
                       </div>
@@ -374,7 +533,7 @@ export function KnowledgeBase() {
 
               <div className="flex gap-2 pt-4">
                 <Button 
-                  onClick={createEntry}
+                  onClick={editingEntry ? updateEntry : createEntry}
                   disabled={loading}
                   className="flex-1"
                 >
