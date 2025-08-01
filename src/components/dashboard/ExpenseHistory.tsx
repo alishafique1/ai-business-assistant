@@ -50,13 +50,27 @@ export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseH
   // Filter expenses based on view mode and selected date
   const filteredExpenses = useMemo(() => {
     const now = new Date();
+    const today = startOfDay(now); // Get start of today in local timezone
     
     return expenses.filter(expense => {
       const expenseDate = expense.date ? parseISO(expense.date) : (expense.created_at ? new Date(expense.created_at) : now);
       
       switch (viewMode) {
         case 'today':
-          return isSameDay(expenseDate, now);
+          // Compare dates at day level, not exact timestamps
+          const expenseDayStart = startOfDay(expenseDate);
+          const isToday = isSameDay(expenseDayStart, today);
+          console.log('🗓️ TODAY FILTER DEBUG:', {
+            expenseId: expense.id,
+            expenseTitle: expense.title,
+            rawExpenseDate: expense.date,
+            parsedExpenseDate: expenseDate,
+            expenseDayStart: expenseDayStart,
+            currentDate: now,
+            todayStart: today,
+            isSameDay: isToday
+          });
+          return isToday;
         case 'week': {
           const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
           const weekEnd = new Date(now.setDate(now.getDate() - now.getDay() + 6));
@@ -92,6 +106,15 @@ export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseH
       
       grouped[dateKey].expenses.push(expense);
       grouped[dateKey].total += expense.amount;
+    });
+
+    // Sort expenses within each date group by time (latest first)
+    Object.keys(grouped).forEach(dateKey => {
+      grouped[dateKey].expenses.sort((a, b) => {
+        const timeA = new Date(a.created_at || a.date || 0).getTime();
+        const timeB = new Date(b.created_at || b.date || 0).getTime();
+        return timeB - timeA; // Latest to oldest within the same date
+      });
     });
 
     // Sort by date (newest first)

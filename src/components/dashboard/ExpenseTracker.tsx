@@ -50,9 +50,11 @@ export function ExpenseTracker() {
   // Helper function to get today's date in local timezone
   const getTodayDate = () => {
     const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
+    // Use startOfDay to ensure we get consistent date without time component
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const year = todayStart.getFullYear();
+    const month = String(todayStart.getMonth() + 1).padStart(2, '0');
+    const day = String(todayStart.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
 
@@ -64,6 +66,9 @@ export function ExpenseTracker() {
     customCategory: '',
     date: getTodayDate()
   });
+
+  // Debug logging for form data changes
+  console.log('📋 CURRENT FORM DATA STATE:', formData);
 
   useEffect(() => {
     if (user) {
@@ -155,7 +160,8 @@ export function ExpenseTracker() {
               ...processedExpense,
               title: `Digital Receipt: ${dateTimeString}`.slice(0, 75),
               description: combinedDescription.slice(0, 150),
-              date: todayDate
+              // Preserve original date from ML API instead of forcing to today
+              date: processedExpense.date || processedExpense.created_at?.split('T')[0] || todayDate
             };
             
             console.log('Transformed ML expense to digital receipt format:', {
@@ -220,9 +226,12 @@ export function ExpenseTracker() {
           
           console.log('Processing business expense from database:', {
             id: expense.id,
+            originalExpenseDate: expense.expense_date,
+            mappedDate: result.date,
             originalCategory: expense.category,
             finalCategory: result.category,
-            title: result.title
+            title: result.title,
+            FULL_EXPENSE_DATA: expense
           });
           
           // Debug logging for expenses with descriptions only
@@ -335,7 +344,7 @@ export function ExpenseTracker() {
       const sortedExpenses = mappedExpenses.sort((a, b) => {
         const dateA = new Date(a.date || a.created_at || 0);
         const dateB = new Date(b.date || b.created_at || 0);
-        return dateA.getTime() - dateB.getTime(); // Reverse sort to fix display order
+        return dateB.getTime() - dateA.getTime(); // Latest to oldest (descending)
       });
       
       console.log(`Final processed expenses: ${sortedExpenses.length} displayed`);
@@ -645,6 +654,8 @@ export function ExpenseTracker() {
   };
 
   const createExpense = async () => {
+    console.log('🔥 CREATE EXPENSE FUNCTION CALLED - FORM DATA:', formData);
+    
     if (!formData.amount || !formData.title || !formData.category) {
       toast({
         title: "Error", 
@@ -702,8 +713,18 @@ export function ExpenseTracker() {
         categoryToStore 
       });
 
-      // Always use today's date for manual entries (fix timezone issues)
-      const todayDate = getTodayDate();
+      // Use the user-selected date from the form, fallback to today if not set
+      const expenseDate = formData.date || getTodayDate();
+      
+      // Debug logging for date handling
+      console.log('DATE HANDLING DEBUG - MANUAL EXPENSE:', {
+        formDataDate: formData.date,
+        formDataDateType: typeof formData.date,
+        todaysDate: getTodayDate(),
+        finalExpenseDate: expenseDate,
+        dateSource: formData.date ? 'user-selected' : 'fallback-today',
+        formDataFull: formData
+      });
       
       // Store both title and description in the description field, but in a parseable format
       const combinedDescription = formData.description 
@@ -714,23 +735,32 @@ export function ExpenseTracker() {
         description: combinedDescription,
         amount: parseFloat(formData.amount),
         category: categoryToStore,
-        expense_date: todayDate,
+        expense_date: expenseDate,
         user_id: user.id
       });
       
+      // Ensure date is stored without timezone conversion issues
       const { data, error } = await supabase
         .from('business_expenses')
         .insert({
           description: combinedDescription,
           amount: parseFloat(formData.amount),
           category: categoryToStore, // Use the preserved category name
-          expense_date: todayDate, // Always use today's date for manual entries
+          expense_date: expenseDate, // Use user-selected date (format: YYYY-MM-DD)
           user_id: user.id
         })
         .select()
         .single();
 
       console.log('Supabase business_expenses insert response:', { data, error });
+      
+      if (data) {
+        console.log('🔍 WHAT WAS ACTUALLY STORED IN DATABASE:', {
+          sentDate: expenseDate,
+          storedDate: data.expense_date,
+          storedData: data
+        });
+      }
 
       if (error) throw error;
       
@@ -826,8 +856,8 @@ export function ExpenseTracker() {
         throw new Error('Failed to delete old expense');
       }
 
-      // Always use today's date for manual entries (fix timezone issues)
-      const todayDate = getTodayDate();
+      // Use the user-selected date from the form, fallback to today if not set
+      const expenseDate = formData.date || getTodayDate();
 
       // Step 2: Create a new expense with updated data via business_expenses table
       // Store both title and description in the description field, but in a parseable format
@@ -841,7 +871,7 @@ export function ExpenseTracker() {
           description: combinedDescription,
           amount: parseFloat(formData.amount),
           category: categoryToStore, // Use the preserved category name
-          expense_date: todayDate, // Always use today's date
+          expense_date: expenseDate, // Use user-selected date
           user_id: user.id
         })
         .select()
@@ -1130,10 +1160,15 @@ export function ExpenseTracker() {
         // Log the extraction for debugging
         console.log('Receipt extraction result:', responseData);
         
-        // Force today's date - override whatever the ML API set
-        const todayDate = getTodayDate();
-        responseData.date = todayDate;
-        console.log(`Forced ML API expense date to today: ${todayDate}`);
+        // Preserve the original date from ML API instead of forcing to today
+        // Only use today's date as fallback if ML API didn't provide a date
+        if (!responseData.date && !responseData.created_at) {
+          const todayDate = getTodayDate();
+          responseData.date = todayDate;
+          console.log(`ML API didn't provide date, using today: ${todayDate}`);
+        } else {
+          console.log(`Preserving original ML API date: ${responseData.date || responseData.created_at}`);
+        }
         
         // Check for potential duplicates in existing expenses
         const isDuplicate = expenses.some(expense => 
@@ -1567,7 +1602,10 @@ export function ExpenseTracker() {
                         type="date" 
                         className="pl-9"
                         value={formData.date}
-                        onChange={(e) => setFormData({...formData, date: e.target.value})}
+                        onChange={(e) => {
+                          console.log('📅 MODAL DATE INPUT CHANGED:', e.target.value);
+                          setFormData({...formData, date: e.target.value});
+                        }}
                       />
                     </div>
                   </div>
@@ -1751,7 +1789,10 @@ export function ExpenseTracker() {
                     type="date" 
                     className="pl-9"
                     value={formData.date}
-                    onChange={(e) => setFormData({...formData, date: e.target.value})}
+                    onChange={(e) => {
+                      console.log('📅 DATE INPUT CHANGED:', e.target.value);
+                      setFormData({...formData, date: e.target.value});
+                    }}
                     disabled={!canAddReceipt}
                   />
                 </div>
