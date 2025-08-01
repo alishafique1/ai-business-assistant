@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 interface Message {
@@ -27,6 +26,25 @@ export function AIAssistant() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [autoExpenseDetection, setAutoExpenseDetection] = useState(true);
 
+  // Helper function to detect content type from user message
+  const detectContentType = (userMessage: string): string => {
+    const lowerMessage = userMessage.toLowerCase();
+    
+    if (lowerMessage.includes('blog post') || lowerMessage.includes('article')) {
+      return 'blog post';
+    } else if (lowerMessage.includes('email') || lowerMessage.includes('message')) {
+      return 'email';
+    } else if (lowerMessage.includes('social media') || lowerMessage.includes('post') || lowerMessage.includes('linkedin') || lowerMessage.includes('twitter')) {
+      return 'social media post';
+    } else if (lowerMessage.includes('report') || lowerMessage.includes('analysis')) {
+      return 'report';
+    } else if (lowerMessage.includes('proposal') || lowerMessage.includes('pitch')) {
+      return 'business proposal';
+    } else {
+      return 'general response';
+    }
+  };
+
   const sendMessage = async () => {
     if (!message.trim() || isLoading || !user) return;
 
@@ -42,20 +60,37 @@ export function AIAssistant() {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: {
-          message: userMessage.content,
-          conversationId: `dashboard-${user.id}-${Date.now()}`,
-          userId: user.id
-        }
+      console.log('Sending message to ML API:', userMessage.content);
+      
+      // Detect content type based on user message
+      const contentType = detectContentType(userMessage.content);
+      
+      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: userMessage.content,
+          content_type: contentType
+        })
       });
 
-      if (error) throw error;
+      console.log('ML API response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('ML API error:', errorText);
+        throw new Error(`Failed to generate response: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('ML API response data:', data);
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.message,
+        content: data.generated_content || data.content || data.response || 'Sorry, I could not generate a response.',
         timestamp: new Date()
       };
 
@@ -70,6 +105,90 @@ export function AIAssistant() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Quick action handlers
+  const handleQuickAction = async (actionType: string) => {
+    let prompt = '';
+    let contentType = '';
+    
+    switch (actionType) {
+      case 'expense-summary':
+        prompt = 'Please provide a summary of my recent expenses and spending patterns.';
+        contentType = 'report';
+        break;
+      case 'create-content':
+        prompt = 'Help me create engaging content for my business marketing.';
+        contentType = 'blog post';
+        break;
+      case 'business-insights':
+        prompt = 'Give me insights and recommendations for improving my business operations.';
+        contentType = 'report';
+        break;
+      case 'voice-commands':
+        prompt = 'Show me examples of voice commands I can use with the AI assistant.';
+        contentType = 'general response';
+        break;
+      default:
+        return;
+    }
+    
+    // Set the message and trigger send
+    setMessage(prompt);
+    
+    // Auto-send the message
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: prompt,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setMessage('');
+    setIsLoading(true);
+
+    try {
+      console.log('Sending quick action to ML API:', prompt);
+      
+      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: prompt,
+          content_type: contentType
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('ML API error:', errorText);
+        throw new Error(`Failed to generate response: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('ML API response data:', data);
+
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: data.generated_content || data.content || data.response || 'Sorry, I could not generate a response.',
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Error with quick action:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process quick action. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }  
   };
 
   return (
@@ -173,19 +292,39 @@ export function AIAssistant() {
                 <CardDescription>Common AI assistant tasks</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start gap-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start gap-2"
+                  onClick={() => handleQuickAction('expense-summary')}
+                  disabled={isLoading}
+                >
                   <Bot className="h-4 w-4" />
                   Expense Summary
                 </Button>
-                <Button variant="outline" className="w-full justify-start gap-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start gap-2"
+                  onClick={() => handleQuickAction('create-content')}
+                  disabled={isLoading}
+                >
                   <MessageSquare className="h-4 w-4" />
                   Create Content
                 </Button>
-                <Button variant="outline" className="w-full justify-start gap-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start gap-2"
+                  onClick={() => handleQuickAction('business-insights')}
+                  disabled={isLoading}
+                >
                   <Settings className="h-4 w-4" />
                   Business Insights
                 </Button>
-                <Button variant="outline" className="w-full justify-start gap-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start gap-2"
+                  onClick={() => handleQuickAction('voice-commands')}
+                  disabled={isLoading}
+                >
                   <Volume2 className="h-4 w-4" />
                   Voice Commands
                 </Button>
