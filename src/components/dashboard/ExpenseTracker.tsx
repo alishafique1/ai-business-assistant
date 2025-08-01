@@ -61,6 +61,7 @@ export function ExpenseTracker() {
     title: '',
     description: '',
     category: '',
+    customCategory: '',
     date: getTodayDate()
   });
 
@@ -109,19 +110,66 @@ export function ExpenseTracker() {
         // Force ALL ML API expenses to use today's date if created recently
         const todayDate = getTodayDate();
         const fixedMLExpenses = mlExpenses.map((expense: Expense) => {
-          // Force today's date for all recent ML API expenses
-          const expenseTime = new Date(expense.created_at || expense.date || '').getTime();
+          // Apply character limits to existing ML API expenses
+          let processedExpense = {
+            ...expense,
+            title: expense.title ? expense.title.slice(0, 75) : expense.title,
+            description: expense.description ? expense.description.slice(0, 150) : expense.description
+          };
+          
+          // Check if this is a recent ML expense (likely from receipt upload)
+          const expenseTime = new Date(processedExpense.created_at || processedExpense.date || '').getTime();
           const currentTime = new Date().getTime();
           const twentyFourHoursAgo = currentTime - (24 * 60 * 60 * 1000);
+          const isRecentExpense = expenseTime > twentyFourHoursAgo;
           
-          if (expenseTime > twentyFourHoursAgo) {
-            return {
-              ...expense,
+          // Transform recent ML expenses to use Digital Receipt format (assumes recent expenses are from photo uploads)
+          if (isRecentExpense) {
+            // Always use current local time for recent ML expenses (likely receipt uploads)
+            // This fixes the 5am timestamp issue from ML API
+            const localTime = new Date();
+            const dateTimeString = localTime.toLocaleString(undefined, {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true
+            });
+            
+            // Move original title to description and create standardized title
+            const originalTitle = processedExpense.title || '';
+            const originalDescription = processedExpense.description || '';
+            
+            // Combine original title and description for the new description
+            let combinedDescription = '';
+            if (originalTitle && originalDescription) {
+              combinedDescription = `${originalTitle} - ${originalDescription}`;
+            } else if (originalTitle) {
+              combinedDescription = originalTitle;
+            } else if (originalDescription) {
+              combinedDescription = originalDescription;
+            }
+            
+            processedExpense = {
+              ...processedExpense,
+              title: `Digital Receipt: ${dateTimeString}`.slice(0, 75),
+              description: combinedDescription.slice(0, 150),
               date: todayDate
             };
+            
+            console.log('Transformed ML expense to digital receipt format:', {
+              originalTitle,
+              newTitle: processedExpense.title,
+              newDescription: processedExpense.description,
+              originalTimestamp: processedExpense.created_at || processedExpense.date,
+              originalTimeHour: new Date(processedExpense.created_at || processedExpense.date || '').getHours(),
+              newFormattedTime: dateTimeString,
+              currentLocalTime: new Date().toLocaleString()
+            });
           }
           
-          return expense;
+          return processedExpense;
         });
         
         allExpenses = [...allExpenses, ...fixedMLExpenses];
@@ -137,24 +185,109 @@ export function ExpenseTracker() {
           category: string;
           created_at: string;
           user_id: string;
-        }) => ({
-          ...expense,
-          // Map business_expenses fields to match expected Expense interface
-          date: expense.expense_date,
-          title: expense.description,
-          amount: expense.amount,
-          category: expense.category
-        }));
+        }) => {
+          // Parse the combined description field back into title and description
+          let title = '';
+          let description = '';
+          
+          if (expense.description) {
+            if (expense.description.includes('|')) {
+              // New format with separator: "title|description"
+              const parts = expense.description.split('|');
+              title = parts[0] || '';
+              description = parts[1] || '';
+            } else if (expense.description.includes(' - ')) {
+              // Old format with dash separator: "title - description"
+              const parts = expense.description.split(' - ');
+              title = parts[0] || '';
+              description = parts.slice(1).join(' - ') || ''; // Join in case there are multiple dashes
+            } else {
+              // Just title, no description
+              title = expense.description;
+              description = '';
+            }
+          }
+          
+          const result = {
+            ...expense,
+            // Map business_expenses fields to match expected Expense interface and apply character limits
+            date: expense.expense_date,
+            title: title.slice(0, 75),
+            description: description.slice(0, 150),
+            amount: expense.amount,
+            category: expense.category
+          };
+          
+          console.log('Processing business expense from database:', {
+            id: expense.id,
+            originalCategory: expense.category,
+            finalCategory: result.category,
+            title: result.title
+          });
+          
+          // Debug logging for expenses with descriptions only
+          if (description && description.trim()) {
+            console.log('Expense with description found:', {
+              originalDescription: expense.description,
+              parsedTitle: title,
+              parsedDescription: description
+            });
+          }
+          
+          return result;
+        });
         console.log('Business expenses:', businessExpenses);
         allExpenses = [...allExpenses, ...businessExpenses];
       }
       
-      console.log('Combined expenses:', allExpenses);
+      console.log(`Combined expenses: ${allExpenses.length} total`);
       
-      // Remove duplicates based only on exact ID match (not amount/title)
-      const uniqueExpenses = allExpenses.filter((expense, index, arr) => 
-        arr.findIndex(e => e.id === expense.id) === index
-      );
+      // Remove duplicates - both exact ID matches and functional duplicates (same amount, similar time)
+      const uniqueExpenses = allExpenses.filter((expense, index, arr) => {
+        // First check for exact ID duplicates
+        const isFirstOccurrenceById = arr.findIndex(e => e.id === expense.id) === index;
+        if (!isFirstOccurrenceById) {
+          return false;
+        }
+        
+        // Check for functional duplicates: same amount, created within a few minutes of each other
+        const duplicates = arr.filter(other => 
+          other.id !== expense.id &&
+          Math.abs(other.amount - expense.amount) < 0.01 && // Same amount (within 1 cent)
+          Math.abs(
+            new Date(expense.created_at || expense.date || '').getTime() - 
+            new Date(other.created_at || other.date || '').getTime()
+          ) < 5 * 60 * 1000 // Within 5 minutes
+        );
+        
+        if (duplicates.length > 0) {
+          // If we have duplicates, keep the one with the best time (not 5am)
+          const expenseHour = new Date(expense.created_at || expense.date || '').getHours();
+          const isBadTime = expenseHour === 5; // Specifically filter out 5am times
+          
+          // Check if any duplicate has better time
+          const hasGoodDuplicate = duplicates.some(dup => {
+            const dupHour = new Date(dup.created_at || dup.date || '').getHours();
+            return dupHour !== 5; // Any time other than 5am is better
+          });
+          
+          if (isBadTime && hasGoodDuplicate) {
+            console.log('Filtering out expense with 5am timestamp (duplicate found):', {
+              badExpense: {
+                id: expense.id,
+                time: expenseHour + ':00',
+                amount: expense.amount,
+                title: expense.title?.substring(0, 50)
+              }
+            });
+            return false; // Filter out the 5am expense
+          }
+        }
+        
+        return true;
+      });
+      
+      console.log(`After deduplication and time filtering: ${uniqueExpenses.length} unique expenses`);
       
       // Map the categories and fix title/description field issues
       const mappedExpenses = uniqueExpenses.map((expense: Expense) => {
@@ -171,12 +304,30 @@ export function ExpenseTracker() {
         // Determine if this expense is from business_expenses (manual entry) or ML API
         const isManualExpense = typeof fixedExpense.id === 'string' && fixedExpense.id.length > 10;
         
+        console.log('Expense category processing:', {
+          expenseId: fixedExpense.id,
+          originalCategory: fixedExpense.category,
+          isManualExpense,
+          title: fixedExpense.title
+        });
+        
+        // For ML API expenses (receipt uploads), preserve the original category name
+        // Don't apply category mapping as we want to show the ML returned category
+        const finalCategory = fixedExpense.category;
+        
+        console.log('Final category result:', {
+          expenseId: fixedExpense.id,
+          originalCategory: fixedExpense.category,
+          finalCategory,
+          preservedMLCategory: !isManualExpense
+        });
+        
         return {
           ...fixedExpense,
           // Keep the original category for reference
           originalCategory: fixedExpense.category,
-          // Only map categories for ML/AI expenses, preserve manual categories as-is
-          category: isManualExpense ? fixedExpense.category : mapCategoryForDisplay(fixedExpense.category)
+          // Preserve all categories as-is (both manual and ML API)
+          category: finalCategory
         };
       });
       
@@ -187,6 +338,7 @@ export function ExpenseTracker() {
         return dateA.getTime() - dateB.getTime(); // Reverse sort to fix display order
       });
       
+      console.log(`Final processed expenses: ${sortedExpenses.length} displayed`);
       setExpenses(sortedExpenses || []);
     } catch (error) {
       console.error('Error fetching expenses:', error);
@@ -201,7 +353,15 @@ export function ExpenseTracker() {
   };
 
   const mapCategoryForDisplay = (mlCategory: string): string => {
-    if (!mlCategory) return 'other';
+    console.log('mapCategoryForDisplay called with:', {
+      mlCategory,
+      userCategories
+    });
+    
+    if (!mlCategory) {
+      console.log('mapCategoryForDisplay: no category provided, returning other');
+      return 'other';
+    }
     
     const normalizedMLCategory = mlCategory.trim();
     
@@ -211,29 +371,42 @@ export function ExpenseTracker() {
     );
     
     if (existingCategory) {
-      // Return the category key for the existing category
-      return existingCategory.toLowerCase().replace(/ & | /g, '');
+      // Return the existing category name (not the key)
+      console.log('mapCategoryForDisplay: found existing category:', existingCategory);
+      return existingCategory;
     }
     
     // Enhanced mapping for common ML categories to existing user categories
     const categoryMap: Record<string, string> = {
       // Food & Dining variations
-      'food & dining': 'meals',
-      'food': 'meals',
-      'restaurant': 'meals',
-      'dining': 'meals',
-      'meal': 'meals',
-      'grocery': 'meals',
-      'groceries': 'meals',
-      'supermarket': 'meals',
-      'meals & entertainment': 'meals',
+      'food & dining': 'Meals',
+      'food': 'Meals',
+      'restaurant': 'Meals',
+      'dining': 'Meals',
+      'meal': 'Meals',
+      'grocery': 'Meals',
+      'groceries': 'Meals',
+      'supermarket': 'Meals',
+      
+      // Entertainment variations
+      'entertainment': 'Entertainment',
+      'fun': 'Entertainment',
+      'movie': 'Entertainment',
+      'movies': 'Entertainment',
+      'theater': 'Entertainment',
+      'game': 'Entertainment',
+      'games': 'Entertainment',
+      'amusement': 'Entertainment',
+      'concert': 'Entertainment',
+      'event': 'Entertainment',
+      'events': 'Entertainment',
       
       // Travel variations
-      'travel': 'travel',
-      'transportation': 'travel',
-      'hotel': 'travel',
-      'flights': 'travel',
-      'accommodation': 'travel',
+      'travel': 'Travel',
+      'transportation': 'Travel',
+      'hotel': 'Travel',
+      'flights': 'Travel',
+      'accommodation': 'Travel',
       
       // Health & Wellness variations
       'health & wellness': 'other', // Map to other since it's not in default categories
@@ -242,20 +415,20 @@ export function ExpenseTracker() {
       'medical': 'other',
       
       // Office/Business variations
-      'office supplies': 'officesupplies',
-      'supplies': 'officesupplies',
+      'office supplies': 'Office Supplies',
+      'supplies': 'Office Supplies',
       'business': 'other',
       
       // Software variations
-      'software': 'software',
-      'technology': 'software',
-      'tech': 'software',
-      'subscription': 'software',
+      'software': 'Software',
+      'technology': 'Software',
+      'tech': 'Software',
+      'subscription': 'Software',
       
       // Marketing variations
-      'marketing': 'marketing',
-      'advertising': 'marketing',
-      'promotion': 'marketing'
+      'marketing': 'Marketing',
+      'advertising': 'Marketing',
+      'promotion': 'Marketing'
     };
     
     const normalizedCategory = normalizedMLCategory.toLowerCase();
@@ -263,6 +436,7 @@ export function ExpenseTracker() {
     
     // If we have a mapping, use it
     if (mappedCategory) {
+      console.log('mapCategoryForDisplay: found mapped category:', mappedCategory);
       return mappedCategory;
     }
     
@@ -273,11 +447,12 @@ export function ExpenseTracker() {
     );
     
     if (matchingUserCategory) {
-      return matchingUserCategory.toLowerCase().replace(/[ &]/g, '');
+      return matchingUserCategory;
     }
     
-    // Fallback to other
-    return 'other';
+    // For completely new categories, return the original ML category name (it will be added to user categories)
+    console.log('mapCategoryForDisplay: returning new category name:', normalizedMLCategory);
+    return normalizedMLCategory;
   };
 
   const fetchCategorySummary = async () => {
@@ -314,7 +489,7 @@ export function ExpenseTracker() {
       
       if (error) {
         console.warn('No user categories found, using defaults');
-        setUserCategories(['Meals & Entertainment', 'Travel', 'Office Supplies', 'Marketing', 'Software', 'Other']);
+        setUserCategories(['Meals', 'Entertainment', 'Travel', 'Office Supplies', 'Marketing', 'Software', 'Other']);
         return;
       }
       
@@ -333,11 +508,11 @@ export function ExpenseTracker() {
           setUserCategories(categories);
         } else {
           // Fallback to default categories
-          setUserCategories(['Meals & Entertainment', 'Travel', 'Office Supplies', 'Marketing', 'Software', 'Other']);
+          setUserCategories(['Meals', 'Entertainment', 'Travel', 'Office Supplies', 'Marketing', 'Software', 'Other']);
         }
       } else {
         // Fallback to default categories
-        setUserCategories(['Meals & Entertainment', 'Travel', 'Office Supplies', 'Marketing', 'Software', 'Other']);
+        setUserCategories(['Meals', 'Entertainment', 'Travel', 'Office Supplies', 'Marketing', 'Software', 'Other']);
       }
     } catch (error) {
       console.error('Error fetching user categories:', error);
@@ -347,7 +522,16 @@ export function ExpenseTracker() {
   };
 
   const addNewCategory = async (newCategory: string) => {
-    if (!user?.id || !newCategory) return false;
+    console.log('addNewCategory called with:', {
+      newCategory,
+      userId: user?.id,
+      currentUserCategories: userCategories
+    });
+    
+    if (!user?.id || !newCategory) {
+      console.log('addNewCategory failed: missing user or category');
+      return false;
+    }
     
     // Check if category already exists (case-insensitive)
     const categoryExists = userCategories.some(
@@ -355,6 +539,7 @@ export function ExpenseTracker() {
     );
     
     if (categoryExists) {
+      console.log('addNewCategory failed: category already exists');
       return false; // Category already exists
     }
     
@@ -409,7 +594,10 @@ export function ExpenseTracker() {
       
       // Update local state
       setUserCategories(updatedCategories);
-      console.log(`Added new category: ${newCategory}`);
+      console.log(`Successfully added new category: ${newCategory}`, {
+        updatedCategories,
+        updatedSystemPrompt: updatedSystemPrompt.substring(0, 200) + '...'
+      });
       return true;
       
     } catch (error) {
@@ -466,41 +654,74 @@ export function ExpenseTracker() {
       return;
     }
 
+    // Validate custom category when "other" is selected
+    if (formData.category === 'other' && !formData.customCategory?.trim()) {
+      toast({
+        title: "Error", 
+        description: "Please enter a custom category name",
+        variant: "destructive"
+      });
+      return;
+    }
+
 
     try {
       setLoading(true);
       
-      // Convert category key back to full category name
-      const fullCategoryName = userCategories.find(cat => 
-        cat.toLowerCase().replace(/ & | /g, '') === formData.category
-      ) || formData.category;
-      
-      // Since business_expenses table accepts any string for category, 
-      // we should preserve the user's exact category selection
-      const categoryToStore = fullCategoryName;
+      // Handle custom category or convert category key back to full category name
+      let categoryToStore;
+      if (formData.category === 'other' && formData.customCategory?.trim()) {
+        // Use the custom category name and add it to user categories
+        categoryToStore = formData.customCategory.trim();
+        
+        // Add the new category to the user's category list
+        const categoryAdded = await addNewCategory(categoryToStore);
+        if (categoryAdded) {
+          toast({
+            title: "New Category Created",
+            description: `Added "${categoryToStore}" to your categories`,
+          });
+          // Refresh categories in the background
+          setTimeout(async () => {
+            await fetchUserCategories();
+          }, 500);
+        }
+      } else {
+        // Convert category key back to full category name
+        const fullCategoryName = userCategories.find(cat => 
+          cat.toLowerCase().replace(/ & | /g, '') === formData.category
+        ) || formData.category;
+        
+        // Since business_expenses table accepts any string for category, 
+        // we should preserve the user's exact category selection
+        categoryToStore = fullCategoryName;
+      }
       
       console.log('Category preservation:', { 
         formDataCategory: formData.category, 
-        fullCategoryName, 
         categoryToStore 
       });
 
       // Always use today's date for manual entries (fix timezone issues)
       const todayDate = getTodayDate();
       
+      // Store both title and description in the description field, but in a parseable format
+      const combinedDescription = formData.description 
+        ? `${formData.title}|${formData.description}` 
+        : formData.title;
+      
       console.log('Creating manual expense via business_expenses table:', {
-        description: `${formData.title}${formData.description ? ` - ${formData.description}` : ''}`,
+        description: combinedDescription,
         amount: parseFloat(formData.amount),
         category: categoryToStore,
         expense_date: todayDate,
         user_id: user.id
       });
-
-      // Create expense using business_expenses table
+      
       const { data, error } = await supabase
         .from('business_expenses')
         .insert({
-          description: `${formData.title}${formData.description ? ` - ${formData.description}` : ''}`,
+          description: combinedDescription,
           amount: parseFloat(formData.amount),
           category: categoryToStore, // Use the preserved category name
           expense_date: todayDate, // Always use today's date for manual entries
@@ -549,17 +770,47 @@ export function ExpenseTracker() {
       return;
     }
 
+    // Validate custom category when "other" is selected
+    if (formData.category === 'other' && !formData.customCategory?.trim()) {
+      toast({
+        title: "Error", 
+        description: "Please enter a custom category name",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       
-      // Convert category key back to full category name
-      const fullCategoryName = userCategories.find(cat => 
-        cat.toLowerCase().replace(/ & | /g, '') === formData.category
-      ) || formData.category;
+      // Handle custom category or convert category key back to full category name
+      let categoryToStore;
+      if (formData.category === 'other' && formData.customCategory?.trim()) {
+        // Use the custom category name and add it to user categories
+        categoryToStore = formData.customCategory.trim();
+        
+        // Add the new category to the user's category list
+        const categoryAdded = await addNewCategory(categoryToStore);
+        if (categoryAdded) {
+          toast({
+            title: "New Category Created",
+            description: `Added "${categoryToStore}" to your categories`,
+          });
+          // Refresh categories in the background
+          setTimeout(async () => {
+            await fetchUserCategories();
+          }, 500);
+        }
+      } else {
+        // Convert category key back to full category name
+        const fullCategoryName = userCategories.find(cat => 
+          cat.toLowerCase().replace(/ & | /g, '') === formData.category
+        ) || formData.category;
       
-      // Since business_expenses table accepts any string for category, 
-      // we should preserve the user's exact category selection
-      const categoryToStore = fullCategoryName;
+        // Since business_expenses table accepts any string for category, 
+        // we should preserve the user's exact category selection
+        categoryToStore = fullCategoryName;
+      }
       
       console.log('Updating expense via ML API - delete and recreate approach');
       
@@ -579,10 +830,15 @@ export function ExpenseTracker() {
       const todayDate = getTodayDate();
 
       // Step 2: Create a new expense with updated data via business_expenses table
+      // Store both title and description in the description field, but in a parseable format
+      const combinedDescription = formData.description 
+        ? `${formData.title}|${formData.description}` 
+        : formData.title;
+      
       const { data, error } = await supabase
         .from('business_expenses')
         .insert({
-          description: `${formData.title}${formData.description ? ` - ${formData.description}` : ''}`,
+          description: combinedDescription,
           amount: parseFloat(formData.amount),
           category: categoryToStore, // Use the preserved category name
           expense_date: todayDate, // Always use today's date
@@ -621,6 +877,7 @@ export function ExpenseTracker() {
       title: '',
       description: '',
       category: '',
+      customCategory: '',
       date: getTodayDate()
     });
   };
@@ -637,6 +894,7 @@ export function ExpenseTracker() {
       title: expense.title || '',
       description: expense.description || '',
       category: expense.category || '',
+      customCategory: '',
       date: dateValue
     });
     
@@ -737,6 +995,11 @@ export function ExpenseTracker() {
         title: "Recording Stopped",
         description: "Processing your voice command..."
       });
+      
+      // Note: When voice processing is implemented, ensure character limits are applied:
+      // - Title: max 75 characters
+      // - Description: max 150 characters
+      // This should be handled in the voice-to-expense processing pipeline
     }
   };
 
@@ -804,13 +1067,68 @@ export function ExpenseTracker() {
 
       if (responseData?.amount && responseData?.category) {
         try {
-          // Process the ML category and potentially create a new category
-          console.log('Processing category:', responseData.category);
-          const categoryResult = await mapCategoryFromML(responseData.category);
+          // Create digital receipt title with current date and time in user's local timezone
+          const now = new Date();
+          const dateTimeString = now.toLocaleString(undefined, {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          });
+          
+          // Move ML-generated title to description and create new standardized title
+          const mlGeneratedTitle = responseData.title || '';
+          const mlGeneratedDescription = responseData.description || '';
+          
+          // Combine ML title and description for the description field
+          let combinedDescription = '';
+          if (mlGeneratedTitle && mlGeneratedDescription) {
+            combinedDescription = `${mlGeneratedTitle} - ${mlGeneratedDescription}`;
+          } else if (mlGeneratedTitle) {
+            combinedDescription = mlGeneratedTitle;
+          } else if (mlGeneratedDescription) {
+            combinedDescription = mlGeneratedDescription;
+          }
+          
+          // Set standardized title and apply character limits
+          responseData.title = `Digital Receipt: ${dateTimeString}`.slice(0, 75);
+          responseData.description = combinedDescription.slice(0, 150);
+          
+          // Debug logging for receipt processing
+          console.log('Receipt processing - Original ML data:', {
+            originalTitle: mlGeneratedTitle,
+            originalDescription: mlGeneratedDescription,
+            originalTimestamp: responseData.created_at || responseData.date
+          });
+          console.log('Receipt processing - Final formatted data:', {
+            newTitle: responseData.title,
+            newDescription: responseData.description,
+            uploadTime: now.toISOString(),
+            formattedTime: dateTimeString,
+            userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+          });
+          
+          // Simple strategy: Set category to "other" and populate custom category input
+          // This lets the existing manual category creation process handle it
+          const mlReturnedCategory = responseData.category;
+          console.log('ML API returned category:', mlReturnedCategory);
+          
+          // Always set to "other" category for ML API expenses
+          responseData.category = 'other';
+          
+          // Store the ML category name for the custom category input
+          responseData.mlCategoryName = mlReturnedCategory;
+          
+          console.log('Set expense category to "other" and stored ML category:', {
+            originalMLCategory: mlReturnedCategory,
+            expenseCategory: responseData.category,
+            customCategoryName: responseData.mlCategoryName
+          });
         
         // Log the extraction for debugging
         console.log('Receipt extraction result:', responseData);
-        console.log('Category mapping result:', categoryResult);
         
         // Force today's date - override whatever the ML API set
         const todayDate = getTodayDate();
@@ -827,13 +1145,13 @@ export function ExpenseTracker() {
         if (isDuplicate) {
           toast({
             title: "⚠️ Duplicate Receipt Warning",
-            description: `Similar expense found, but added anyway: ${formatAmount(responseData.amount)} - ${categoryResult.categoryName}`,
+            description: `Similar expense found, but added anyway: ${formatAmount(responseData.amount)} - Category: ${mlReturnedCategory}`,
             variant: "destructive"
           });
         } else {
           toast({
             title: "Receipt Processed Successfully",
-            description: `New expense added: ${formatAmount(responseData.amount)} - ${categoryResult.categoryName}${categoryResult.isNewCategory ? ' (New Category!)' : ''}`,
+            description: `New expense added: ${formatAmount(responseData.amount)} - Category: ${mlReturnedCategory}`,
           });
         }
         
@@ -842,16 +1160,30 @@ export function ExpenseTracker() {
         const incrementResult = await incrementCount();
         console.log('incrementCount() result for photo:', incrementResult);
         
-        // Always refresh expenses list and category summary (expense should be added regardless)
-        await fetchExpenses();
-        await fetchCategorySummary();
+        // Add the category to user categories if it doesn't exist
+        // This ensures new ML categories appear in the Categories tab
+        const categoryExists = userCategories.some(
+          cat => cat.toLowerCase() === mlReturnedCategory.toLowerCase()
+        );
         
-          // If a new category was created, refresh categories
-          if (categoryResult.isNewCategory) {
+        if (!categoryExists) {
+          console.log('Adding new ML category to user categories:', mlReturnedCategory);
+          const categoryAdded = await addNewCategory(mlReturnedCategory);
+          if (categoryAdded) {
+            toast({
+              title: "New Category Created",
+              description: `Added "${mlReturnedCategory}" to your categories`,
+            });
+            // Refresh categories
             setTimeout(async () => {
               await fetchUserCategories();
             }, 500);
           }
+        }
+        
+        // Always refresh expenses list and category summary (expense should be added regardless)
+        await fetchExpenses();
+        await fetchCategorySummary();
         } catch (processingError) {
           console.error('Error processing receipt data:', processingError);
           toast({
@@ -910,14 +1242,27 @@ export function ExpenseTracker() {
     // Enhanced mapping for common ML categories to existing user categories
     const categoryMap: Record<string, { key: string; name: string }> = {
       // Food & Dining variations
-      'food & dining': { key: 'meals', name: 'Meals & Entertainment' },
-      'food': { key: 'meals', name: 'Meals & Entertainment' },
-      'restaurant': { key: 'meals', name: 'Meals & Entertainment' },
-      'dining': { key: 'meals', name: 'Meals & Entertainment' },
-      'meal': { key: 'meals', name: 'Meals & Entertainment' },
-      'grocery': { key: 'meals', name: 'Meals & Entertainment' },
-      'groceries': { key: 'meals', name: 'Meals & Entertainment' },
-      'supermarket': { key: 'meals', name: 'Meals & Entertainment' },
+      'food & dining': { key: 'meals', name: 'Meals' },
+      'food': { key: 'meals', name: 'Meals' },
+      'restaurant': { key: 'meals', name: 'Meals' },
+      'dining': { key: 'meals', name: 'Meals' },
+      'meal': { key: 'meals', name: 'Meals' },
+      'grocery': { key: 'meals', name: 'Meals' },
+      'groceries': { key: 'meals', name: 'Meals' },
+      'supermarket': { key: 'meals', name: 'Meals' },
+      
+      // Entertainment variations
+      'entertainment': { key: 'entertainment', name: 'Entertainment' },
+      'fun': { key: 'entertainment', name: 'Entertainment' },
+      'movie': { key: 'entertainment', name: 'Entertainment' },
+      'movies': { key: 'entertainment', name: 'Entertainment' },
+      'theater': { key: 'entertainment', name: 'Entertainment' },
+      'game': { key: 'entertainment', name: 'Entertainment' },
+      'games': { key: 'entertainment', name: 'Entertainment' },
+      'amusement': { key: 'entertainment', name: 'Entertainment' },
+      'concert': { key: 'entertainment', name: 'Entertainment' },
+      'event': { key: 'entertainment', name: 'Entertainment' },
+      'events': { key: 'entertainment', name: 'Entertainment' },
       
       // Travel variations
       'travel': { key: 'travel', name: 'Travel' },
@@ -1154,7 +1499,9 @@ export function ExpenseTracker() {
                       <Label htmlFor="modal-category">Category</Label>
                       <Select 
                         value={formData.category} 
-                        onValueChange={(value) => setFormData({...formData, category: value})}
+                        onValueChange={(value) => {
+                          setFormData({...formData, category: value, customCategory: ''});
+                        }}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select" />
@@ -1170,6 +1517,16 @@ export function ExpenseTracker() {
                           })}
                         </SelectContent>
                       </Select>
+                      {formData.category === 'other' && (
+                        <div className="mt-2">
+                          <Input
+                            placeholder="Enter custom category name"
+                            value={formData.customCategory}
+                            onChange={(e) => setFormData({...formData, customCategory: e.target.value})}
+                            className={formData.category === 'other' && !formData.customCategory?.trim() ? "border-red-300 focus:border-red-500" : ""}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                   
@@ -1179,8 +1536,12 @@ export function ExpenseTracker() {
                       id="modal-title" 
                       placeholder="Expense title"
                       value={formData.title}
-                      onChange={(e) => setFormData({...formData, title: e.target.value})}
+                      onChange={(e) => setFormData({...formData, title: e.target.value.slice(0, 75)})}
+                      maxLength={75}
                     />
+                    <p className="text-xs text-muted-foreground text-right">
+                      {formData.title.length}/75 characters
+                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -1189,8 +1550,12 @@ export function ExpenseTracker() {
                       id="modal-description" 
                       placeholder="Additional details"
                       value={formData.description}
-                      onChange={(e) => setFormData({...formData, description: e.target.value})}
+                      onChange={(e) => setFormData({...formData, description: e.target.value.slice(0, 150)})}
+                      maxLength={150}
                     />
+                    <p className="text-xs text-muted-foreground text-right">
+                      {formData.description.length}/150 characters
+                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -1314,7 +1679,9 @@ export function ExpenseTracker() {
                   <Label htmlFor="category">Category</Label>
                   <Select 
                     value={formData.category} 
-                    onValueChange={(value) => setFormData({...formData, category: value})}
+                    onValueChange={(value) => {
+                      setFormData({...formData, category: value, customCategory: ''});
+                    }}
                     disabled={!canAddReceipt}
                   >
                     <SelectTrigger>
@@ -1331,6 +1698,17 @@ export function ExpenseTracker() {
                       })}
                     </SelectContent>
                   </Select>
+                  {formData.category === 'other' && (
+                    <div className="mt-2">
+                      <Input
+                        placeholder="Enter custom category name"
+                        value={formData.customCategory}
+                        onChange={(e) => setFormData({...formData, customCategory: e.target.value})}
+                        disabled={!canAddReceipt}
+                        className={formData.category === 'other' && !formData.customCategory?.trim() ? "border-red-300 focus:border-red-500" : ""}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -1340,9 +1718,13 @@ export function ExpenseTracker() {
                   id="title" 
                   placeholder="Expense title"
                   value={formData.title}
-                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                  onChange={(e) => setFormData({...formData, title: e.target.value.slice(0, 75)})}
                   disabled={!canAddReceipt}
+                  maxLength={75}
                 />
+                <p className="text-xs text-muted-foreground text-right">
+                  {formData.title.length}/75 characters
+                </p>
               </div>
               
               <div className="space-y-2">
@@ -1351,9 +1733,13 @@ export function ExpenseTracker() {
                   id="description" 
                   placeholder="What was this expense for?"
                   value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  onChange={(e) => setFormData({...formData, description: e.target.value.slice(0, 150)})}
                   disabled={!canAddReceipt}
+                  maxLength={150}
                 />
+                <p className="text-xs text-muted-foreground text-right">
+                  {formData.description.length}/150 characters
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -1411,33 +1797,92 @@ export function ExpenseTracker() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {userCategories.map((category) => {
-                    const categoryKey = category.toLowerCase().replace(/ & | /g, '');
-                    // Match expenses by both the full category name and the key format
-                    const categoryExpenses = expenses.filter(exp => 
-                      exp.category === categoryKey || 
-                      exp.category === category ||
-                      exp.category?.toLowerCase() === category.toLowerCase()
-                    );
-                    const categoryTotal = categoryExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+                  {(() => {
+                    // Get all unique categories from actual expenses (both keys and full names)
+                    const expenseCategories = [...new Set(expenses.map(exp => exp.category).filter(Boolean))];
+                    console.log('Expense categories found:', expenseCategories);
+                    console.log('User categories from settings:', userCategories);
                     
-                    // Use API summary data if available, otherwise fallback to local calculation
-                    const summaryData = categorySummary[categoryKey] || categorySummary[category];
-                    const displayTotal = summaryData?.total ?? categoryTotal;
-                    const displayCount = summaryData?.count ?? categoryExpenses.length;
+                    // Create a comprehensive category mapping
+                    const categoryDisplayMap = new Map<string, { displayName: string; key: string }>();
                     
-                    return (
-                      <div 
-                        key={category} 
-                        className="p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors hover:border-primary/50"
-                        onClick={() => setSelectedCategory(category)}
-                      >
-                        <div className="font-medium">{category}</div>
-                        <div className="text-sm text-muted-foreground">{formatAmount(displayTotal)} total</div>
-                        <div className="text-xs text-muted-foreground">{displayCount} expenses</div>
-                      </div>
-                    );
-                  })}
+                    // Add user categories to the map
+                    userCategories.forEach(userCat => {
+                      if (userCat.toLowerCase() !== 'other') {
+                        const key = userCat.toLowerCase().replace(/[ &]/g, '');
+                        categoryDisplayMap.set(key, { displayName: userCat, key });
+                        categoryDisplayMap.set(userCat.toLowerCase(), { displayName: userCat, key });
+                        categoryDisplayMap.set(userCat, { displayName: userCat, key });
+                      }
+                    });
+                    
+                    // Add expense categories that might not be in user categories (new ML categories)
+                    expenseCategories.forEach(expCat => {
+                      if (expCat.toLowerCase() !== 'other') {
+                        const key = expCat.toLowerCase().replace(/[ &]/g, '');
+                        // If not already in map, add it
+                        if (!categoryDisplayMap.has(key) && !categoryDisplayMap.has(expCat)) {
+                          // Try to find a proper display name
+                          const properDisplayName = userCategories.find(uc => 
+                            uc.toLowerCase().replace(/[ &]/g, '') === key
+                          ) || expCat;
+                          
+                          categoryDisplayMap.set(key, { displayName: properDisplayName, key });
+                          categoryDisplayMap.set(expCat.toLowerCase(), { displayName: properDisplayName, key });
+                          categoryDisplayMap.set(expCat, { displayName: properDisplayName, key });
+                        }
+                      }
+                    });
+                    
+                    // Get unique categories for display
+                    const uniqueCategories = Array.from(new Set(
+                      Array.from(categoryDisplayMap.values()).map(cat => cat.displayName)
+                    ));
+                    
+                    console.log('Final categories for display:', uniqueCategories);
+                    
+                    return uniqueCategories.map((displayName) => {
+                      const categoryInfo = categoryDisplayMap.get(displayName);
+                      if (!categoryInfo) return null;
+                      
+                      // Match expenses using flexible matching
+                      const categoryExpenses = expenses.filter(exp => {
+                        if (!exp.category) return false;
+                        const expCat = exp.category;
+                        const expKey = expCat.toLowerCase().replace(/[ &]/g, '');
+                        const targetKey = categoryInfo.key;
+                        
+                        return expCat === displayName || 
+                               expCat === targetKey || 
+                               expKey === targetKey ||
+                               expCat.toLowerCase() === displayName.toLowerCase();
+                      });
+                      
+                      const categoryTotal = categoryExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+                      
+                      // Only show categories that have expenses
+                      if (categoryExpenses.length === 0) return null;
+                      
+                      // Use API summary data if available, otherwise fallback to local calculation
+                      const summaryData = categorySummary[categoryInfo.key] || categorySummary[displayName];
+                      const displayTotal = summaryData?.total ?? categoryTotal;
+                      const displayCount = summaryData?.count ?? categoryExpenses.length;
+                      
+                      console.log(`Category "${displayName}" has ${categoryExpenses.length} expenses, total: ${displayTotal}`);
+                      
+                      return (
+                        <div 
+                          key={displayName} 
+                          className="p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors hover:border-primary/50"
+                          onClick={() => setSelectedCategory(displayName)}
+                        >
+                          <div className="font-medium">{displayName}</div>
+                          <div className="text-sm text-muted-foreground">{formatAmount(displayTotal)} total</div>
+                          <div className="text-xs text-muted-foreground">{displayCount} expenses</div>
+                        </div>
+                      );
+                    }).filter(Boolean);
+                  })()}
                 </div>
               </CardContent>
             </Card>
@@ -1479,7 +1924,9 @@ export function ExpenseTracker() {
                 <Label htmlFor="edit-category">Category</Label>
                 <Select 
                   value={formData.category} 
-                  onValueChange={(value) => setFormData({...formData, category: value})}
+                  onValueChange={(value) => {
+                    setFormData({...formData, category: value, customCategory: ''});
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select" />
@@ -1495,6 +1942,16 @@ export function ExpenseTracker() {
                     })}
                   </SelectContent>
                 </Select>
+                {formData.category === 'other' && (
+                  <div className="mt-2">
+                    <Input
+                      placeholder="Enter custom category name"
+                      value={formData.customCategory}
+                      onChange={(e) => setFormData({...formData, customCategory: e.target.value})}
+                      className={formData.category === 'other' && !formData.customCategory?.trim() ? "border-red-300 focus:border-red-500" : ""}
+                    />
+                  </div>
+                )}
               </div>
             </div>
             
@@ -1504,8 +1961,12 @@ export function ExpenseTracker() {
                 id="edit-title" 
                 placeholder="Expense title"
                 value={formData.title}
-                onChange={(e) => setFormData({...formData, title: e.target.value})}
+                onChange={(e) => setFormData({...formData, title: e.target.value.slice(0, 75)})}
+                maxLength={75}
               />
+              <p className="text-xs text-muted-foreground text-right">
+                {formData.title.length}/75 characters
+              </p>
             </div>
             
             <div className="space-y-2">
@@ -1514,8 +1975,12 @@ export function ExpenseTracker() {
                 id="edit-description" 
                 placeholder="What was this expense for?"
                 value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                onChange={(e) => setFormData({...formData, description: e.target.value.slice(0, 150)})}
+                maxLength={150}
               />
+              <p className="text-xs text-muted-foreground text-right">
+                {formData.description.length}/150 characters
+              </p>
             </div>
 
             <div className="space-y-2">

@@ -249,10 +249,11 @@ export default function Onboarding() {
         throw profileError;
       }
 
-      // Create or update AI settings
+      // Create or update AI settings with default categories
+      const defaultCategories = 'Meals, Entertainment, Travel, Office Supplies, Marketing, Software, Other';
       const systemPrompt = `You are ${formData.aiName}, a helpful AI business assistant for ${formData.businessName}. 
 Your response style is ${formData.responseStyle}. 
-Help with business operations and categorize expenses into: ${formData.categories}.`;
+Help with business operations and categorize expenses into: ${defaultCategories}.`;
 
       const { error: aiError } = await supabase
         .from('ai_settings')
@@ -380,8 +381,7 @@ Help with business operations and categorize expenses into: ${formData.categorie
       case 3: // AI Configuration step
         return !!(
           formData.aiName?.trim() &&
-          formData.responseStyle?.trim() &&
-          formData.categories?.trim()
+          formData.responseStyle?.trim()
         );
       
       case 4: // Knowledge Base step
@@ -693,19 +693,18 @@ Help with business operations and categorize expenses into: ${formData.categorie
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="categories">Default Expense Categories <span className="text-red-500">*</span></Label>
-                  <Textarea
-                    id="categories"
-                    value={formData.categories}
-                    onChange={(e) => updateFormData("categories", e.target.value)}
-                    placeholder="e.g., Travel, Meals, Office Supplies, Marketing, Software"
-                    rows={3}
-                    className={!formData.categories?.trim() ? "border-red-300 focus:border-red-500" : ""}
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Separate categories with commas. You can always modify these later.
+                <div className="p-4 bg-muted/50 rounded-lg border">
+                  <h4 className="font-medium mb-2">Default Expense Categories</h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    We've set up basic categories for you. You can edit, create, and remove them from the dashboard settings.
                   </p>
+                  <div className="flex flex-wrap gap-2">
+                    {['Meals', 'Entertainment', 'Travel', 'Office Supplies', 'Marketing', 'Software', 'Other'].map((category) => (
+                      <span key={category} className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
+                        {category}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}

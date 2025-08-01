@@ -260,24 +260,24 @@ export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseH
                 </div>
                 
                 {data.expanded && (
-                  <div className="border-t">
-                    <Table>
+                  <div className="border-t overflow-x-auto">
+                    <Table className="table-fixed">
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Description</TableHead>
-                          <TableHead>Category</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead className="w-24">Actions</TableHead>
+                          <TableHead className="w-2/5">Description</TableHead>
+                          <TableHead className="w-1/5">Category</TableHead>
+                          <TableHead className="w-1/5">Amount</TableHead>
+                          <TableHead className="w-1/5">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {data.expenses.map((expense) => (
                           <TableRow key={expense.id}>
                             <TableCell>
-                              <div>
-                                <div className="font-medium">{expense.title || 'Untitled'}</div>
-                                {expense.description && (
-                                  <div className="text-sm text-muted-foreground">
+                              <div className="max-w-xs lg:max-w-sm xl:max-w-md">
+                                <div className="font-medium break-words">{expense.title || 'Untitled'}</div>
+                                {expense.description && expense.description.trim() && (
+                                  <div className="text-sm text-muted-foreground mt-1 break-words whitespace-pre-wrap">
                                     {expense.description}
                                   </div>
                                 )}
