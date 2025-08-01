@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Plus, Search, Edit3, Trash2, Link2, Building, Users, Package, Target } from "lucide-react";
+import { BookOpen, Plus, Search, Edit3, Trash2, Link2, Building, Users, Package, Target, Bot, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
@@ -39,6 +39,8 @@ export function KnowledgeBase() {
     target_audience: '',
     products_services: ''
   });
+  const [knowledgeBasePreview, setKnowledgeBasePreview] = useState<string>("");
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -92,6 +94,37 @@ export function KnowledgeBase() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchKnowledgeBasePreview = async () => {
+    try {
+      setPreviewLoading(true);
+      console.log('Fetching knowledge base preview...');
+      
+      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/get-knowledge-base');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch knowledge base preview');
+      }
+      
+      const data = await response.json();
+      console.log('Knowledge base preview data:', data);
+      
+      // Handle different possible response formats
+      const preview = data.formatted_knowledge || data.content || data.knowledge_base || JSON.stringify(data, null, 2);
+      setKnowledgeBasePreview(preview);
+      
+    } catch (error) {
+      console.error('Error fetching knowledge base preview:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch knowledge base preview",
+        variant: "destructive"
+      });
+      setKnowledgeBasePreview("Unable to load knowledge base preview");
+    } finally {
+      setPreviewLoading(false);
     }
   };
 
@@ -387,6 +420,9 @@ export function KnowledgeBase() {
             {!editingEntry && (
               <TabsTrigger value="browse">Business Information</TabsTrigger>
             )}
+            {!editingEntry && entries.length > 0 && (
+              <TabsTrigger value="preview">AI Preview</TabsTrigger>
+            )}
             {editingEntry && (
               <TabsTrigger value="edit">Edit Business Information</TabsTrigger>
             )}
@@ -476,6 +512,76 @@ export function KnowledgeBase() {
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="preview" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bot className="h-5 w-5" />
+                  AI Knowledge Base Preview
+                </CardTitle>
+                <CardDescription>
+                  See how your business information appears to the AI assistant
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm text-muted-foreground">
+                      This is how the AI sees your business information when providing responses
+                    </p>
+                    <Button 
+                      onClick={fetchKnowledgeBasePreview}
+                      disabled={previewLoading}
+                      size="sm"
+                      variant="outline"
+                    >
+                      {previewLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          <Search className="h-4 w-4 mr-2" />
+                          Refresh Preview
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  
+                  <div className="border rounded-lg p-4 bg-muted/20 min-h-[200px]">
+                    {previewLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin" />
+                      </div>
+                    ) : knowledgeBasePreview ? (
+                      <pre className="text-sm whitespace-pre-wrap overflow-auto max-h-[400px]">
+                        {knowledgeBasePreview}
+                      </pre>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Bot className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                        <p>Click "Refresh Preview" to see your formatted knowledge base</p>
+                        <p className="text-sm">This shows how AI will use your business information</p>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border-l-4 border-blue-500">
+                    <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-1">
+                      💡 How AI Uses This Information
+                    </h4>
+                    <p className="text-sm text-blue-800 dark:text-blue-200">
+                      This formatted knowledge base is automatically included when you chat with the AI assistant, 
+                      helping it provide personalized responses about your business, create relevant content, 
+                      and give contextual advice.
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

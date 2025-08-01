@@ -21,6 +21,8 @@ export function Overview({ onViewChange }: OverviewProps) {
     aiInteractions: 0
   });
   const [integrationCount, setIntegrationCount] = useState(0);
+  const [businessSummary, setBusinessSummary] = useState<string>("");
+  const [summaryLoading, setSummaryLoading] = useState(false);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -165,6 +167,50 @@ export function Overview({ onViewChange }: OverviewProps) {
     }
   }, [user]);
 
+  const fetchBusinessSummary = async () => {
+    try {
+      setSummaryLoading(true);
+      console.log('Fetching business summary from knowledge base...');
+      
+      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/get-knowledge-base');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch business summary');
+      }
+      
+      const data = await response.json();
+      console.log('Business summary data:', data);
+      
+      // Extract business summary from knowledge base data
+      let summary = '';
+      if (data.formatted_knowledge) {
+        summary = data.formatted_knowledge;
+      } else if (data.content) {
+        summary = data.content;
+      } else if (data.knowledge_base) {
+        summary = data.knowledge_base;
+      } else {
+        // Try to create a summary from the raw data
+        if (data.business_name || data.industry) {
+          summary = `Business: ${data.business_name || 'Unknown'}
+Industry: ${data.industry || 'Not specified'}
+Target Audience: ${data.target_audience || 'Not specified'}
+Products/Services: ${data.products_services || 'Not specified'}`;
+        } else {
+          summary = 'No business information available';
+        }
+      }
+      
+      setBusinessSummary(summary);
+      
+    } catch (error) {
+      console.error('Error fetching business summary:', error);
+      setBusinessSummary('Unable to load business summary');
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       fetchStats();
@@ -307,6 +353,65 @@ export function Overview({ onViewChange }: OverviewProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Business Summary Card */}
+      <Card className="card-surreal group hover:shadow-xl transition-all duration-500 hover:-translate-y-1 border-0 bg-gradient-to-br from-purple-50 to-indigo-50/80 dark:from-purple-950/20 dark:to-indigo-950/20">
+        <CardHeader className="flex flex-row items-center justify-between pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-lg group-hover:shadow-purple-500/25 transition-all duration-300 group-hover:rotate-12">
+              <BookOpen className="h-5 w-5" />
+            </div>
+            <div>
+              <CardTitle className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                Business Profile
+              </CardTitle>
+              <CardDescription>Your business knowledge base summary</CardDescription>
+            </div>
+          </div>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={fetchBusinessSummary}
+            disabled={summaryLoading}
+            className="border-purple-200 hover:bg-purple-50 dark:border-purple-800 dark:hover:bg-purple-950/20"
+          >
+            {summaryLoading ? (
+              <>
+                <Bot className="h-4 w-4 animate-spin mr-2" />
+                Loading...
+              </>
+            ) : (
+              <>
+                <Bot className="h-4 w-4 mr-2" />
+                Refresh
+              </>
+            )}
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {summaryLoading ? (
+            <div className="flex items-center justify-center py-6">
+              <Bot className="h-6 w-6 animate-spin text-purple-500" />
+            </div>
+          ) : businessSummary ? (
+            <div className="space-y-3">
+              <pre className="text-sm whitespace-pre-wrap text-muted-foreground bg-white/50 dark:bg-white/5 rounded-lg p-3 max-h-32 overflow-auto">
+                {businessSummary}
+              </pre>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Sparkles className="h-3 w-3" />
+                This information helps AI provide personalized business assistance
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-6 text-muted-foreground">
+              <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Click "Refresh" to load your business profile</p>
+              <p className="text-xs">This shows how AI sees your business information</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Enhanced Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

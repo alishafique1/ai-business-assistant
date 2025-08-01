@@ -25,6 +25,29 @@ export function AIAssistant() {
   const [isLoading, setIsLoading] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [autoExpenseDetection, setAutoExpenseDetection] = useState(true);
+  const [knowledgeBaseContext, setKnowledgeBaseContext] = useState<string>("");
+
+  // Fetch knowledge base context for AI
+  const fetchKnowledgeBaseContext = async (): Promise<string> => {
+    try {
+      console.log('Fetching knowledge base context for AI...');
+      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/get-knowledge-base');
+      
+      if (!response.ok) {
+        console.warn('Knowledge base context not available:', response.status);
+        return '';
+      }
+      
+      const data = await response.json();
+      console.log('Knowledge base context fetched:', data);
+      
+      // The API might return different formats, handle gracefully
+      return data.formatted_knowledge || data.content || data.knowledge_base || JSON.stringify(data);
+    } catch (error) {
+      console.warn('Failed to fetch knowledge base context:', error);
+      return '';
+    }
+  };
 
   // Helper function to detect content type from user message
   const detectContentType = (userMessage: string): string => {
@@ -62,8 +85,16 @@ export function AIAssistant() {
     try {
       console.log('Sending message to ML API:', userMessage.content);
       
+      // Fetch fresh knowledge base context for this request
+      const knowledgeContext = await fetchKnowledgeBaseContext();
+      
       // Detect content type based on user message
       const contentType = detectContentType(userMessage.content);
+      
+      // Enhanced prompt with knowledge base context
+      const enhancedPrompt = knowledgeContext 
+        ? `Context about my business: ${knowledgeContext}\n\nUser request: ${userMessage.content}`
+        : userMessage.content;
       
       const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/generate', {
         method: 'POST',
@@ -71,7 +102,7 @@ export function AIAssistant() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          prompt: userMessage.content,
+          prompt: enhancedPrompt,
           content_type: contentType
         })
       });
@@ -151,13 +182,21 @@ export function AIAssistant() {
     try {
       console.log('Sending quick action to ML API:', prompt);
       
+      // Fetch fresh knowledge base context for this request
+      const knowledgeContext = await fetchKnowledgeBaseContext();
+      
+      // Enhanced prompt with knowledge base context
+      const enhancedPrompt = knowledgeContext 
+        ? `Context about my business: ${knowledgeContext}\n\nUser request: ${prompt}`
+        : prompt;
+      
       const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          prompt: prompt,
+          prompt: enhancedPrompt,
           content_type: contentType
         })
       });
