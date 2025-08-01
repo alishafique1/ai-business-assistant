@@ -32,6 +32,12 @@ export function KnowledgeBase() {
     products_services: ''
   });
   const [editingEntry, setEditingEntry] = useState<KnowledgeEntry | null>(null);
+  const [originalFormData, setOriginalFormData] = useState({
+    business_name: '',
+    industry: '',
+    target_audience: '',
+    products_services: ''
+  });
 
   useEffect(() => {
     if (user) {
@@ -288,6 +294,12 @@ export function KnowledgeBase() {
         target_audience: '', 
         products_services: '' 
       });
+      setOriginalFormData({
+        business_name: '', 
+        industry: '', 
+        target_audience: '', 
+        products_services: '' 
+      });
       
     } catch (error) {
       console.error('Error updating knowledge entry:', error);
@@ -301,19 +313,37 @@ export function KnowledgeBase() {
     }
   };
 
+  // Check if form data has changed from original
+  const hasFormChanged = () => {
+    return (
+      formData.business_name !== originalFormData.business_name ||
+      formData.industry !== originalFormData.industry ||
+      formData.target_audience !== originalFormData.target_audience ||
+      formData.products_services !== originalFormData.products_services
+    );
+  };
+
   const startEditing = (entry: KnowledgeEntry) => {
     setEditingEntry(entry);
-    setFormData({
+    const entryData = {
       business_name: entry.business_name,
       industry: entry.industry,
       target_audience: entry.target_audience,
       products_services: entry.products_services
-    });
+    };
+    setFormData(entryData);
+    setOriginalFormData(entryData); // Store original data for comparison
   };
 
   const cancelEditing = () => {
     setEditingEntry(null);
     setFormData({ 
+      business_name: '', 
+      industry: '', 
+      target_audience: '', 
+      products_services: '' 
+    });
+    setOriginalFormData({
       business_name: '', 
       industry: '', 
       target_audience: '', 
@@ -509,8 +539,8 @@ export function KnowledgeBase() {
                 <div className="flex gap-2 pt-4">
                   <Button 
                     onClick={updateEntry}
-                    disabled={loading}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    disabled={loading || !hasFormChanged()}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
                     {loading ? "Updating..." : "Update Information"}
                   </Button>
