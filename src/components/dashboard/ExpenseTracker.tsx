@@ -105,7 +105,26 @@ export function ExpenseTracker() {
       if (mlApiResponse.ok) {
         const mlExpenses = await mlApiResponse.json();
         console.log('ML API expenses:', mlExpenses);
-        allExpenses = [...allExpenses, ...mlExpenses];
+        
+        // Force ALL ML API expenses to use today's date if created recently
+        const todayDate = getTodayDate();
+        const fixedMLExpenses = mlExpenses.map((expense: Expense) => {
+          // Force today's date for all recent ML API expenses
+          const expenseTime = new Date(expense.created_at || expense.date || '').getTime();
+          const currentTime = new Date().getTime();
+          const twentyFourHoursAgo = currentTime - (24 * 60 * 60 * 1000);
+          
+          if (expenseTime > twentyFourHoursAgo) {
+            return {
+              ...expense,
+              date: todayDate
+            };
+          }
+          
+          return expense;
+        });
+        
+        allExpenses = [...allExpenses, ...fixedMLExpenses];
       }
       
       // Process business_expenses from Supabase
@@ -792,6 +811,11 @@ export function ExpenseTracker() {
         // Log the extraction for debugging
         console.log('Receipt extraction result:', responseData);
         console.log('Category mapping result:', categoryResult);
+        
+        // Force today's date - override whatever the ML API set
+        const todayDate = getTodayDate();
+        responseData.date = todayDate;
+        console.log(`Forced ML API expense date to today: ${todayDate}`);
         
         // Check for potential duplicates in existing expenses
         const isDuplicate = expenses.some(expense => 
