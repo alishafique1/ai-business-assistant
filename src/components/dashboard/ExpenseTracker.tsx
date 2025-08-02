@@ -316,7 +316,9 @@ export function ExpenseTracker() {
         }
         
         // Determine if this expense is from business_expenses (manual entry) or ML API
-        const isManualExpense = typeof fixedExpense.id === 'string' && fixedExpense.id.length > 10;
+        // Supabase UUIDs are 36 characters and have dashes, ML API IDs are typically numeric or short strings
+        const isManualExpense = typeof fixedExpense.id === 'string' && 
+                                (fixedExpense.id.length === 36 && fixedExpense.id.includes('-'));
         
         console.log('Expense category processing:', {
           expenseId: fixedExpense.id,

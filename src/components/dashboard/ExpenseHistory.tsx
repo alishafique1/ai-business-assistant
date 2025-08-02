@@ -54,8 +54,23 @@ export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseH
     const now = new Date();
     const today = startOfDay(now); // Get start of today in local timezone
     
+    console.log('🔍 FILTERING EXPENSES - TOTAL:', expenses.length, 'View mode:', viewMode);
+    
     return expenses.filter(expense => {
-      const expenseDate = expense.date ? parseISO(expense.date) : (expense.created_at ? new Date(expense.created_at) : now);
+      // Handle date parsing more carefully - manual expenses should use expense.date (YYYY-MM-DD format)
+      // while ML API expenses might use created_at (full timestamp)
+      let expenseDate: Date;
+      
+      if (expense.date) {
+        // For manual expenses: expense.date is in YYYY-MM-DD format
+        expenseDate = parseISO(expense.date);
+      } else if (expense.created_at) {
+        // For ML API expenses: created_at is a full timestamp
+        expenseDate = new Date(expense.created_at);
+      } else {
+        // Fallback to current time
+        expenseDate = now;
+      }
       
       switch (viewMode) {
         case 'today': {
@@ -66,17 +81,20 @@ export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseH
             expenseId: expense.id,
             expenseTitle: expense.title,
             rawExpenseDate: expense.date,
+            rawCreatedAt: expense.created_at,
             parsedExpenseDate: expenseDate,
             expenseDayStart: expenseDayStart,
             currentDate: now,
             todayStart: today,
-            isSameDay: isToday
+            isSameDay: isToday,
+            isManualExpense: expense.id && expense.id.length === 36 && expense.id.includes('-')
           });
           return isToday;
         }
         case 'week': {
-          const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
-          const weekEnd = new Date(now.setDate(now.getDate() - now.getDay() + 6));
+          const currentDate = new Date(); // Don't mutate the original now variable
+          const weekStart = new Date(currentDate.setDate(currentDate.getDate() - currentDate.getDay()));
+          const weekEnd = new Date(currentDate.setDate(currentDate.getDate() - currentDate.getDay() + 6));
           return expenseDate >= startOfDay(weekStart) && expenseDate <= endOfDay(weekEnd);
         }
         case 'month':
@@ -96,7 +114,15 @@ export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseH
     const grouped: GroupedExpenses = {};
     
     filteredExpenses.forEach(expense => {
-      const expenseDate = expense.date ? parseISO(expense.date) : (expense.created_at ? new Date(expense.created_at) : new Date());
+      // Use same date parsing logic as filtering
+      let expenseDate: Date;
+      if (expense.date) {
+        expenseDate = parseISO(expense.date);
+      } else if (expense.created_at) {
+        expenseDate = new Date(expense.created_at);
+      } else {
+        expenseDate = new Date();
+      }
       const dateKey = format(expenseDate, 'yyyy-MM-dd');
       
       if (!grouped[dateKey]) {
