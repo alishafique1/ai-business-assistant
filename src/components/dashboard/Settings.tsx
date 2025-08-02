@@ -47,6 +47,23 @@ export function Settings() {
   
   // Auto-detected timezone
   const [autoDetectedTimezone, setAutoDetectedTimezone] = useState<string>('');
+  
+  // Original data for change detection
+  const [originalProfileData, setOriginalProfileData] = useState<ProfileData>({
+    business_name: '',
+    industry: '',
+    timezone: '',
+    currency: 'usd',
+    manual_timezone: false
+  });
+  const [originalNotifications, setOriginalNotifications] = useState<NotificationPreferences>({
+    email_notifications: true,
+    push_notifications: false,
+    daily_summaries: true,
+    weekly_insights: true,
+    monthly_reports: false,
+    feature_updates: true
+  });
 
   // Currency to timezone mapping
   const currencyTimezoneMap = {
@@ -164,11 +181,13 @@ export function Settings() {
 
       if (data) {
         console.log('Setting profile data:', data);
-        setProfileData(prev => ({
-          ...prev,
+        const newProfileData = {
+          ...profileData,
           business_name: data.business_name || '',
           industry: data.industry || ''
-        }));
+        };
+        setProfileData(newProfileData);
+        setOriginalProfileData(newProfileData);
       } else {
         console.log('No profile data found');
       }
@@ -184,19 +203,23 @@ export function Settings() {
       // Try to get notification preferences from localStorage
       const storedNotifications = localStorage.getItem(`notifications_${user?.id}`);
       if (storedNotifications) {
-        setNotifications(JSON.parse(storedNotifications));
+        const notificationData = JSON.parse(storedNotifications);
+        setNotifications(notificationData);
+        setOriginalNotifications(notificationData);
       }
       
       // Try to get other preferences from localStorage
       const storedPreferences = localStorage.getItem(`preferences_${user?.id}`);
       if (storedPreferences) {
         const prefs = JSON.parse(storedPreferences);
-        setProfileData(prev => ({
-          ...prev,
+        const updatedProfileData = {
+          ...profileData,
           timezone: prefs.timezone || autoDetectedTimezone || 'UTC',
           currency: prefs.currency || 'usd',
           manual_timezone: prefs.manual_timezone || false
-        }));
+        };
+        setProfileData(updatedProfileData);
+        setOriginalProfileData(updatedProfileData);
       }
     } catch (error) {
       console.error('Error fetching notification preferences:', error);
@@ -277,6 +300,10 @@ export function Settings() {
         description: "Your profile settings have been updated successfully."
       });
 
+      // Update original data to reflect the saved state
+      setOriginalProfileData(profileData);
+      setOriginalNotifications(notifications);
+
     } catch (error) {
       console.error('Error saving profile:', error);
       toast({
@@ -295,6 +322,28 @@ export function Settings() {
 
   const updateNotificationField = (field: keyof NotificationPreferences, value: boolean) => {
     setNotifications(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Function to check if profile has changed
+  const hasProfileChanged = (): boolean => {
+    return (
+      profileData.business_name !== originalProfileData.business_name ||
+      profileData.timezone !== originalProfileData.timezone ||
+      profileData.currency !== originalProfileData.currency ||
+      profileData.manual_timezone !== originalProfileData.manual_timezone
+    );
+  };
+
+  // Function to check if notifications have changed
+  const hasNotificationsChanged = (): boolean => {
+    return (
+      notifications.email_notifications !== originalNotifications.email_notifications ||
+      notifications.push_notifications !== originalNotifications.push_notifications ||
+      notifications.daily_summaries !== originalNotifications.daily_summaries ||
+      notifications.weekly_insights !== originalNotifications.weekly_insights ||
+      notifications.monthly_reports !== originalNotifications.monthly_reports ||
+      notifications.feature_updates !== originalNotifications.feature_updates
+    );
   };
 
   const handleManualTimezoneToggle = (checked: boolean) => {
@@ -556,7 +605,7 @@ export function Settings() {
 
               <Button 
                 onClick={saveProfile}
-                disabled={saving}
+                disabled={saving || !hasProfileChanged()}
                 className="gap-2"
               >
                 {saving && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -637,7 +686,7 @@ export function Settings() {
               <div className="pt-4 border-t">
                 <Button 
                   onClick={saveProfile}
-                  disabled={saving}
+                  disabled={saving || !hasNotificationsChanged()}
                   className="gap-2"
                 >
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}

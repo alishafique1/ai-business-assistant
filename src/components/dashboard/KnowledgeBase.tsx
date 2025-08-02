@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,9 +24,25 @@ export function KnowledgeBase() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [entries, setEntries] = useState<KnowledgeEntry[]>(() => {
-    // Load from localStorage on initialization
-    const stored = localStorage.getItem('knowledgeBase_entries');
-    return stored ? JSON.parse(stored) : [];
+    // Load from localStorage on initialization with comprehensive debugging
+    try {
+      console.log('🔍 INITIALIZING KNOWLEDGE BASE - Checking localStorage');
+      const stored = localStorage.getItem('knowledgeBase_entries');
+      console.log('📦 localStorage raw data:', stored);
+      
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        console.log('✅ Parsed localStorage entries:', parsed.length, 'entries found');
+        console.log('📋 Entry details:', parsed.map(e => ({ id: e.id, business_name: e.business_name })));
+        return parsed;
+      } else {
+        console.log('⚠️ No localStorage data found, starting with empty array');
+        return [];
+      }
+    } catch (error) {
+      console.error('❌ Error loading from localStorage:', error);
+      return [];
+    }
   });
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -46,9 +62,94 @@ export function KnowledgeBase() {
   const [knowledgeBasePreview, setKnowledgeBasePreview] = useState<string>("");
   const [previewLoading, setPreviewLoading] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
+  // Semaphore for localStorage operations to prevent race conditions
+  const [localStorageOperationInProgress, setLocalStorageOperationInProgress] = useState(false);
+  const localStorageQueue = useRef<Array<() => void>>([]);
+
+  // Semaphore-controlled localStorage operations
+  const executeWithSemaphore = async (operation: () => void) => {
+    return new Promise<void>((resolve) => {
+      const wrappedOperation = () => {
+        try {
+          operation();
+        } finally {
+          resolve();
+          processNextOperation();
+        }
+      };
+
+      if (localStorageOperationInProgress) {
+        console.log('🚦 Operation queued - semaphore busy');
+        localStorageQueue.current.push(wrappedOperation);
+      } else {
+        console.log('🚦 Acquiring semaphore for localStorage operation');
+        setLocalStorageOperationInProgress(true);
+        wrappedOperation();
+      }
+    });
+  };
+
+  const processNextOperation = () => {
+    const nextOperation = localStorageQueue.current.shift();
+    if (nextOperation) {
+      console.log('🚦 Processing next queued operation');
+      nextOperation();
+    } else {
+      console.log('🚦 Releasing semaphore - queue empty');
+      setLocalStorageOperationInProgress(false);
+    }
+  };
+
+  // Safe localStorage read with semaphore
+  const safeReadFromLocalStorage = async (): Promise<KnowledgeEntry[]> => {
+    return new Promise((resolve) => {
+      executeWithSemaphore(() => {
+        try {
+          console.log('🔒 SAFE READ - Acquiring localStorage');
+          const stored = localStorage.getItem('knowledgeBase_entries');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            console.log('🔒 SAFE READ - Found', parsed.length, 'entries');
+            resolve(parsed);
+          } else {
+            console.log('🔒 SAFE READ - No data found');
+            resolve([]);
+          }
+        } catch (error) {
+          console.error('🔒 SAFE READ - Error:', error);
+          resolve([]);
+        }
+      });
+    });
+  };
+
+  // Safe localStorage write with semaphore
+  const safeWriteToLocalStorage = async (entries: KnowledgeEntry[]): Promise<void> => {
+    return executeWithSemaphore(() => {
+      try {
+        console.log('🔒 SAFE WRITE - Saving', entries.length, 'entries to localStorage');
+        localStorage.setItem('knowledgeBase_entries', JSON.stringify(entries));
+        
+        // Verify the write
+        const verification = localStorage.getItem('knowledgeBase_entries');
+        const parsed = verification ? JSON.parse(verification) : [];
+        console.log('🔒 SAFE WRITE - Verified', parsed.length, 'entries saved');
+        
+        if (parsed.length !== entries.length) {
+          console.error('🔒 SAFE WRITE - VERIFICATION FAILED!');
+        }
+      } catch (error) {
+        console.error('🔒 SAFE WRITE - Error:', error);
+      }
+    });
+  };
 
   useEffect(() => {
     if (user) {
+      // Double-check localStorage before API call
+      const preAPICheck = localStorage.getItem('knowledgeBase_entries');
+      console.log('🔍 PRE-API CHECK - localStorage contains:', preAPICheck ? JSON.parse(preAPICheck).length : 0, 'entries');
       fetchKnowledgeBase();
     }
   }, [user]);
@@ -67,14 +168,32 @@ export function KnowledgeBase() {
     console.log('📝 FORM DATA DEBUG:', formData);
   }, [formData]);
 
+  // Periodic localStorage monitoring (for debugging)
+  useEffect(() => {
+    const checkLocalStorage = () => {
+      const current = localStorage.getItem('knowledgeBase_entries');
+      const count = current ? JSON.parse(current).length : 0;
+      if (count !== entries.length) {
+        console.warn('⚠️ LOCALSTORAGE MISMATCH - State:', entries.length, 'localStorage:', count);
+      }
+    };
+    
+    const interval = setInterval(checkLocalStorage, 5000); // Check every 5 seconds
+    return () => clearInterval(interval);
+  }, [entries]);
+
   // Save entries to localStorage whenever they change (but not on initial load)
   useEffect(() => {
     if (!isInitialLoad) {
-      console.log('Saving entries to localStorage:', entries.length);
-      localStorage.setItem('knowledgeBase_entries', JSON.stringify(entries));
-      // Clear AI Assistant cache when knowledge base changes
-      localStorage.removeItem('knowledgeBase_context');
-      localStorage.removeItem('knowledgeBase_cached');
+      console.log('💾 AUTO SAVE - Requesting semaphore for', entries.length, 'entries');
+      safeWriteToLocalStorage(entries).then(() => {
+        // Clear AI Assistant cache when knowledge base changes
+        localStorage.removeItem('knowledgeBase_context');
+        localStorage.removeItem('knowledgeBase_cached');
+        console.log('💾 AUTO SAVE - Complete with cache cleared');
+      });
+    } else {
+      console.log('⏭️ Skipping auto save (initial load)');
     }
   }, [entries, isInitialLoad]);
 
@@ -109,9 +228,8 @@ export function KnowledgeBase() {
       console.log('ML API fetch response data:', data);
       const apiEntries = Array.isArray(data) ? data : [];
       
-      // Get current localStorage data to compare
-      const currentStoredEntries = localStorage.getItem('knowledgeBase_entries');
-      const currentEntries = currentStoredEntries ? JSON.parse(currentStoredEntries) : [];
+      // Get current localStorage data to compare using semaphore
+      const currentEntries = await safeReadFromLocalStorage();
       
       // Only update if we got meaningful data from API
       // Don't override localStorage with empty API responses
@@ -143,17 +261,15 @@ export function KnowledgeBase() {
     }
   };
 
-  // Manual function to sync entries to localStorage
+  // Manual function to sync entries to localStorage with semaphore
   const syncToLocalStorage = (entriesToSave: KnowledgeEntry[]) => {
-    try {
-      console.log('💾 Manually syncing to localStorage:', entriesToSave.length);
-      localStorage.setItem('knowledgeBase_entries', JSON.stringify(entriesToSave));
+    console.log('💾 MANUAL SYNC - Requesting semaphore for', entriesToSave.length, 'entries');
+    safeWriteToLocalStorage(entriesToSave).then(() => {
       // Clear AI Assistant cache when knowledge base changes
       localStorage.removeItem('knowledgeBase_context');
       localStorage.removeItem('knowledgeBase_cached');
-    } catch (error) {
-      console.error('Failed to sync to localStorage:', error);
-    }
+      console.log('💾 MANUAL SYNC - Complete with cache cleared');
+    });
   };
 
   const fetchKnowledgeBasePreview = async () => {
