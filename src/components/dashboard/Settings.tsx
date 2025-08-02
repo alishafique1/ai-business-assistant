@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Bell, CreditCard, Lock, User, Trash2, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Bell, CreditCard, Lock, User, Trash2, Loader2, MapPin, Clock } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlan } from "@/hooks/usePlan";
@@ -18,6 +19,7 @@ interface ProfileData {
   industry: string;
   timezone: string;
   currency: string;
+  manual_timezone: boolean;
 }
 
 interface NotificationPreferences {
@@ -38,9 +40,53 @@ export function Settings() {
   const [profileData, setProfileData] = useState<ProfileData>({
     business_name: '',
     industry: '',
-    timezone: 'utc-5',
-    currency: 'usd'
+    timezone: '',
+    currency: 'usd',
+    manual_timezone: false
   });
+  
+  // Auto-detected timezone
+  const [autoDetectedTimezone, setAutoDetectedTimezone] = useState<string>('');
+
+  // Currency to timezone mapping
+  const currencyTimezoneMap = {
+    'usd': 'America/New_York', // UTC-5 (EST)
+    'eur': 'Europe/London',    // UTC+0 (GMT)
+    'gbp': 'Europe/London',    // UTC+0 (GMT)
+    'cad': 'America/Toronto',  // UTC-5 (EST)
+    'aud': 'Australia/Sydney', // UTC+10
+    'jpy': 'Asia/Tokyo',       // UTC+9
+    'inr': 'Asia/Kolkata',     // UTC+5:30
+    'cny': 'Asia/Shanghai'     // UTC+8
+  };
+
+  // Full timezone list
+  const timezones = [
+    { value: 'Pacific/Honolulu', label: 'Hawaii (UTC-10)' },
+    { value: 'America/Anchorage', label: 'Alaska (UTC-9)' },
+    { value: 'America/Los_Angeles', label: 'Pacific Time (UTC-8)' },
+    { value: 'America/Denver', label: 'Mountain Time (UTC-7)' },
+    { value: 'America/Chicago', label: 'Central Time (UTC-6)' },
+    { value: 'America/New_York', label: 'Eastern Time (UTC-5)' },
+    { value: 'America/Halifax', label: 'Atlantic Time (UTC-4)' },
+    { value: 'America/St_Johns', label: 'Newfoundland (UTC-3:30)' },
+    { value: 'America/Sao_Paulo', label: 'Brazil (UTC-3)' },
+    { value: 'Atlantic/South_Georgia', label: 'South Georgia (UTC-2)' },
+    { value: 'Atlantic/Azores', label: 'Azores (UTC-1)' },
+    { value: 'Europe/London', label: 'GMT/UTC (UTC+0)' },
+    { value: 'Europe/Berlin', label: 'Central European Time (UTC+1)' },
+    { value: 'Europe/Helsinki', label: 'Eastern European Time (UTC+2)' },
+    { value: 'Europe/Moscow', label: 'Moscow Time (UTC+3)' },
+    { value: 'Asia/Dubai', label: 'Gulf Standard Time (UTC+4)' },
+    { value: 'Asia/Kolkata', label: 'India Standard Time (UTC+5:30)' },
+    { value: 'Asia/Dhaka', label: 'Bangladesh Time (UTC+6)' },
+    { value: 'Asia/Bangkok', label: 'Indochina Time (UTC+7)' },
+    { value: 'Asia/Shanghai', label: 'China Standard Time (UTC+8)' },
+    { value: 'Asia/Tokyo', label: 'Japan Standard Time (UTC+9)' },
+    { value: 'Australia/Sydney', label: 'Australian Eastern Time (UTC+10)' },
+    { value: 'Pacific/Noumea', label: 'New Caledonia Time (UTC+11)' },
+    { value: 'Pacific/Auckland', label: 'New Zealand Time (UTC+12)' }
+  ];
   
   // Notification state
   const [notifications, setNotifications] = useState<NotificationPreferences>({
@@ -56,6 +102,31 @@ export function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  // Detect user's timezone and set defaults
+  useEffect(() => {
+    const detectTimezone = () => {
+      try {
+        const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        setAutoDetectedTimezone(detectedTimezone);
+        console.log('Auto-detected timezone:', detectedTimezone);
+        
+        // Set default timezone only if not manually set
+        if (!profileData.manual_timezone && !profileData.timezone) {
+          setProfileData(prev => ({ ...prev, timezone: detectedTimezone }));
+        }
+      } catch (error) {
+        console.error('Failed to detect timezone:', error);
+        // Fallback to UTC
+        setAutoDetectedTimezone('UTC');
+        if (!profileData.manual_timezone && !profileData.timezone) {
+          setProfileData(prev => ({ ...prev, timezone: 'UTC' }));
+        }
+      }
+    };
+
+    detectTimezone();
+  }, []);
+
   // Fetch user profile data on component mount
   useEffect(() => {
     if (user?.id) {
@@ -63,6 +134,16 @@ export function Settings() {
       fetchNotificationPreferences();
     }
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Update timezone when currency changes (if not manually set)
+  useEffect(() => {
+    if (!profileData.manual_timezone && profileData.currency) {
+      const defaultTimezone = currencyTimezoneMap[profileData.currency as keyof typeof currencyTimezoneMap];
+      if (defaultTimezone) {
+        setProfileData(prev => ({ ...prev, timezone: defaultTimezone }));
+      }
+    }
+  }, [profileData.currency, profileData.manual_timezone]);
 
   const fetchUserProfile = async () => {
     try {
@@ -112,8 +193,9 @@ export function Settings() {
         const prefs = JSON.parse(storedPreferences);
         setProfileData(prev => ({
           ...prev,
-          timezone: prefs.timezone || 'utc-5',
-          currency: prefs.currency || 'usd'
+          timezone: prefs.timezone || autoDetectedTimezone || 'UTC',
+          currency: prefs.currency || 'usd',
+          manual_timezone: prefs.manual_timezone || false
         }));
       }
     } catch (error) {
@@ -186,7 +268,8 @@ export function Settings() {
       // Save other preferences to localStorage
       localStorage.setItem(`preferences_${user.id}`, JSON.stringify({
         timezone: profileData.timezone,
-        currency: profileData.currency
+        currency: profileData.currency,
+        manual_timezone: profileData.manual_timezone
       }));
 
       toast({
@@ -212,6 +295,36 @@ export function Settings() {
 
   const updateNotificationField = (field: keyof NotificationPreferences, value: boolean) => {
     setNotifications(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleManualTimezoneToggle = (checked: boolean) => {
+    setProfileData(prev => {
+      const newData = { ...prev, manual_timezone: checked };
+      
+      // If switching to auto mode, set to detected or currency-based timezone
+      if (!checked) {
+        const currencyBasedTimezone = currencyTimezoneMap[prev.currency as keyof typeof currencyTimezoneMap];
+        newData.timezone = autoDetectedTimezone || currencyBasedTimezone || 'UTC';
+      }
+      
+      return newData;
+    });
+  };
+
+  const handleCurrencyChange = (currency: string) => {
+    setProfileData(prev => {
+      const newData = { ...prev, currency };
+      
+      // If not manual timezone, update timezone based on currency
+      if (!prev.manual_timezone) {
+        const defaultTimezone = currencyTimezoneMap[currency as keyof typeof currencyTimezoneMap];
+        if (defaultTimezone) {
+          newData.timezone = defaultTimezone;
+        }
+      }
+      
+      return newData;
+    });
   };
 
   const handleUpgradePlan = () => {
@@ -346,59 +459,99 @@ export function Settings() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="industry">Industry</Label>
-                  <Select 
-                    value={profileData.industry}
-                    onValueChange={(value) => updateProfileField('industry', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your industry" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="consulting">Consulting</SelectItem>
-                      <SelectItem value="software">Software & Technology</SelectItem>
-                      <SelectItem value="marketing">Marketing & Advertising</SelectItem>
-                      <SelectItem value="retail">Retail</SelectItem>
-                      <SelectItem value="healthcare">Healthcare</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="industry" className="flex items-center gap-2">
+                    <Lock className="h-4 w-4 text-muted-foreground" />
+                    Industry
+                    <Badge variant="outline" className="text-xs">From Onboarding</Badge>
+                  </Label>
+                  <Input 
+                    id="industry"
+                    value={profileData.industry || 'Not set during onboarding'}
+                    disabled
+                    className="bg-muted cursor-not-allowed"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Industry is set during onboarding and cannot be changed here.
+                  </p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="timezone">Timezone</Label>
+                  <Label htmlFor="currency">Default Currency</Label>
                   <Select 
-                    value={profileData.timezone}
-                    onValueChange={(value) => updateProfileField('timezone', value)}
+                    value={profileData.currency}
+                    onValueChange={handleCurrencyChange}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="utc-8">Pacific Time (UTC-8)</SelectItem>
-                      <SelectItem value="utc-6">Central Time (UTC-6)</SelectItem>
-                      <SelectItem value="utc-5">Eastern Time (UTC-5)</SelectItem>
-                      <SelectItem value="utc+0">UTC</SelectItem>
+                      <SelectItem value="usd">USD ($) - United States Dollar</SelectItem>
+                      <SelectItem value="eur">EUR (€) - Euro</SelectItem>
+                      <SelectItem value="gbp">GBP (£) - British Pound</SelectItem>
+                      <SelectItem value="cad">CAD (C$) - Canadian Dollar</SelectItem>
+                      <SelectItem value="aud">AUD (A$) - Australian Dollar</SelectItem>
+                      <SelectItem value="jpy">JPY (¥) - Japanese Yen</SelectItem>
+                      <SelectItem value="inr">INR (₹) - Indian Rupee</SelectItem>
+                      <SelectItem value="cny">CNY (¥) - Chinese Yuan</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="currency">Default Currency</Label>
-                <Select 
-                  value={profileData.currency}
-                  onValueChange={(value) => updateProfileField('currency', value)}
-                >
-                  <SelectTrigger className="w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="usd">USD ($)</SelectItem>
-                    <SelectItem value="eur">EUR (€)</SelectItem>
-                    <SelectItem value="gbp">GBP (£)</SelectItem>
-                    <SelectItem value="cad">CAD (C$)</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="manual-timezone"
+                      checked={profileData.manual_timezone}
+                      onCheckedChange={handleManualTimezoneToggle}
+                    />
+                    <Label htmlFor="manual-timezone" className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Set timezone manually
+                    </Label>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {profileData.manual_timezone 
+                      ? 'You can manually select any timezone from the list below.' 
+                      : `Using ${autoDetectedTimezone ? 'auto-detected' : 'currency-based'} timezone. Check the box above to override.`
+                    }
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="timezone" className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Timezone
+                    {!profileData.manual_timezone && (
+                      <Badge variant="secondary" className="text-xs">
+                        {autoDetectedTimezone ? 'Auto-detected' : 'Currency-based'}
+                      </Badge>
+                    )}
+                  </Label>
+                  <Select 
+                    value={profileData.timezone}
+                    onValueChange={(value) => updateProfileField('timezone', value)}
+                    disabled={!profileData.manual_timezone}
+                  >
+                    <SelectTrigger className={!profileData.manual_timezone ? 'bg-muted cursor-not-allowed' : ''}>
+                      <SelectValue placeholder="Select timezone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {timezones.map((tz) => (
+                        <SelectItem key={tz.value} value={tz.value}>
+                          {tz.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!profileData.manual_timezone && (
+                    <p className="text-xs text-muted-foreground">
+                      Current: {profileData.timezone} 
+                      {autoDetectedTimezone && autoDetectedTimezone === profileData.timezone && ' (auto-detected)'}
+                      {!autoDetectedTimezone && ' (based on selected currency)'}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <Button 

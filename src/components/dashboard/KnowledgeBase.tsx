@@ -23,7 +23,11 @@ interface KnowledgeEntry {
 export function KnowledgeBase() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [entries, setEntries] = useState<KnowledgeEntry[]>([]);
+  const [entries, setEntries] = useState<KnowledgeEntry[]>(() => {
+    // Load from localStorage on initialization
+    const stored = localStorage.getItem('knowledgeBase_entries');
+    return stored ? JSON.parse(stored) : [];
+  });
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     business_name: '',
@@ -47,6 +51,14 @@ export function KnowledgeBase() {
       fetchKnowledgeBase();
     }
   }, [user]);
+
+  // Save entries to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('knowledgeBase_entries', JSON.stringify(entries));
+    // Clear AI Assistant cache when knowledge base changes
+    localStorage.removeItem('knowledgeBase_context');
+    localStorage.removeItem('knowledgeBase_cached');
+  }, [entries]);
 
   const fetchKnowledgeBase = async () => {
     if (!user?.id) return;
@@ -77,20 +89,21 @@ export function KnowledgeBase() {
       
       const data = await response.json();
       console.log('ML API fetch response data:', data);
-      setEntries(Array.isArray(data) ? data : []);
+      const apiEntries = Array.isArray(data) ? data : [];
+      
+      // Only update if we got data from API, otherwise keep localStorage data
+      if (apiEntries.length > 0) {
+        setEntries(apiEntries);
+      }
     } catch (error) {
       console.error('Error fetching knowledge base:', error);
       
       // Don't show error toast if it's just that the GET endpoint doesn't exist
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        console.log('Network error or CORS issue, showing empty state');
-        setEntries([]);
+        console.log('Network error or CORS issue, keeping existing localStorage data');
       } else {
-        toast({
-          title: "Info",
-          description: "Knowledge base is ready for new entries",
-        });
-        setEntries([]);
+        // Keep existing localStorage data instead of clearing
+        console.log('API error, keeping existing localStorage data');
       }
     } finally {
       setLoading(false);

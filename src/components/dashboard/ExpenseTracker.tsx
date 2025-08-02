@@ -14,6 +14,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useReceiptLimit } from "@/hooks/useReceiptLimit";
 import { usePlan } from "@/hooks/usePlan";
+import { useTimezone } from "@/hooks/useTimezone";
 import { ExpenseHistory } from "./ExpenseHistory";
 import { CategoryExpenseHistory } from "./CategoryExpenseHistory";
 
@@ -37,6 +38,7 @@ export function ExpenseTracker() {
   const { formatAmount } = useCurrency();
   const { planData } = usePlan();
   const { canAddReceipt, remainingReceipts, incrementCount, limitData, loading: limitLoading, error: limitError, liveTimer, formatTimeRemaining, shouldShowTimer } = useReceiptLimit();
+  const { formatExpenseDate, formatDateTime, getCurrentDate, getTimezoneDisplay } = useTimezone();
   const [isRecording, setIsRecording] = useState(false);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categorySummary, setCategorySummary] = useState<Record<string, { total: number; count: number }>>({});
@@ -47,16 +49,6 @@ export function ExpenseTracker() {
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // Helper function to get today's date in local timezone
-  const getTodayDate = () => {
-    const today = new Date();
-    // Use startOfDay to ensure we get consistent date without time component
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const year = todayStart.getFullYear();
-    const month = String(todayStart.getMonth() + 1).padStart(2, '0');
-    const day = String(todayStart.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
 
   const [formData, setFormData] = useState({
     amount: '',
@@ -64,7 +56,7 @@ export function ExpenseTracker() {
     description: '',
     category: '',
     customCategory: '',
-    date: getTodayDate()
+    date: new Date().toISOString().split('T')[0] // Safe fallback
   });
 
   // Debug logging for form data changes
@@ -77,6 +69,19 @@ export function ExpenseTracker() {
       fetchUserCategories();
     }
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Update form date when timezone becomes available
+  useEffect(() => {
+    if (user && getCurrentDate) {
+      try {
+        const timezoneAwareDate = getCurrentDate();
+        setFormData(prev => ({ ...prev, date: timezoneAwareDate }));
+      } catch (error) {
+        console.warn('Failed to get timezone-aware date:', error);
+        // Keep the fallback date
+      }
+    }
+  }, [user, getCurrentDate]);
 
   const fetchExpenses = async () => {
     if (!user?.id) return;
@@ -113,7 +118,7 @@ export function ExpenseTracker() {
         console.log('ML API expenses:', mlExpenses);
         
         // Force ALL ML API expenses to use today's date if created recently
-        const todayDate = getTodayDate();
+        const todayDate = getCurrentDate();
         const fixedMLExpenses = mlExpenses.map((expense: Expense) => {
           // Apply character limits to existing ML API expenses
           let processedExpense = {
@@ -714,13 +719,13 @@ export function ExpenseTracker() {
       });
 
       // Use the user-selected date from the form, fallback to today if not set
-      const expenseDate = formData.date || getTodayDate();
+      const expenseDate = formData.date || getCurrentDate();
       
       // Debug logging for date handling
       console.log('DATE HANDLING DEBUG - MANUAL EXPENSE:', {
         formDataDate: formData.date,
         formDataDateType: typeof formData.date,
-        todaysDate: getTodayDate(),
+        todaysDate: getCurrentDate(),
         finalExpenseDate: expenseDate,
         dateSource: formData.date ? 'user-selected' : 'fallback-today',
         formDataFull: formData
@@ -857,7 +862,7 @@ export function ExpenseTracker() {
       }
 
       // Use the user-selected date from the form, fallback to today if not set
-      const expenseDate = formData.date || getTodayDate();
+      const expenseDate = formData.date || getCurrentDate();
 
       // Step 2: Create a new expense with updated data via business_expenses table
       // Store both title and description in the description field, but in a parseable format
@@ -908,7 +913,7 @@ export function ExpenseTracker() {
       description: '',
       category: '',
       customCategory: '',
-      date: getTodayDate()
+      date: getCurrentDate()
     });
   };
 
@@ -917,7 +922,7 @@ export function ExpenseTracker() {
     setEditingExpense(expense);
     
     // Handle date field - use date if available, otherwise use created_at, fallback to today
-    const dateValue = expense.date || expense.created_at || getTodayDate();
+    const dateValue = expense.date || expense.created_at || getCurrentDate();
     
     setFormData({
       amount: expense.amount.toString(),
@@ -1163,7 +1168,7 @@ export function ExpenseTracker() {
         // Preserve the original date from ML API instead of forcing to today
         // Only use today's date as fallback if ML API didn't provide a date
         if (!responseData.date && !responseData.created_at) {
-          const todayDate = getTodayDate();
+          const todayDate = getCurrentDate();
           responseData.date = todayDate;
           console.log(`ML API didn't provide date, using today: ${todayDate}`);
         } else {

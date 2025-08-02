@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format, startOfDay, endOfDay, startOfMonth, endOfMonth, startOfYear, endOfYear, isSameDay, parseISO } from "date-fns";
 import { useCurrency } from "@/hooks/useCurrency";
+import { useTimezone } from "@/hooks/useTimezone";
 
 interface Expense {
   id: string;
@@ -42,6 +43,7 @@ interface GroupedExpenses {
 
 export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseHistoryProps) {
   const { formatAmount } = useCurrency();
+  const { formatExpenseDate, formatDateTime, getTimezoneDisplay } = useTimezone();
   const [viewMode, setViewMode] = useState<ViewMode>('today');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
@@ -56,7 +58,7 @@ export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseH
       const expenseDate = expense.date ? parseISO(expense.date) : (expense.created_at ? new Date(expense.created_at) : now);
       
       switch (viewMode) {
-        case 'today':
+        case 'today': {
           // Compare dates at day level, not exact timestamps
           const expenseDayStart = startOfDay(expenseDate);
           const isToday = isSameDay(expenseDayStart, today);
@@ -71,6 +73,7 @@ export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseH
             isSameDay: isToday
           });
           return isToday;
+        }
         case 'week': {
           const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
           const weekEnd = new Date(now.setDate(now.getDate() - now.getDay() + 6));
@@ -325,10 +328,10 @@ export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseH
                     )}
                     <div>
                       <h3 className="font-medium">
-                        {format(parseISO(dateKey), 'EEEE, MMMM d, yyyy')}
+                        {formatExpenseDate(parseISO(dateKey))}
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        {data.expenses.length} expense{data.expenses.length !== 1 ? 's' : ''}
+                        {data.expenses.length} expense{data.expenses.length !== 1 ? 's' : ''} • {getTimezoneDisplay()}
                       </p>
                     </div>
                   </div>

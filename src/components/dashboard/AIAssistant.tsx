@@ -26,8 +26,12 @@ export function AIAssistant() {
   const [isLoading, setIsLoading] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [autoExpenseDetection, setAutoExpenseDetection] = useState(true);
-  const [knowledgeBaseContext, setKnowledgeBaseContext] = useState<string>("");
-  const [knowledgeBaseCached, setKnowledgeBaseCached] = useState<boolean>(false);
+  const [knowledgeBaseContext, setKnowledgeBaseContext] = useState<string>(() => {
+    return localStorage.getItem('knowledgeBase_context') || '';
+  });
+  const [knowledgeBaseCached, setKnowledgeBaseCached] = useState<boolean>(() => {
+    return localStorage.getItem('knowledgeBase_cached') === 'true';
+  });
 
   // Fetch knowledge base context for AI with caching
   const fetchKnowledgeBaseContext = async (): Promise<string> => {
@@ -57,6 +61,8 @@ export function AIAssistant() {
         // Cache the context
         setKnowledgeBaseContext(context);
         setKnowledgeBaseCached(true);
+        localStorage.setItem('knowledgeBase_context', context);
+        localStorage.setItem('knowledgeBase_cached', 'true');
         return context;
       } else {
         console.warn('⚠️ Knowledge base context is empty or too short');
@@ -64,6 +70,24 @@ export function AIAssistant() {
       }
     } catch (error) {
       console.warn('❌ Failed to fetch knowledge base context:', error);
+      
+      // Fallback: Try to generate context from localStorage entries
+      try {
+        const storedEntries = localStorage.getItem('knowledgeBase_entries');
+        if (storedEntries) {
+          const entries = JSON.parse(storedEntries);
+          if (entries.length > 0) {
+            const context = entries.map((entry: { business_name: string; industry: string; target_audience: string; products_services: string }) => 
+              `Business: ${entry.business_name}\nIndustry: ${entry.industry}\nTarget Audience: ${entry.target_audience}\nProducts/Services: ${entry.products_services}`
+            ).join('\n\n');
+            console.log('📋 Using localStorage fallback context');
+            return context;
+          }
+        }
+      } catch (fallbackError) {
+        console.warn('Failed to use localStorage fallback:', fallbackError);
+      }
+      
       return '';
     }
   };
@@ -225,7 +249,7 @@ export function AIAssistant() {
         // Generate summary from expenses if API summary is not available
         if (expenses.length > 0) {
           const categoryTotals: Record<string, number> = {};
-          expenses.forEach((expense: any) => {
+          expenses.forEach((expense: { category?: string; amount?: number }) => {
             const category = expense.category || 'Uncategorized';
             categoryTotals[category] = (categoryTotals[category] || 0) + (expense.amount || 0);
           });
@@ -266,11 +290,11 @@ Once you have some expense data, I'll be able to provide detailed analysis inclu
 Would you like me to help you set up your first expense entry or explain how the expense tracking system works?`;
         } else {
           // Create expense listing
-          const expensesList = expenseData.expenses.map((expense: any, index: number) => 
+          const expensesList = expenseData.expenses.map((expense: { title?: string; description?: string; amount?: number; category?: string; date?: string; created_at?: string }, index: number) => 
             `${index + 1}. ${expense.title || expense.description || 'Unnamed expense'} - $${expense.amount} (${expense.category || 'Uncategorized'}) - ${expense.date || expense.created_at}`
           ).join('\n');
           
-          const totalAmount = expenseData.expenses.reduce((sum: number, expense: any) => sum + (expense.amount || 0), 0);
+          const totalAmount = expenseData.expenses.reduce((sum: number, expense: { amount?: number }) => sum + (expense.amount || 0), 0);
           
           // Generate comprehensive analysis based on the expense data
           assistantContent = `Here are your current expenses:
