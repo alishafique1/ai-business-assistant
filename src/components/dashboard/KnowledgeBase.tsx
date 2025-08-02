@@ -62,6 +62,11 @@ export function KnowledgeBase() {
     });
   }, [entries, isInitialLoad]);
 
+  // Debug effect to monitor form data changes
+  useEffect(() => {
+    console.log('📝 FORM DATA DEBUG:', formData);
+  }, [formData]);
+
   // Save entries to localStorage whenever they change (but not on initial load)
   useEffect(() => {
     if (!isInitialLoad) {
@@ -183,7 +188,16 @@ export function KnowledgeBase() {
   };
 
   const createEntry = async () => {
+    console.log('🚀 CREATE ENTRY CALLED - Form Data:', formData);
+    console.log('🔍 Validation Check:', {
+      business_name: !!formData.business_name,
+      industry: !!formData.industry,
+      target_audience: !!formData.target_audience,
+      products_services: !!formData.products_services
+    });
+
     if (!formData.business_name || !formData.industry || !formData.target_audience || !formData.products_services) {
+      console.log('❌ VALIDATION FAILED - Missing required fields');
       toast({
         title: "Error", 
         description: "Please fill in all required fields",
@@ -256,6 +270,9 @@ export function KnowledgeBase() {
         products_services: '' 
       });
       
+      // Switch to browse tab to show the new entry
+      setActiveTab("browse");
+      
     } catch (error) {
       console.error('Error creating knowledge entry via API:', error);
       
@@ -289,6 +306,9 @@ export function KnowledgeBase() {
         target_audience: '', 
         products_services: '' 
       });
+      
+      // Switch to browse tab to show the new entry
+      setActiveTab("browse");
     } finally {
       setLoading(false);
     }
@@ -501,12 +521,14 @@ export function KnowledgeBase() {
             }
           </p>
         </div>
-        {entries.length === 0 && (
-          <Button className="gap-2" onClick={() => setEditingEntry(null)}>
-            <Plus className="h-4 w-4" />
-            Add Business Info
-          </Button>
-        )}
+        <Button className="gap-2" onClick={() => {
+          setEditingEntry(null);
+          setActiveTab("add");
+          console.log('🆕 Add Business Info button clicked');
+        }}>
+          <Plus className="h-4 w-4" />
+          {entries.length === 0 ? "Add Business Info" : "Add New Business"}
+        </Button>
       </div>
 
       {entries.length > 0 || editingEntry ? (
@@ -517,6 +539,9 @@ export function KnowledgeBase() {
             )}
             {!editingEntry && entries.length > 0 && (
               <TabsTrigger value="preview">AI Preview</TabsTrigger>
+            )}
+            {!editingEntry && (
+              <TabsTrigger value="add">Add New Business</TabsTrigger>
             )}
             {editingEntry && (
               <TabsTrigger value="edit">Edit Business Information</TabsTrigger>
@@ -764,6 +789,87 @@ export function KnowledgeBase() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="add" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Plus className="h-5 w-5" />
+                  Add New Business Information
+                </CardTitle>
+                <CardDescription>
+                  Add additional business details to expand your knowledge base
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="add_business_name" className="flex items-center gap-2">
+                    <Building className="h-4 w-4" />
+                    Business Name
+                  </Label>
+                  <Input 
+                    id="add_business_name" 
+                    placeholder="Your Company Name"
+                    value={formData.business_name}
+                    onChange={(e) => setFormData({...formData, business_name: e.target.value})}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="add_industry" className="flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    Industry
+                  </Label>
+                  <Input 
+                    id="add_industry" 
+                    placeholder="e.g., Technology, Healthcare, Retail, Consulting"
+                    value={formData.industry}
+                    onChange={(e) => setFormData({...formData, industry: e.target.value})}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="add_target_audience" className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Target Audience
+                  </Label>
+                  <Input 
+                    id="add_target_audience" 
+                    placeholder="e.g., Small businesses, Students, Enterprise clients"
+                    value={formData.target_audience}
+                    onChange={(e) => setFormData({...formData, target_audience: e.target.value})}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="add_products_services" className="flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    Products & Services
+                  </Label>
+                  <Textarea 
+                    id="add_products_services" 
+                    placeholder="Describe your main products and services in detail..."
+                    value={formData.products_services}
+                    onChange={(e) => setFormData({...formData, products_services: e.target.value})}
+                    rows={4}
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-4">
+                  <Button 
+                    onClick={() => {
+                      console.log('🖱️ TAB BUTTON CLICKED - Add to Knowledge Base');
+                      createEntry();
+                    }}
+                    disabled={loading}
+                    className="flex-1"
+                  >
+                    {loading ? "Saving..." : "Add to Knowledge Base"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       ) : (
         // Show add form only when no entries exist
@@ -833,7 +939,10 @@ export function KnowledgeBase() {
 
             <div className="flex gap-2 pt-4">
               <Button 
-                onClick={createEntry}
+                onClick={() => {
+                  console.log('🖱️ BUTTON CLICKED - Add to Knowledge Base');
+                  createEntry();
+                }}
                 disabled={loading}
                 className="flex-1"
               >
