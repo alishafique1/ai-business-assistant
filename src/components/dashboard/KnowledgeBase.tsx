@@ -45,6 +45,7 @@ export function KnowledgeBase() {
   });
   const [knowledgeBasePreview, setKnowledgeBasePreview] = useState<string>("");
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -52,13 +53,25 @@ export function KnowledgeBase() {
     }
   }, [user]);
 
-  // Save entries to localStorage whenever they change
+  // Debug effect to monitor entries changes
   useEffect(() => {
-    localStorage.setItem('knowledgeBase_entries', JSON.stringify(entries));
-    // Clear AI Assistant cache when knowledge base changes
-    localStorage.removeItem('knowledgeBase_context');
-    localStorage.removeItem('knowledgeBase_cached');
-  }, [entries]);
+    console.log('🔍 KNOWLEDGE BASE DEBUG - Entries changed:', {
+      entriesCount: entries.length,
+      isInitialLoad,
+      entries: entries.map(e => ({ id: e.id, business_name: e.business_name }))
+    });
+  }, [entries, isInitialLoad]);
+
+  // Save entries to localStorage whenever they change (but not on initial load)
+  useEffect(() => {
+    if (!isInitialLoad) {
+      console.log('Saving entries to localStorage:', entries.length);
+      localStorage.setItem('knowledgeBase_entries', JSON.stringify(entries));
+      // Clear AI Assistant cache when knowledge base changes
+      localStorage.removeItem('knowledgeBase_context');
+      localStorage.removeItem('knowledgeBase_cached');
+    }
+  }, [entries, isInitialLoad]);
 
   const fetchKnowledgeBase = async () => {
     if (!user?.id) return;
@@ -91,9 +104,23 @@ export function KnowledgeBase() {
       console.log('ML API fetch response data:', data);
       const apiEntries = Array.isArray(data) ? data : [];
       
-      // Only update if we got data from API, otherwise keep localStorage data
+      // Get current localStorage data to compare
+      const currentStoredEntries = localStorage.getItem('knowledgeBase_entries');
+      const currentEntries = currentStoredEntries ? JSON.parse(currentStoredEntries) : [];
+      
+      // Only update if we got meaningful data from API
+      // Don't override localStorage with empty API responses
       if (apiEntries.length > 0) {
+        console.log('API returned data, updating entries:', apiEntries);
         setEntries(apiEntries);
+      } else if (currentEntries.length === 0) {
+        // Only set empty if localStorage is also empty (fresh user)
+        console.log('Both API and localStorage are empty, showing empty state');
+        setEntries([]);
+      } else {
+        // Keep localStorage data if API is empty but localStorage has data
+        console.log('API returned empty but localStorage has data, keeping localStorage entries:', currentEntries.length);
+        // Don't call setEntries to avoid triggering the save effect
       }
     } catch (error) {
       console.error('Error fetching knowledge base:', error);
@@ -107,6 +134,20 @@ export function KnowledgeBase() {
       }
     } finally {
       setLoading(false);
+      setIsInitialLoad(false);
+    }
+  };
+
+  // Manual function to sync entries to localStorage
+  const syncToLocalStorage = (entriesToSave: KnowledgeEntry[]) => {
+    try {
+      console.log('💾 Manually syncing to localStorage:', entriesToSave.length);
+      localStorage.setItem('knowledgeBase_entries', JSON.stringify(entriesToSave));
+      // Clear AI Assistant cache when knowledge base changes
+      localStorage.removeItem('knowledgeBase_context');
+      localStorage.removeItem('knowledgeBase_cached');
+    } catch (error) {
+      console.error('Failed to sync to localStorage:', error);
     }
   };
 
@@ -198,7 +239,14 @@ export function KnowledgeBase() {
         products_services: formData.products_services,
         created_at: result.created_at || new Date().toISOString()
       };
-      setEntries(prev => [newEntry, ...prev]);
+      console.log('🆕 Adding new entry to state:', newEntry);
+      setEntries(prev => {
+        const updated = [newEntry, ...prev];
+        console.log('📝 Updated entries array:', updated.length);
+        // Immediately sync to localStorage to ensure persistence
+        syncToLocalStorage(updated);
+        return updated;
+      });
       
       // Clear form after successful creation
       setFormData({ 
@@ -209,11 +257,37 @@ export function KnowledgeBase() {
       });
       
     } catch (error) {
-      console.error('Error creating knowledge entry:', error);
+      console.error('Error creating knowledge entry via API:', error);
+      
+      // Even if API fails, save to localStorage so user doesn't lose data
+      console.log('API failed, saving entry to localStorage only');
+      const fallbackEntry: KnowledgeEntry = {
+        id: Date.now().toString(),
+        business_name: formData.business_name,
+        industry: formData.industry,
+        target_audience: formData.target_audience,
+        products_services: formData.products_services,
+        created_at: new Date().toISOString()
+      };
+      
+      setEntries(prev => {
+        const updated = [fallbackEntry, ...prev];
+        syncToLocalStorage(updated);
+        return updated;
+      });
+      
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create knowledge entry",
-        variant: "destructive"
+        title: "Saved Locally",
+        description: "Business information saved locally. It will sync to the server when available.",
+        variant: "default"
+      });
+      
+      // Clear form after successful local save
+      setFormData({ 
+        business_name: '', 
+        industry: '', 
+        target_audience: '', 
+        products_services: '' 
       });
     } finally {
       setLoading(false);
@@ -255,7 +329,11 @@ export function KnowledgeBase() {
       }
       
       // Remove from local state regardless of API success
-      setEntries(prev => prev.filter(entry => entry.id !== entryId));
+      setEntries(prev => {
+        const updated = prev.filter(entry => entry.id !== entryId);
+        syncToLocalStorage(updated);
+        return updated;
+      });
       
       toast({
         title: "Success",
@@ -329,9 +407,13 @@ export function KnowledgeBase() {
         updated_at: new Date().toISOString()
       };
       
-      setEntries(prev => prev.map(entry => 
-        entry.id === editingEntry.id ? updatedEntry : entry
-      ));
+      setEntries(prev => {
+        const updated = prev.map(entry => 
+          entry.id === editingEntry.id ? updatedEntry : entry
+        );
+        syncToLocalStorage(updated);
+        return updated;
+      });
       
       toast({
         title: "Success",
