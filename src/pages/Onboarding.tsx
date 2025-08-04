@@ -697,9 +697,9 @@ Help with business operations and categorize expenses into: ${defaultCategories}
                   </Select>
                 </div>
                 <div className="p-4 bg-muted/50 rounded-lg border">
-                  <h4 className="font-medium mb-2">Default Expense Categories</h4>
+                  <h4 className="font-medium mb-2">Expense Categories</h4>
                   <p className="text-sm text-muted-foreground mb-3">
-                    We've set up basic categories for you. You can edit, create, and remove them from the dashboard settings.
+                    Expense categories will automatically be prepared according to the expense.
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {['Meals', 'Entertainment', 'Travel', 'Office Supplies', 'Marketing', 'Software', 'Other'].map((category) => (

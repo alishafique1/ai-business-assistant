@@ -152,7 +152,15 @@ function generateMockDescription(): string {
 }
 
 function generateMockCategory(): string {
-  const categories = ['meals', 'travel', 'office', 'marketing', 'software', 'other']
+  // Weight the categories to make common ones more likely
+  const categories = [
+    'meals', 'meals', 'meals',    // 30% chance - most common business expense
+    'travel', 'travel',           // 20% chance - common for business
+    'office',                     // 10% chance - office supplies  
+    'marketing',                  // 10% chance - marketing expenses
+    'software',                   // 10% chance - software subscriptions
+    'other'                       // 10% chance - fallback
+  ]
   return categories[Math.floor(Math.random() * categories.length)]
 }
 

@@ -394,6 +394,13 @@ export function ExpenseTracker() {
     
     // Enhanced mapping for common ML categories to existing user categories
     const categoryMap: Record<string, string> = {
+      // Direct ML API categories (from mock function)
+      'meals': 'Meals',
+      'travel': 'Travel', 
+      'office': 'Office Supplies',
+      'marketing': 'Marketing',
+      'software': 'Software',
+      
       // Food & Dining variations
       'food & dining': 'Meals',
       'food': 'Meals',
@@ -1147,22 +1154,29 @@ export function ExpenseTracker() {
             userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
           });
           
-          // Simple strategy: Set category to "other" and populate custom category input
-          // This lets the existing manual category creation process handle it
+          // Properly map ML category to user categories
           const mlReturnedCategory = responseData.category;
           console.log('ML API returned category:', mlReturnedCategory);
           
-          // Always set to "other" category for ML API expenses
-          responseData.category = 'other';
+          // Map the ML category to a proper user category
+          const mappedCategory = mapCategoryForDisplay(mlReturnedCategory);
           
-          // Store the ML category name for the custom category input
-          responseData.mlCategoryName = mlReturnedCategory;
-          
-          console.log('Set expense category to "other" and stored ML category:', {
-            originalMLCategory: mlReturnedCategory,
-            expenseCategory: responseData.category,
-            customCategoryName: responseData.mlCategoryName
-          });
+          if (mappedCategory && mappedCategory !== 'other') {
+            responseData.category = mappedCategory;
+            console.log('Mapped ML category successfully:', {
+              originalMLCategory: mlReturnedCategory,
+              mappedCategory: mappedCategory
+            });
+          } else {
+            // Fallback to "other" only if mapping fails
+            responseData.category = 'other';
+            responseData.mlCategoryName = mlReturnedCategory;
+            console.log('Failed to map ML category, using "other":', {
+              originalMLCategory: mlReturnedCategory,
+              expenseCategory: responseData.category,
+              customCategoryName: responseData.mlCategoryName
+            });
+          }
         
         // Log the extraction for debugging
         console.log('Receipt extraction result:', responseData);
