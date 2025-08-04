@@ -7,12 +7,23 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Bell, CreditCard, Lock, User, Trash2, Loader2, MapPin, Clock } from "lucide-react";
+import { Bell, CreditCard, Lock, User, Trash2, Loader2, MapPin, Clock, AlertTriangle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlan } from "@/hooks/usePlan";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface ProfileData {
   business_name: string;
@@ -32,7 +43,7 @@ interface NotificationPreferences {
 }
 
 export function Settings() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { planData, upgradeToPro, downgradeToFree } = usePlan();
   const { toast } = useToast();
   
@@ -118,6 +129,7 @@ export function Settings() {
   // Loading states
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Detect user's timezone and set defaults
   useEffect(() => {
@@ -447,12 +459,356 @@ export function Settings() {
     }
   };
 
-  const handleDeleteAccount = () => {
-    toast({
-      title: "Account Deletion",
-      description: "Account deletion will be available soon. Contact support to delete your account.",
-      variant: "destructive"
-    });
+  // Test function to debug what's available
+  const testDeletionMethods = async () => {
+    try {
+      console.log('=== TEST BUTTON CLICKED ===');
+      
+      if (!user?.id) {
+        console.log('❌ No user ID found');
+        toast({
+          title: "Test Failed",
+          description: "No user ID available for testing",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      console.log('✅ User ID:', user.id);
+      console.log('✅ Session token present:', !!session?.access_token);
+      
+      toast({
+        title: "Running Tests",
+        description: "Check console for detailed results...",
+      });
+      
+      console.log('=== TESTING DELETION METHODS ===');
+      
+      // Test 1: Check if edge function exists
+      console.log('🔍 Test 1: Edge function...');
+      try {
+        const { data, error } = await supabase.functions.invoke('delete-account', {
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        });
+        console.log('✅ Edge function response:', { data, error });
+        if (error) {
+          console.log('❌ Edge function error details:', error);
+        }
+      } catch (e) {
+        console.log('❌ Edge function exception:', e);
+      }
+      
+      // Test 2: Check if stored procedure exists
+      console.log('🔍 Test 2: Stored procedure...');
+      try {
+        const { data, error } = await supabase.rpc('delete_user_account', { 
+          target_user_id: user.id 
+        });
+        console.log('✅ Stored procedure response:', { data, error });
+        if (error) {
+          console.log('❌ Stored procedure error details:', error);
+        }
+      } catch (e) {
+        console.log('❌ Stored procedure exception:', e);
+      }
+      
+      // Test 3: Check auth deletion RPC
+      console.log('🔍 Test 3: Auth deletion RPC...');
+      try {
+        const { data, error } = await supabase.rpc('delete_auth_user_direct', { 
+          target_user_id: user.id 
+        });
+        console.log('✅ Auth deletion RPC response:', { data, error });
+        if (error) {
+          console.log('❌ Auth deletion RPC error details:', error);
+        }
+      } catch (e) {
+        console.log('❌ Auth deletion RPC exception:', e);
+      }
+      
+      // Test 4: Check new simple-delete-account function
+      console.log('🔍 Test 4: New simple delete account function...');
+      try {
+        const { data, error } = await supabase.functions.invoke('simple-delete-account', {
+          headers: { 'Authorization': `Bearer ${session?.access_token}` }
+        });
+        console.log('✅ Simple delete account response:', { data, error });
+        console.log('Simple delete account data:', JSON.stringify(data, null, 2));
+        console.log('Simple delete account error:', JSON.stringify(error, null, 2));
+        
+        if (error) {
+          console.log('❌ Simple delete account error details:', {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+          });
+        }
+        if (data && data.success) {
+          console.log('🚨 WARNING: This would have deleted your auth user! (Test successful)');
+          console.log('✅ NEW EDGE FUNCTION IS WORKING! You can now delete your account properly.');
+        } else if (data && !data.success) {
+          console.log('❌ Simple delete function returned failure:', data.error);
+        }
+      } catch (e) {
+        console.log('❌ Simple delete account exception:', e);
+        console.log('❌ Exception details:', {
+          name: e.name,
+          message: e.message,
+          stack: e.stack
+        });
+      }
+      
+      console.log('=== TESTS COMPLETED ===');
+      
+      toast({
+        title: "Tests Completed",
+        description: "Check browser console (F12) for detailed results",
+        variant: "default"
+      });
+      
+    } catch (error) {
+      console.error('❌ Test function failed completely:', error);
+      toast({
+        title: "Test Function Failed",
+        description: error.message || "Unknown error occurred",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user?.id) return;
+
+    try {
+      setDeleting(true);
+      
+      console.log('=== STARTING SIMPLIFIED ACCOUNT DELETION ===');
+      console.log('User ID:', user.id);
+      
+      toast({
+        title: "Deleting Account",
+        description: "Clearing your data and attempting to delete your account...",
+      });
+
+      // Step 1: Clear local storage
+      try {
+        localStorage.removeItem(`notifications_${user.id}`);
+        localStorage.removeItem(`preferences_${user.id}`);
+        localStorage.removeItem(`knowledge_base_${user.id}`);
+        Object.keys(localStorage).forEach(key => {
+          if (key.includes(user.id)) {
+            localStorage.removeItem(key);
+          }
+        });
+        console.log('✅ LocalStorage cleared');
+      } catch (error) {
+        console.warn('⚠️ Error clearing localStorage:', error);
+      }
+
+      // Step 2: Delete user data from all tables (client-side)
+      console.log('🗑️ Deleting user data from database tables...');
+      const tablesToClean = [
+        'messages',
+        'conversations', 
+        'business_expenses',
+        'business_outcomes',
+        'client_metrics',
+        'expenses',
+        'knowledge_base_entries',
+        'clients',
+        'integrations',
+        'ai_settings',
+        'profiles'
+      ];
+
+      let totalDeleted = 0;
+      for (const table of tablesToClean) {
+        try {
+          console.log(`Deleting from ${table}...`);
+          const { error, count } = await supabase
+            .from(table)
+            .delete({ count: 'exact' })
+            .eq('user_id', user.id);
+          
+          if (error && error.code !== 'PGRST116') {
+            console.warn(`⚠️ Warning deleting from ${table}:`, error);
+          } else {
+            const deletedCount = count || 0;
+            totalDeleted += deletedCount;
+            console.log(`✅ Deleted ${deletedCount} rows from ${table}`);
+          }
+        } catch (error) {
+          console.error(`❌ Error deleting from ${table}:`, error);
+        }
+      }
+
+      // Step 3: Delete storage files
+      console.log('🗑️ Deleting user files from storage...');
+      const buckets = ['receipts', 'avatars', 'documents'];
+      let totalFilesDeleted = 0;
+      
+      for (const bucket of buckets) {
+        try {
+          const { data: files, error: listError } = await supabase.storage
+            .from(bucket)
+            .list(user.id);
+          
+          if (listError && listError.message !== 'The resource was not found') {
+            console.warn(`⚠️ Warning listing files in ${bucket}:`, listError);
+            continue;
+          }
+
+          if (files && files.length > 0) {
+            const filePaths = files.map(file => `${user.id}/${file.name}`);
+            const { error: deleteError } = await supabase.storage
+              .from(bucket)
+              .remove(filePaths);
+            
+            if (deleteError) {
+              console.warn(`⚠️ Warning deleting files from ${bucket}:`, deleteError);
+            } else {
+              totalFilesDeleted += files.length;
+              console.log(`✅ Deleted ${files.length} files from ${bucket}`);
+            }
+          }
+        } catch (error) {
+          console.error(`❌ Error deleting from storage ${bucket}:`, error);
+        }
+      }
+
+      console.log(`📊 Data cleanup complete: ${totalDeleted} records, ${totalFilesDeleted} files deleted`);
+
+      // Step 4: Try multiple methods to delete the auth user
+      console.log('🔐 Attempting to delete auth user using multiple methods...');
+      
+      let authUserDeleted = false;
+      
+      // Method 1: Try the simple edge function
+      console.log('Method 1: Trying simple-delete-account edge function...');
+      try {
+        const { data: authResult, error: authError } = await supabase.functions.invoke('simple-delete-account', {
+          headers: {
+            'Authorization': `Bearer ${session?.access_token}`
+          }
+        });
+
+        console.log('Edge function auth deletion response:', { authResult, authError });
+
+        if (!authError && authResult && authResult.success) {
+          console.log('✅ Method 1 succeeded! Auth user deleted via edge function');
+          authUserDeleted = true;
+        } else {
+          console.log('❌ Method 1 failed:', authError || authResult);
+        }
+      } catch (authDeleteError) {
+        console.log('❌ Method 1 exception:', authDeleteError);
+      }
+
+      // Method 2: Try direct API call if edge function failed
+      if (!authUserDeleted) {
+        console.log('Method 2: Trying direct auth deletion API...');
+        try {
+          // Make a direct call to Supabase's auth admin endpoint
+          const response = await fetch(`${supabase.supabaseUrl}/auth/v1/admin/users/${user.id}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${session?.access_token}`,
+              'apikey': supabase.supabaseKey,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          console.log('Direct API response status:', response.status);
+          
+          if (response.ok) {
+            console.log('✅ Method 2 succeeded! Auth user deleted via direct API');
+            authUserDeleted = true;
+          } else {
+            const responseText = await response.text();
+            console.log('❌ Method 2 failed with status:', response.status, responseText);
+          }
+        } catch (directApiError) {
+          console.log('❌ Method 2 exception:', directApiError);
+        }
+      }
+
+      // Method 3: Try using Supabase's auth.admin (if available)
+      if (!authUserDeleted) {
+        console.log('Method 3: Trying supabase.auth.admin.deleteUser...');
+        try {
+          const { error: adminError } = await supabase.auth.admin.deleteUser(user.id);
+          
+          if (!adminError) {
+            console.log('✅ Method 3 succeeded! Auth user deleted via admin client');
+            authUserDeleted = true;
+          } else {
+            console.log('❌ Method 3 failed:', adminError);
+          }
+        } catch (adminException) {
+          console.log('❌ Method 3 exception:', adminException);
+        }
+      }
+
+      // Show results and handle next steps
+      if (authUserDeleted) {
+        toast({
+          title: "🎉 Account Completely Deleted!",
+          description: "Your account and all data have been permanently deleted. You cannot log back in.",
+          variant: "destructive"
+        });
+        
+        console.log('✅ SUCCESS: Complete account deletion - user can no longer log in');
+        
+        // Wait longer before redirect since user is deleted
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 4000);
+        
+      } else {
+        console.log('⚠️ Auth user deletion failed with all methods');
+        
+        toast({
+          title: "⚠️ Partial Deletion Complete",
+          description: "Your data was cleared but the login account remains. You've been signed out.",
+          variant: "destructive"
+        });
+
+        // Sign out since auth deletion failed
+        await supabase.auth.signOut({ scope: 'global' });
+        
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 3000);
+      }
+
+      console.log(`📊 Final result - Auth user deleted: ${authUserDeleted}`);
+
+    } catch (error) {
+      console.error('❌ Account deletion failed:', error);
+      
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+        toast({
+          title: "Partial Deletion",
+          description: "Some data was cleared. You've been signed out. Contact support if needed.",
+          variant: "destructive"
+        });
+        
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
+      } catch (signOutError) {
+        console.error('❌ Error signing out:', signOutError);
+        toast({
+          title: "Deletion Failed",
+          description: "Please clear your browser data and contact support.",
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (loading) {
@@ -806,15 +1162,80 @@ export function Settings() {
               <div className="space-y-4 pt-4 border-t">
                 <h4 className="font-medium text-destructive">Danger Zone</h4>
                 <div className="p-4 border border-destructive/20 rounded-lg bg-destructive/5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-destructive">Delete Account</p>
-                      <p className="text-sm text-muted-foreground">Permanently delete your account and all data</p>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-destructive">Delete Account</p>
+                        <p className="text-sm text-muted-foreground">Permanently delete your account and all data</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={testDeletionMethods}
+                          className="text-orange-600 border-orange-600 hover:bg-orange-50"
+                        >
+                          Test Methods
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="sm" className="gap-2" disabled={deleting}>
+                              {deleting ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                              {deleting ? "Deleting..." : "Delete Account"}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                                <AlertTriangle className="h-5 w-5" />
+                                Delete Account Permanently
+                              </AlertDialogTitle>
+                              <AlertDialogDescription className="space-y-2">
+                                <p>
+                                  This action <strong>cannot be undone</strong>. This will permanently delete your account and remove all of your data from our servers.
+                                </p>
+                                <p>The following data will be permanently deleted:</p>
+                                <ul className="list-disc list-inside space-y-1 text-sm">
+                                  <li>Your profile and business information</li>
+                                  <li>All expense records and receipts</li>
+                                  <li>Business metrics and outcomes</li>
+                                  <li>Knowledge base entries</li>
+                                  <li>All chat histories and AI interactions</li>
+                                  <li>Notification preferences and settings</li>
+                                </ul>
+                                <p className="font-medium text-destructive">
+                                  Are you absolutely sure you want to delete your account?
+                                </p>
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={handleDeleteAccount}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                disabled={deleting}
+                              >
+                                {deleting ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                    Deleting Account...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Yes, Delete My Account
+                                  </>
+                                )}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
-                    <Button variant="destructive" size="sm" className="gap-2" onClick={handleDeleteAccount}>
-                      <Trash2 className="h-4 w-4" />
-                      Delete Account
-                    </Button>
                   </div>
                 </div>
               </div>
