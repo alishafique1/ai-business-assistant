@@ -792,14 +792,31 @@ Help with business operations and categorize expenses into: ${defaultCategories}
                 </div>
                 <div>
                   <Label htmlFor="targetAudience">Target Audience <span className="text-red-500">*</span></Label>
-                  <Textarea
-                    id="targetAudience"
-                    value={formData.targetAudience}
-                    onChange={(e) => updateFormData("targetAudience", e.target.value)}
-                    placeholder="Describe your target customers and their characteristics"
-                    rows={3}
-                    className={!formData.targetAudience?.trim() ? "border-red-300 focus:border-red-500" : ""}
-                  />
+                  <Select value={formData.targetAudience} onValueChange={(value) => updateFormData("targetAudience", value)}>
+                    <SelectTrigger className={!formData.targetAudience?.trim() ? "border-red-300 focus:border-red-500" : ""}>
+                      <SelectValue placeholder="Select your primary target audience" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="small-business-owners">Small Business Owners</SelectItem>
+                      <SelectItem value="entrepreneurs">Entrepreneurs & Startups</SelectItem>
+                      <SelectItem value="freelancers">Freelancers & Consultants</SelectItem>
+                      <SelectItem value="young-professionals">Young Professionals (25-35)</SelectItem>
+                      <SelectItem value="middle-aged-professionals">Middle-Aged Professionals (35-50)</SelectItem>
+                      <SelectItem value="seniors">Seniors (50+)</SelectItem>
+                      <SelectItem value="families">Families with Children</SelectItem>
+                      <SelectItem value="students">Students & Recent Graduates</SelectItem>
+                      <SelectItem value="tech-enthusiasts">Tech Enthusiasts</SelectItem>
+                      <SelectItem value="health-wellness">Health & Wellness Focused</SelectItem>
+                      <SelectItem value="environmentally-conscious">Environmentally Conscious Consumers</SelectItem>
+                      <SelectItem value="luxury-consumers">Luxury/Premium Consumers</SelectItem>
+                      <SelectItem value="budget-conscious">Budget-Conscious Consumers</SelectItem>
+                      <SelectItem value="b2b-clients">B2B Clients & Partners</SelectItem>
+                      <SelectItem value="local-community">Local Community & Neighbors</SelectItem>
+                      <SelectItem value="online-shoppers">Online Shoppers</SelectItem>
+                      <SelectItem value="industry-specific">Industry-Specific Professionals</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label htmlFor="productsServices">Products/Services <span className="text-red-500">*</span></Label>

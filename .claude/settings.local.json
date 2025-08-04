@@ -13,7 +13,8 @@
       "Bash(supabase functions:*)",
       "Bash(npm run build:*)",
       "Bash(npx eslint:*)",
-      "Bash(npx supabase functions deploy:*)"
+      "Bash(npx supabase functions deploy:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": []
   }

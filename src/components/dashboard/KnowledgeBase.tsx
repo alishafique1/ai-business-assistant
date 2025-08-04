@@ -348,110 +348,37 @@ export function KnowledgeBase() {
     
     try {
       setLoading(true);
-      console.log('🔄 FETCHING - Starting knowledge base fetch from ML API...');
+      console.log('🔄 FETCHING - Prioritizing user localStorage data over shared API...');
       
-      let apiEntries = [];
-      let fetchSuccessful = false;
-
-      // Try method 1: GET /knowledge-base
-      try {
-        console.log('📡 METHOD 1 - Trying GET /knowledge-base...');
-        const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/knowledge-base', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        console.log('📡 METHOD 1 - Response status:', response.status);
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('📡 METHOD 1 - Success! Data:', data);
-          apiEntries = Array.isArray(data) ? data : (data.entries ? data.entries : []);
-          fetchSuccessful = true;
-        } else {
-          console.log('📡 METHOD 1 - Failed with status:', response.status);
-        }
-      } catch (method1Error) {
-        console.log('📡 METHOD 1 - Exception:', method1Error.message);
-      }
-
-      // Try method 2: GET /get-knowledge-base if method 1 failed
-      if (!fetchSuccessful) {
-        try {
-          console.log('📡 METHOD 2 - Trying GET /get-knowledge-base...');
-          const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/get-knowledge-base', {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-          
-          console.log('📡 METHOD 2 - Response status:', response.status);
-          
-          if (response.ok) {
-            const data = await response.json();
-            console.log('📡 METHOD 2 - Success! Data:', data);
-            
-            // Try to parse the response and extract knowledge base entries
-            if (data.knowledge_base || data.entries) {
-              apiEntries = Array.isArray(data.knowledge_base) ? data.knowledge_base : 
-                          Array.isArray(data.entries) ? data.entries : [];
-            } else if (typeof data === 'object' && data.business_name) {
-              // Single entry format
-              apiEntries = [data];
-            } else if (Array.isArray(data)) {
-              apiEntries = data;
-            }
-            fetchSuccessful = true;
-          } else {
-            console.log('📡 METHOD 2 - Failed with status:', response.status);
-          }
-        } catch (method2Error) {
-          console.log('📡 METHOD 2 - Exception:', method2Error.message);
-        }
-      }
+      // Always prioritize localStorage data for user's personal knowledge base
+      const currentEntries = await safeReadFromLocalStorage();
       
-      if (!fetchSuccessful) {
-        console.log('📡 BOTH METHODS FAILED - Using localStorage fallback');
-        const currentEntries = await safeReadFromLocalStorage();
-        if (currentEntries.length === 0) {
-          console.log('📡 No localStorage data either, showing empty state');
-          setEntries([]);
-        } else {
-          console.log('📡 Using existing localStorage data:', currentEntries.length, 'entries');
-          // Don't call setEntries to avoid triggering save effect
-        }
+      if (currentEntries.length > 0) {
+        console.log('✅ USING LOCALSTORAGE - Found', currentEntries.length, 'personal entries, using them instead of API');
+        setEntries(currentEntries);
         return;
       }
       
-      // Get current localStorage data to compare using semaphore
-      const currentEntries = await safeReadFromLocalStorage();
+      console.log('💾 NO LOCALSTORAGE DATA - Checking if migration is needed or showing empty state');
       
-      // Only update if we got meaningful data from API
-      // Don't override localStorage with empty API responses
-      if (apiEntries.length > 0) {
-        console.log('API returned data, updating entries:', apiEntries);
-        setEntries(apiEntries);
-      } else if (currentEntries.length === 0) {
-        // Only set empty if localStorage is also empty (fresh user)
-        console.log('Both API and localStorage are empty, showing empty state');
-        setEntries([]);
-      } else {
-        // Keep localStorage data if API is empty but localStorage has data
-        console.log('API returned empty but localStorage has data, keeping localStorage entries:', currentEntries.length);
-        // Don't call setEntries to avoid triggering the save effect
-      }
+      // If no localStorage data, show empty state (don't fetch from shared API)
+      // The shared API contains example data that isn't user-specific
+      console.log('📡 SKIPPING API FETCH - API contains shared/example data, not user-specific data');
+      console.log('💡 RECOMMENDATION - Users should add their own data via the form');
+      
+      setEntries([]);
+      
     } catch (error) {
-      console.error('Error fetching knowledge base:', error);
+      console.error('Error in fetchKnowledgeBase:', error);
       
-      // Don't show error toast if it's just that the GET endpoint doesn't exist
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        console.log('Network error or CORS issue, keeping existing localStorage data');
+      // Always keep existing localStorage data instead of clearing
+      const fallbackEntries = await safeReadFromLocalStorage();
+      if (fallbackEntries.length > 0) {
+        console.log('🔄 FALLBACK - Using existing localStorage data:', fallbackEntries.length, 'entries');
+        setEntries(fallbackEntries);
       } else {
-        // Keep existing localStorage data instead of clearing
-        console.log('API error, keeping existing localStorage data');
+        console.log('📭 EMPTY STATE - No data available');
+        setEntries([]);
       }
     } finally {
       setLoading(false);
@@ -473,29 +400,48 @@ export function KnowledgeBase() {
   const fetchKnowledgeBasePreview = async () => {
     try {
       setPreviewLoading(true);
-      console.log('Fetching knowledge base preview...');
+      console.log('🔍 Generating knowledge base preview from user data...');
       
-      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/get-knowledge-base');
+      // Use current user's entries instead of fetching from shared API
+      const userEntries = entries.length > 0 ? entries : await safeReadFromLocalStorage();
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch knowledge base preview');
+      if (userEntries.length === 0) {
+        setKnowledgeBasePreview("No business information available to preview.\n\nAdd your business information using the form above to see how the AI will use it for personalized responses.");
+        return;
       }
       
-      const data = await response.json();
-      console.log('Knowledge base preview data:', data);
+      // Generate a formatted preview of the user's business knowledge
+      let preview = "=== YOUR BUSINESS KNOWLEDGE BASE ===\n\n";
       
-      // Handle different possible response formats
-      const preview = data.formatted_knowledge || data.content || data.knowledge_base || JSON.stringify(data, null, 2);
+      userEntries.forEach((entry, index) => {
+        preview += `Business ${index + 1}:\n`;
+        preview += `• Company: ${entry.business_name}\n`;
+        preview += `• Industry: ${getIndustryLabel(entry.industry)}\n`;
+        preview += `• Target Audience: ${entry.target_audience}\n`;
+        preview += `• Products & Services: ${entry.products_services}\n`;
+        if (entry.created_at) {
+          preview += `• Added: ${new Date(entry.created_at).toLocaleDateString()}\n`;
+        }
+        preview += "\n" + "=".repeat(50) + "\n\n";
+      });
+      
+      preview += "HOW AI USES THIS INFORMATION:\n";
+      preview += "• Provides personalized business advice\n";
+      preview += "• Creates content relevant to your industry\n";
+      preview += "• Understands your target audience for marketing suggestions\n";
+      preview += "• Gives context-aware recommendations for your specific business\n";
+      
+      console.log('✅ Generated preview from', userEntries.length, 'user entries');
       setKnowledgeBasePreview(preview);
       
     } catch (error) {
-      console.error('Error fetching knowledge base preview:', error);
+      console.error('Error generating knowledge base preview:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch knowledge base preview",
+        description: "Failed to generate knowledge base preview",
         variant: "destructive"
       });
-      setKnowledgeBasePreview("Unable to load knowledge base preview");
+      setKnowledgeBasePreview("Unable to generate knowledge base preview from your data");
     } finally {
       setPreviewLoading(false);
     }

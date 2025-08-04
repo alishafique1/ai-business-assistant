@@ -61,12 +61,30 @@ export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseH
       // while ML API expenses might use created_at (full timestamp)
       let expenseDate: Date;
       
+      // Try to parse date with multiple fallbacks for robustness
       if (expense.date) {
-        // For manual expenses: expense.date is in YYYY-MM-DD format
-        expenseDate = parseISO(expense.date);
+        try {
+          // First try parsing as ISO date string (YYYY-MM-DD)
+          expenseDate = parseISO(expense.date);
+          // Validate the parsed date
+          if (isNaN(expenseDate.getTime())) {
+            throw new Error('Invalid date');
+          }
+        } catch (error) {
+          // If ISO parsing fails, try direct Date constructor
+          expenseDate = new Date(expense.date);
+          if (isNaN(expenseDate.getTime())) {
+            // If still invalid, fallback to created_at or current time
+            expenseDate = expense.created_at ? new Date(expense.created_at) : now;
+          }
+        }
       } else if (expense.created_at) {
         // For ML API expenses: created_at is a full timestamp
         expenseDate = new Date(expense.created_at);
+        // Validate the parsed date
+        if (isNaN(expenseDate.getTime())) {
+          expenseDate = now;
+        }
       } else {
         // Fallback to current time
         expenseDate = now;
@@ -77,18 +95,27 @@ export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseH
           // Compare dates at day level, not exact timestamps
           const expenseDayStart = startOfDay(expenseDate);
           const isToday = isSameDay(expenseDayStart, today);
-          console.log('🗓️ TODAY FILTER DEBUG:', {
-            expenseId: expense.id,
-            expenseTitle: expense.title,
-            rawExpenseDate: expense.date,
-            rawCreatedAt: expense.created_at,
-            parsedExpenseDate: expenseDate,
-            expenseDayStart: expenseDayStart,
-            currentDate: now,
-            todayStart: today,
-            isSameDay: isToday,
-            isManualExpense: expense.id && expense.id.length === 36 && expense.id.includes('-')
-          });
+          
+          // Enhanced debugging for ML API expenses
+          const isMLAPIExpense = expense.id && !(expense.id.length === 36 && expense.id.includes('-'));
+          if (isMLAPIExpense || !isToday) {
+            console.log('🗓️ TODAY FILTER DEBUG:', {
+              expenseId: expense.id,
+              expenseTitle: expense.title,
+              rawExpenseDate: expense.date,
+              rawCreatedAt: expense.created_at,
+              parsedExpenseDate: expenseDate,
+              expenseDayStart: expenseDayStart,
+              currentDate: now,
+              todayStart: today,
+              isSameDay: isToday,
+              isMLAPIExpense,
+              dateValid: !isNaN(expenseDate.getTime()),
+              timeDiff: expenseDate.getTime() - today.getTime(),
+              userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+              timeDiffHours: (expenseDate.getTime() - today.getTime()) / (1000 * 60 * 60)
+            });
+          }
           return isToday;
         }
         case 'week': {
@@ -114,12 +141,25 @@ export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseH
     const grouped: GroupedExpenses = {};
     
     filteredExpenses.forEach(expense => {
-      // Use same date parsing logic as filtering
+      // Use same robust date parsing logic as filtering
       let expenseDate: Date;
       if (expense.date) {
-        expenseDate = parseISO(expense.date);
+        try {
+          expenseDate = parseISO(expense.date);
+          if (isNaN(expenseDate.getTime())) {
+            throw new Error('Invalid date');
+          }
+        } catch (error) {
+          expenseDate = new Date(expense.date);
+          if (isNaN(expenseDate.getTime())) {
+            expenseDate = expense.created_at ? new Date(expense.created_at) : new Date();
+          }
+        }
       } else if (expense.created_at) {
         expenseDate = new Date(expense.created_at);
+        if (isNaN(expenseDate.getTime())) {
+          expenseDate = new Date();
+        }
       } else {
         expenseDate = new Date();
       }

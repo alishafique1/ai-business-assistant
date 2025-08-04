@@ -23,8 +23,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('useAuth: Auth state changed', { event, hasSession: !!session, userId: session?.user?.id });
-        setSession(session);
-        setUser(session?.user ?? null);
+        
+        // Handle different auth events
+        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
+          console.log('useAuth: User signed out or session expired, clearing state');
+          setSession(null);
+          setUser(null);
+        } else if (event === 'SIGNED_IN' && session) {
+          console.log('useAuth: User signed in, setting session');
+          setSession(session);
+          setUser(session.user);
+        } else {
+          // Default behavior for other events
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
+        
         setLoading(false);
       }
     );
@@ -32,14 +46,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Get initial session with error handling
     console.log('useAuth: Getting initial session');
     supabase.auth.getSession()
-      .then(({ data: { session } }) => {
-        console.log('useAuth: Initial session retrieved', { hasSession: !!session, userId: session?.user?.id });
-        setSession(session);
-        setUser(session?.user ?? null);
+      .then(({ data: { session }, error }) => {
+        if (error) {
+          console.error('useAuth: Error getting initial session:', error);
+          setSession(null);
+          setUser(null);
+        } else {
+          console.log('useAuth: Initial session retrieved', { hasSession: !!session, userId: session?.user?.id });
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
         setLoading(false);
       })
       .catch((error) => {
         console.error('useAuth: Failed to get session:', error);
+        setSession(null);
+        setUser(null);
         setLoading(false);
       });
 
@@ -51,11 +73,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
+      console.log('useAuth: Signing out user');
+      
+      // Immediately clear local state
+      setUser(null);
+      setSession(null);
+      
+      // Sign out from Supabase
       const { error } = await supabase.auth.signOut({ scope: 'global' });
-      if (error) throw error;
+      if (error) {
+        console.error('useAuth: Error during signOut:', error);
+      } else {
+        console.log('useAuth: Successfully signed out');
+      }
+      
+      // Clear any remaining local storage
+      try {
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('sb-') || key.includes('supabase')) {
+            localStorage.removeItem(key);
+          }
+        });
+        console.log('useAuth: Cleared Supabase localStorage keys');
+      } catch (clearError) {
+        console.warn('useAuth: Error clearing localStorage:', clearError);
+      }
+      
+      // Redirect to auth page
       window.location.href = '/auth';
     } catch (error) {
       console.error('Error signing out:', error);
+      // Force redirect even if signOut fails
+      window.location.href = '/auth';
     }
   };
 

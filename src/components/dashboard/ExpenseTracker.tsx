@@ -15,6 +15,7 @@ import { useCurrency } from "@/hooks/useCurrency";
 import { useReceiptLimit } from "@/hooks/useReceiptLimit";
 import { usePlan } from "@/hooks/usePlan";
 import { useTimezone } from "@/hooks/useTimezone";
+import { useNotifications } from "@/hooks/useNotifications";
 import { ExpenseHistory } from "./ExpenseHistory";
 import { CategoryExpenseHistory } from "./CategoryExpenseHistory";
 
@@ -39,6 +40,7 @@ export function ExpenseTracker() {
   const { planData } = usePlan();
   const { canAddReceipt, remainingReceipts, incrementCount, limitData, loading: limitLoading, error: limitError, liveTimer, formatTimeRemaining, shouldShowTimer } = useReceiptLimit();
   const { formatExpenseDate, formatDateTime, getCurrentDate, getTimezoneDisplay } = useTimezone();
+  const { notifyExpenseAdded, notifyLargeExpense, notifyDuplicateExpense, notifyReceiptProcessed } = useNotifications();
   const [isRecording, setIsRecording] = useState(false);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categorySummary, setCategorySummary] = useState<Record<string, { total: number; count: number }>>({});
@@ -115,7 +117,21 @@ export function ExpenseTracker() {
       // Process ML API expenses
       if (mlApiResponse.ok) {
         const mlExpenses = await mlApiResponse.json();
-        console.log('ML API expenses:', mlExpenses);
+        console.log('🔍 ML API RESPONSE - Raw expenses:', mlExpenses);
+        console.log('🔍 ML API RESPONSE - Type:', typeof mlExpenses, 'Is Array:', Array.isArray(mlExpenses));
+        
+        if (Array.isArray(mlExpenses) && mlExpenses.length > 0) {
+          console.log('🔍 ML API RESPONSE - First expense sample:', {
+            id: mlExpenses[0].id,
+            title: mlExpenses[0].title,
+            amount: mlExpenses[0].amount,
+            category: mlExpenses[0].category,
+            date: mlExpenses[0].date,
+            created_at: mlExpenses[0].created_at,
+            dateType: typeof mlExpenses[0].date,
+            createdAtType: typeof mlExpenses[0].created_at
+          });
+        }
         
         // Force ALL ML API expenses to use today's date if created recently
         const todayDate = getCurrentDate();
@@ -135,10 +151,10 @@ export function ExpenseTracker() {
           
           // Transform recent ML expenses to use Digital Receipt format (assumes recent expenses are from photo uploads)
           if (isRecentExpense) {
-            // Always use current local time for recent ML expenses (likely receipt uploads)
-            // This fixes the 5am timestamp issue from ML API
-            const localTime = new Date();
-            const dateTimeString = localTime.toLocaleString(undefined, {
+            // Use the actual expense timestamp, not current time
+            // This shows when the receipt was actually processed/logged
+            const expenseTimestamp = new Date(processedExpense.created_at || processedExpense.date || new Date());
+            const dateTimeString = expenseTimestamp.toLocaleString(undefined, {
               year: 'numeric',
               month: '2-digit',
               day: '2-digit',
@@ -165,25 +181,58 @@ export function ExpenseTracker() {
               ...processedExpense,
               title: `Digital Receipt: ${dateTimeString}`.slice(0, 75),
               description: combinedDescription.slice(0, 150),
-              // Preserve original date from ML API instead of forcing to today
-              date: processedExpense.date || processedExpense.created_at?.split('T')[0] || todayDate
+              // Use today's date for recent ML expenses to fix timezone issues
+              // This ensures they appear on the correct day in user's timezone
+              date: todayDate
             };
             
-            console.log('Transformed ML expense to digital receipt format:', {
+            console.log('🕐 Transformed ML expense with logged time:', {
               originalTitle,
               newTitle: processedExpense.title,
               newDescription: processedExpense.description,
-              originalTimestamp: processedExpense.created_at || processedExpense.date,
-              originalTimeHour: new Date(processedExpense.created_at || processedExpense.date || '').getHours(),
-              newFormattedTime: dateTimeString,
-              currentLocalTime: new Date().toLocaleString()
+              originalMLTimestamp: expense.created_at || expense.date,
+              originalMLTimeHour: new Date(expense.created_at || expense.date || '').getHours(),
+              fixedDate: todayDate,
+              loggedTime: dateTimeString,
+              actualExpenseTimestamp: expenseTimestamp.toISOString(),
+              userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
             });
           }
           
           return processedExpense;
         });
         
-        allExpenses = [...allExpenses, ...fixedMLExpenses];
+        // Additional timezone fix for all ML expenses
+        const timezoneFixedExpenses = fixedMLExpenses.map((expense) => {
+          // For ML API expenses, ensure the date is properly handled for user's timezone
+          if (expense.date && typeof expense.date === 'string') {
+            try {
+              const expenseDate = new Date(expense.date);
+              // Check if this date seems to be in UTC but should be in local timezone
+              const now = new Date();
+              const timeDiff = now.getTime() - expenseDate.getTime();
+              const isWithinLast3Days = timeDiff >= 0 && timeDiff <= (3 * 24 * 60 * 60 * 1000);
+              
+              if (isWithinLast3Days) {
+                // For recent expenses, use the current date to fix timezone issues
+                expense.date = getCurrentDate();
+                console.log('🕐 Applied timezone fix to recent ML expense:', {
+                  expenseId: expense.id,
+                  originalDate: expenseDate.toISOString(),
+                  fixedDate: expense.date,
+                  userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                });
+              }
+            } catch (error) {
+              console.warn('Error processing ML expense date:', error);
+              // Fallback to current date
+              expense.date = getCurrentDate();
+            }
+          }
+          return expense;
+        });
+        
+        allExpenses = [...allExpenses, ...timezoneFixedExpenses];
       }
       
       // Process business_expenses from Supabase
@@ -254,7 +303,18 @@ export function ExpenseTracker() {
         allExpenses = [...allExpenses, ...businessExpenses];
       }
       
-      console.log(`Combined expenses: ${allExpenses.length} total`);
+      console.log(`🔍 COMBINED EXPENSES DEBUG:`, {
+        total: allExpenses.length,
+        supabaseExpenses: supabaseResponse.data?.length || 0,
+        sampleExpense: allExpenses.length > 0 ? {
+          id: allExpenses[0].id,
+          title: allExpenses[0].title,
+          date: allExpenses[0].date,
+          created_at: allExpenses[0].created_at,
+          category: allExpenses[0].category,
+          isMLExpense: !(allExpenses[0].id && allExpenses[0].id.length === 36 && allExpenses[0].id.includes('-'))
+        } : null
+      });
       
       // Remove duplicates - both exact ID matches and functional duplicates (same amount, similar time)
       const uniqueExpenses = allExpenses.filter((expense, index, arr) => {
@@ -778,6 +838,41 @@ export function ExpenseTracker() {
 
       if (error) throw error;
       
+      // Send notifications for the new expense
+      if (data) {
+        try {
+          const newExpense = {
+            id: data.id,
+            title: combinedDescription,
+            amount: parseFloat(formData.amount),
+            category: categoryToStore,
+            date: expenseDate
+          };
+          
+          // Send expense added notification
+          await notifyExpenseAdded(newExpense);
+          
+          // Check for large expense alert
+          await notifyLargeExpense(newExpense);
+          
+          // Check for potential duplicates
+          const duplicateCheck = expenses.filter(expense => 
+            Math.abs(expense.amount - newExpense.amount) < 0.01 &&
+            expense.category === newExpense.category &&
+            expense.date === newExpense.date
+          );
+          
+          if (duplicateCheck.length > 0) {
+            await notifyDuplicateExpense(newExpense, duplicateCheck);
+          }
+          
+          console.log('✅ Expense notifications sent');
+        } catch (notificationError) {
+          console.error('❌ Failed to send expense notifications:', notificationError);
+          // Don't break the flow if notifications fail
+        }
+      }
+      
       toast({
         title: "Success",
         description: "Expense created successfully"
@@ -1085,6 +1180,7 @@ export function ExpenseTracker() {
 
     try {
       setUploadingReceipt(true);
+      const uploadStartTime = Date.now(); // Track upload time for notifications
       
       // Create FormData for file upload
       const formData = new FormData();
@@ -1111,9 +1207,10 @@ export function ExpenseTracker() {
 
       if (responseData?.amount && responseData?.category) {
         try {
-          // Create digital receipt title with current date and time in user's local timezone
-          const now = new Date();
-          const dateTimeString = now.toLocaleString(undefined, {
+          // Create digital receipt title with the actual processing time, not current time
+          // Use the timestamp from when the receipt was processed/uploaded
+          const processedTime = responseData.created_at ? new Date(responseData.created_at) : new Date();
+          const dateTimeString = processedTime.toLocaleString(undefined, {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
@@ -1149,8 +1246,8 @@ export function ExpenseTracker() {
           console.log('Receipt processing - Final formatted data:', {
             newTitle: responseData.title,
             newDescription: responseData.description,
-            uploadTime: now.toISOString(),
-            formattedTime: dateTimeString,
+            processedTime: processedTime.toISOString(),
+            displayTime: dateTimeString,
             userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
           });
           
@@ -1181,14 +1278,28 @@ export function ExpenseTracker() {
         // Log the extraction for debugging
         console.log('Receipt extraction result:', responseData);
         
-        // Preserve the original date from ML API instead of forcing to today
-        // Only use today's date as fallback if ML API didn't provide a date
-        if (!responseData.date && !responseData.created_at) {
+        // Fix timezone issue for ML API expenses
+        // The ML API might return UTC timestamps, but we want them to show in user's local timezone
+        if (responseData.created_at || responseData.date) {
+          // Always use current local date for picture uploads to avoid timezone confusion
+          // This ensures the expense appears on the correct day in the user's timezone
+          const todayDate = getCurrentDate();
+          const originalDate = responseData.date || responseData.created_at;
+          
+          console.log(`🕐 TIMEZONE FIX - ML API date handling:`, {
+            originalMLDate: originalDate,
+            originalMLDateType: typeof originalDate,
+            userLocalDate: todayDate,
+            userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            reason: 'Using current local date to fix timezone issues with ML API'
+          });
+          
+          // Override with current local date to ensure it shows today
+          responseData.date = todayDate;
+        } else {
           const todayDate = getCurrentDate();
           responseData.date = todayDate;
           console.log(`ML API didn't provide date, using today: ${todayDate}`);
-        } else {
-          console.log(`Preserving original ML API date: ${responseData.date || responseData.created_at}`);
         }
         
         // Check for potential duplicates in existing expenses
@@ -1197,6 +1308,44 @@ export function ExpenseTracker() {
           expense.title === responseData.title &&
           Math.abs(new Date(expense.created_at || expense.date || '').getTime() - new Date().getTime()) < 24 * 60 * 60 * 1000 // Within 24 hours
         );
+        
+        // Send notifications for receipt processing
+        try {
+          const receiptExpense = {
+            id: responseData.id,
+            title: responseData.title || 'Receipt expense',
+            amount: responseData.amount,
+            category: mlReturnedCategory,
+            date: responseData.date
+          };
+          
+          // Send receipt processed notification
+          await notifyReceiptProcessed(receiptExpense, {
+            originalCategory: mlReturnedCategory,
+            confidence: responseData.confidence,
+            processingTime: Date.now() - uploadStartTime
+          });
+          
+          // Send expense added notification
+          await notifyExpenseAdded(receiptExpense);
+          
+          // Check for large expense alert
+          await notifyLargeExpense(receiptExpense);
+          
+          // Check for duplicate and send notification if needed
+          if (isDuplicate) {
+            const duplicates = expenses.filter(expense => 
+              expense.amount === responseData.amount && 
+              expense.title === responseData.title
+            );
+            await notifyDuplicateExpense(receiptExpense, duplicates);
+          }
+          
+          console.log('✅ Receipt processing notifications sent');
+        } catch (notificationError) {
+          console.error('❌ Failed to send receipt processing notifications:', notificationError);
+          // Don't break the flow if notifications fail
+        }
         
         if (isDuplicate) {
           toast({
@@ -1814,7 +1963,6 @@ export function ExpenseTracker() {
                       console.log('📅 DATE INPUT CHANGED:', e.target.value);
                       setFormData({...formData, date: e.target.value});
                     }}
-                    disabled={!canAddReceipt}
                   />
                 </div>
               </div>

@@ -7,12 +7,13 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Bell, CreditCard, Lock, User, Trash2, Loader2, MapPin, Clock, AlertTriangle, Download, FileText } from "lucide-react";
+import { Bell, CreditCard, Lock, User, Trash2, Loader2, MapPin, Clock, AlertTriangle, Download, FileText, Shield, Zap, MessageSquare, Smartphone, AlertCircle, TrendingUp, Brain, Settings as SettingsIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlan } from "@/hooks/usePlan";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useNotifications } from "@/hooks/useNotifications";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,18 +50,51 @@ interface ProfileData {
 }
 
 interface NotificationPreferences {
+  // General
   email_notifications: boolean;
   push_notifications: boolean;
+  sms_notifications: boolean;
+  
+  // Reports & Summaries
   daily_summaries: boolean;
   weekly_insights: boolean;
   monthly_reports: boolean;
+  
+  // Business Alerts
+  expense_alerts: boolean;
+  budget_warnings: boolean;
+  large_expense_threshold: boolean;
+  duplicate_expense_warnings: boolean;
+  
+  // AI & Automation
+  ai_insights: boolean;
+  smart_categorization_suggestions: boolean;
+  receipt_processing_status: boolean;
+  
+  // Security & Account
+  login_alerts: boolean;
+  account_changes: boolean;
+  data_export_completion: boolean;
+  
+  // Marketing & Updates
   feature_updates: boolean;
+  product_announcements: boolean;
+  tips_and_tutorials: boolean;
+  
+  // Integration Notifications
+  telegram_notifications: boolean;
+  whatsapp_notifications: boolean;
+  
+  // Timing Preferences
+  quiet_hours_enabled: boolean;
+  notification_schedule: 'immediate' | 'batched' | 'daily_digest';
 }
 
 export function Settings() {
   const { user, session } = useAuth();
   const { planData, upgradeToPro, downgradeToFree } = usePlan();
   const { toast } = useToast();
+  const { notifyDataExportComplete, notifyAccountChange } = useNotifications();
   
   // Profile state
   const [profileData, setProfileData] = useState<ProfileData>({
@@ -83,12 +117,44 @@ export function Settings() {
     manual_timezone: false
   });
   const [originalNotifications, setOriginalNotifications] = useState<NotificationPreferences>({
+    // General
     email_notifications: true,
     push_notifications: false,
+    sms_notifications: false,
+    
+    // Reports & Summaries
     daily_summaries: true,
     weekly_insights: true,
     monthly_reports: false,
-    feature_updates: true
+    
+    // Business Alerts
+    expense_alerts: true,
+    budget_warnings: true,
+    large_expense_threshold: true,
+    duplicate_expense_warnings: true,
+    
+    // AI & Automation
+    ai_insights: true,
+    smart_categorization_suggestions: true,
+    receipt_processing_status: true,
+    
+    // Security & Account
+    login_alerts: true,
+    account_changes: true,
+    data_export_completion: true,
+    
+    // Marketing & Updates
+    feature_updates: true,
+    product_announcements: false,
+    tips_and_tutorials: true,
+    
+    // Integration Notifications
+    telegram_notifications: false,
+    whatsapp_notifications: false,
+    
+    // Timing Preferences
+    quiet_hours_enabled: false,
+    notification_schedule: 'immediate'
   });
 
   // Currency to timezone mapping
@@ -133,12 +199,44 @@ export function Settings() {
   
   // Notification state
   const [notifications, setNotifications] = useState<NotificationPreferences>({
+    // General
     email_notifications: true,
     push_notifications: false,
+    sms_notifications: false,
+    
+    // Reports & Summaries
     daily_summaries: true,
     weekly_insights: true,
     monthly_reports: false,
-    feature_updates: true
+    
+    // Business Alerts
+    expense_alerts: true,
+    budget_warnings: true,
+    large_expense_threshold: true,
+    duplicate_expense_warnings: true,
+    
+    // AI & Automation
+    ai_insights: true,
+    smart_categorization_suggestions: true,
+    receipt_processing_status: true,
+    
+    // Security & Account
+    login_alerts: true,
+    account_changes: true,
+    data_export_completion: true,
+    
+    // Marketing & Updates
+    feature_updates: true,
+    product_announcements: false,
+    tips_and_tutorials: true,
+    
+    // Integration Notifications
+    telegram_notifications: false,
+    whatsapp_notifications: false,
+    
+    // Timing Preferences
+    quiet_hours_enabled: false,
+    notification_schedule: 'immediate'
   });
   
   // Loading states
@@ -236,16 +334,96 @@ export function Settings() {
 
   const fetchNotificationPreferences = async () => {
     try {
-      // Try to get notification preferences from localStorage
-      const storedNotifications = localStorage.getItem(`notifications_${user?.id}`);
-      if (storedNotifications) {
-        const notificationData = JSON.parse(storedNotifications);
-        setNotifications(notificationData);
-        setOriginalNotifications(notificationData);
+      if (!user?.id) return;
+
+      console.log('🔔 Fetching notification preferences from database...');
+      
+      // Fetch notification preferences from Supabase
+      const { data: notificationData, error: notificationError } = await supabase
+        .from('notification_preferences')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (notificationError && notificationError.code !== 'PGRST116') {
+        console.error('Error fetching notification preferences:', notificationError);
+        
+        // Fallback to localStorage
+        const storedNotifications = localStorage.getItem(`notifications_${user.id}`);
+        if (storedNotifications) {
+          const localData = JSON.parse(storedNotifications);
+          setNotifications(localData);
+          setOriginalNotifications(localData);
+        }
+      } else if (notificationData) {
+        console.log('✅ Loaded notification preferences from database:', notificationData);
+        
+        // Map database fields to component state
+        const mappedNotifications: NotificationPreferences = {
+          // General
+          email_notifications: notificationData.email_notifications ?? true,
+          push_notifications: notificationData.push_notifications ?? false,
+          sms_notifications: notificationData.sms_notifications ?? false,
+          
+          // Reports & Summaries
+          daily_summaries: notificationData.daily_summaries ?? true,
+          weekly_insights: notificationData.weekly_insights ?? true,
+          monthly_reports: notificationData.monthly_reports ?? false,
+          
+          // Business Alerts
+          expense_alerts: notificationData.expense_alerts ?? true,
+          budget_warnings: notificationData.budget_warnings ?? true,
+          large_expense_threshold: notificationData.large_expense_threshold ?? true,
+          duplicate_expense_warnings: notificationData.duplicate_expense_warnings ?? true,
+          
+          // AI & Automation
+          ai_insights: notificationData.ai_insights ?? true,
+          smart_categorization_suggestions: notificationData.smart_categorization_suggestions ?? true,
+          receipt_processing_status: notificationData.receipt_processing_status ?? true,
+          
+          // Security & Account
+          login_alerts: notificationData.login_alerts ?? true,
+          account_changes: notificationData.account_changes ?? true,
+          data_export_completion: notificationData.data_export_completion ?? true,
+          
+          // Marketing & Updates
+          feature_updates: notificationData.feature_updates ?? true,
+          product_announcements: notificationData.product_announcements ?? false,
+          tips_and_tutorials: notificationData.tips_and_tutorials ?? true,
+          
+          // Integration Notifications
+          telegram_notifications: notificationData.telegram_notifications ?? false,
+          whatsapp_notifications: notificationData.whatsapp_notifications ?? false,
+          
+          // Timing Preferences
+          quiet_hours_enabled: notificationData.quiet_hours_enabled ?? false,
+          notification_schedule: notificationData.notification_schedule || 'immediate'
+        };
+        
+        setNotifications(mappedNotifications);
+        setOriginalNotifications(mappedNotifications);
+      } else {
+        console.log('📝 No notification preferences found, creating defaults...');
+        
+        // Create default notification preferences in database
+        const { error: insertError } = await supabase
+          .from('notification_preferences')
+          .insert({
+            user_id: user.id,
+            // Defaults will be set by database constraints
+          });
+          
+        if (insertError) {
+          console.error('Error creating default notification preferences:', insertError);
+        } else {
+          console.log('✅ Created default notification preferences');
+          // Refetch to get the created preferences
+          fetchNotificationPreferences();
+        }
       }
       
-      // Try to get other preferences from localStorage
-      const storedPreferences = localStorage.getItem(`preferences_${user?.id}`);
+      // Try to get other preferences from localStorage for now
+      const storedPreferences = localStorage.getItem(`preferences_${user.id}`);
       if (storedPreferences) {
         const prefs = JSON.parse(storedPreferences);
         const updatedProfileData = {
@@ -321,7 +499,61 @@ export function Settings() {
 
       if (error) throw error;
 
-      // Save notification preferences to localStorage for now
+      // Save notification preferences to database
+      console.log('💾 Saving notification preferences to database...');
+      
+      const { error: notificationError } = await supabase
+        .from('notification_preferences')
+        .upsert({
+          user_id: user.id,
+          // General
+          email_notifications: notifications.email_notifications,
+          push_notifications: notifications.push_notifications,
+          sms_notifications: notifications.sms_notifications,
+          
+          // Reports & summaries
+          daily_summaries: notifications.daily_summaries,
+          weekly_insights: notifications.weekly_insights,
+          monthly_reports: notifications.monthly_reports,
+          
+          // Business alerts
+          expense_alerts: notifications.expense_alerts,
+          budget_warnings: notifications.budget_warnings,
+          large_expense_threshold: notifications.large_expense_threshold,
+          duplicate_expense_warnings: notifications.duplicate_expense_warnings,
+          
+          // AI & automation
+          ai_insights: notifications.ai_insights,
+          smart_categorization_suggestions: notifications.smart_categorization_suggestions,
+          receipt_processing_status: notifications.receipt_processing_status,
+          
+          // Security & account
+          login_alerts: notifications.login_alerts,
+          account_changes: notifications.account_changes,
+          data_export_completion: notifications.data_export_completion,
+          
+          // Marketing & updates
+          feature_updates: notifications.feature_updates,
+          product_announcements: notifications.product_announcements,
+          tips_and_tutorials: notifications.tips_and_tutorials,
+          
+          // Integration notifications
+          telegram_notifications: notifications.telegram_notifications,
+          whatsapp_notifications: notifications.whatsapp_notifications,
+          
+          // Timing preferences
+          quiet_hours_enabled: notifications.quiet_hours_enabled,
+          notification_schedule: notifications.notification_schedule,
+        });
+
+      if (notificationError) {
+        console.error('Error saving notification preferences:', notificationError);
+        throw new Error(`Failed to save notification preferences: ${notificationError.message}`);
+      } else {
+        console.log('✅ Notification preferences saved to database');
+      }
+
+      // Backup to localStorage
       localStorage.setItem(`notifications_${user.id}`, JSON.stringify(notifications));
       
       // Save other preferences to localStorage
@@ -330,6 +562,16 @@ export function Settings() {
         currency: profileData.currency,
         manual_timezone: profileData.manual_timezone
       }));
+
+      // Send account change notification
+      try {
+        await notifyAccountChange('profile and notification settings', {
+          profileChanged: hasProfileChanged(),
+          notificationsChanged: hasNotificationsChanged()
+        });
+      } catch (notificationError) {
+        console.error('Failed to send account change notification:', notificationError);
+      }
 
       toast({
         title: "Settings Saved",
@@ -373,12 +615,44 @@ export function Settings() {
   // Function to check if notifications have changed
   const hasNotificationsChanged = (): boolean => {
     return (
+      // General
       notifications.email_notifications !== originalNotifications.email_notifications ||
       notifications.push_notifications !== originalNotifications.push_notifications ||
+      notifications.sms_notifications !== originalNotifications.sms_notifications ||
+      
+      // Reports & Summaries
       notifications.daily_summaries !== originalNotifications.daily_summaries ||
       notifications.weekly_insights !== originalNotifications.weekly_insights ||
       notifications.monthly_reports !== originalNotifications.monthly_reports ||
-      notifications.feature_updates !== originalNotifications.feature_updates
+      
+      // Business Alerts
+      notifications.expense_alerts !== originalNotifications.expense_alerts ||
+      notifications.budget_warnings !== originalNotifications.budget_warnings ||
+      notifications.large_expense_threshold !== originalNotifications.large_expense_threshold ||
+      notifications.duplicate_expense_warnings !== originalNotifications.duplicate_expense_warnings ||
+      
+      // AI & Automation
+      notifications.ai_insights !== originalNotifications.ai_insights ||
+      notifications.smart_categorization_suggestions !== originalNotifications.smart_categorization_suggestions ||
+      notifications.receipt_processing_status !== originalNotifications.receipt_processing_status ||
+      
+      // Security & Account
+      notifications.login_alerts !== originalNotifications.login_alerts ||
+      notifications.account_changes !== originalNotifications.account_changes ||
+      notifications.data_export_completion !== originalNotifications.data_export_completion ||
+      
+      // Marketing & Updates
+      notifications.feature_updates !== originalNotifications.feature_updates ||
+      notifications.product_announcements !== originalNotifications.product_announcements ||
+      notifications.tips_and_tutorials !== originalNotifications.tips_and_tutorials ||
+      
+      // Integration Notifications
+      notifications.telegram_notifications !== originalNotifications.telegram_notifications ||
+      notifications.whatsapp_notifications !== originalNotifications.whatsapp_notifications ||
+      
+      // Timing Preferences
+      notifications.quiet_hours_enabled !== originalNotifications.quiet_hours_enabled ||
+      notifications.notification_schedule !== originalNotifications.notification_schedule
     );
   };
 
@@ -594,6 +868,13 @@ export function Settings() {
       
       console.log('✅ JSON download completed successfully');
       
+      // Send data export notification
+      try {
+        await notifyDataExportComplete('JSON', `user-data-${new Date().toISOString().split('T')[0]}.json`);
+      } catch (notificationError) {
+        console.error('Failed to send export notification:', notificationError);
+      }
+      
       toast({
         title: "JSON Data Downloaded",
         description: `Downloaded ${data.totalExpenses} expenses and profile data as JSON.`,
@@ -666,6 +947,13 @@ export function Settings() {
       URL.revokeObjectURL(url);
       
       console.log('✅ CSV download completed successfully');
+      
+      // Send data export notification
+      try {
+        await notifyDataExportComplete('CSV', `expenses-data-${new Date().toISOString().split('T')[0]}.csv`);
+      } catch (notificationError) {
+        console.error('Failed to send export notification:', notificationError);
+      }
       
       toast({
         title: "CSV Data Downloaded",
@@ -774,6 +1062,13 @@ export function Settings() {
         }, 500);
         
         console.log('✅ PDF generation initiated successfully');
+        
+        // Send data export notification
+        try {
+          await notifyDataExportComplete('PDF', `expenses-report-${new Date().toISOString().split('T')[0]}.pdf`);
+        } catch (notificationError) {
+          console.error('Failed to send export notification:', notificationError);
+        }
         
         toast({
           title: "PDF Generation",
@@ -1115,61 +1410,86 @@ export function Settings() {
         }
       }
 
+      // Clear all session data immediately regardless of auth deletion success
+      console.log('🧹 Clearing all session and browser data...');
+      
+      // Clear all browser storage
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+        console.log('✅ Browser storage cleared');
+      } catch (error) {
+        console.warn('⚠️ Error clearing browser storage:', error);
+      }
+
+      // Force sign out with global scope to clear all sessions
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+        console.log('✅ Supabase session cleared');
+      } catch (error) {
+        console.warn('⚠️ Error during sign out:', error);
+      }
+
       // Show results and handle next steps
       if (authUserDeleted) {
         toast({
           title: "🎉 Account Completely Deleted!",
-          description: "Your account and all data have been permanently deleted. You cannot log back in.",
+          description: "Your account and all data have been permanently deleted. Redirecting to homepage...",
           variant: "destructive"
         });
         
         console.log('✅ SUCCESS: Complete account deletion - user can no longer log in');
-        
-        // Wait longer before redirect since user is deleted
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 4000);
         
       } else {
         console.log('⚠️ Auth user deletion failed with all methods');
         
         toast({
           title: "⚠️ Partial Deletion Complete",
-          description: "Your data was cleared but the login account remains. You've been signed out.",
+          description: "Your data was cleared and you've been signed out. Redirecting to homepage...",
           variant: "destructive"
         });
-
-        // Sign out since auth deletion failed
-        await supabase.auth.signOut({ scope: 'global' });
-        
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 3000);
       }
+
+      // Always redirect after clearing everything, with a shorter delay
+      setTimeout(() => {
+        window.location.href = '/auth';
+      }, 2000);
 
       console.log(`📊 Final result - Auth user deleted: ${authUserDeleted}`);
 
     } catch (error) {
       console.error('❌ Account deletion failed:', error);
       
+      // Clear everything even if deletion failed
       try {
+        localStorage.clear();
+        sessionStorage.clear();
         await supabase.auth.signOut({ scope: 'global' });
+        console.log('✅ Emergency cleanup completed');
+        
         toast({
           title: "Partial Deletion",
-          description: "Some data was cleared. You've been signed out. Contact support if needed.",
+          description: "Some data was cleared. You've been signed out. Redirecting...",
           variant: "destructive"
         });
         
         setTimeout(() => {
-          window.location.href = '/';
+          window.location.href = '/auth';
         }, 2000);
+        
       } catch (signOutError) {
-        console.error('❌ Error signing out:', signOutError);
+        console.error('❌ Error during emergency cleanup:', signOutError);
+        
         toast({
           title: "Deletion Failed",
-          description: "Please clear your browser data and contact support.",
+          description: "Please manually clear your browser data and reload the page.",
           variant: "destructive"
         });
+        
+        // Force page reload as last resort
+        setTimeout(() => {
+          window.location.reload();
+        }, 3000);
       }
     } finally {
       setDeleting(false);
@@ -1337,85 +1657,417 @@ export function Settings() {
         </TabsContent>
 
         <TabsContent value="notifications">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Notification Preferences
-              </CardTitle>
-              <CardDescription>Choose how you want to be notified</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="email-notifications">Email Notifications</Label>
-                  <p className="text-sm text-muted-foreground">Receive updates and summaries via email</p>
+          <div className="space-y-6">
+            {/* General Notification Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-5 w-5" />
+                  General Notifications
+                </CardTitle>
+                <CardDescription>Choose your primary notification channels</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Bell className="h-5 w-5 text-blue-500" />
+                      <div>
+                        <Label htmlFor="email-notifications" className="font-medium">Email</Label>
+                        <p className="text-xs text-muted-foreground">Updates via email</p>
+                      </div>
+                    </div>
+                    <Switch 
+                      id="email-notifications"
+                      checked={notifications.email_notifications}
+                      onCheckedChange={(checked) => updateNotificationField('email_notifications', checked)}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Smartphone className="h-5 w-5 text-green-500" />
+                      <div>
+                        <Label htmlFor="push-notifications" className="font-medium">Browser Push</Label>
+                        <p className="text-xs text-muted-foreground">Instant notifications</p>
+                      </div>
+                    </div>
+                    <Switch 
+                      id="push-notifications"
+                      checked={notifications.push_notifications}
+                      onCheckedChange={(checked) => updateNotificationField('push_notifications', checked)}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <MessageSquare className="h-5 w-5 text-purple-500" />
+                      <div>
+                        <Label htmlFor="sms-notifications" className="font-medium">SMS</Label>
+                        <p className="text-xs text-muted-foreground">Text messages</p>
+                        <Badge variant="outline" className="text-xs mt-1">Coming Soon</Badge>
+                      </div>
+                    </div>
+                    <Switch 
+                      id="sms-notifications"
+                      checked={notifications.sms_notifications}
+                      onCheckedChange={(checked) => updateNotificationField('sms_notifications', checked)}
+                      disabled
+                    />
+                  </div>
                 </div>
-                <Switch 
-                  id="email-notifications"
-                  checked={notifications.email_notifications}
-                  onCheckedChange={(checked) => updateNotificationField('email_notifications', checked)}
-                />
-              </div>
+              </CardContent>
+            </Card>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="push-notifications">Push Notifications</Label>
-                  <p className="text-sm text-muted-foreground">Browser notifications for important updates</p>
-                </div>
-                <Switch 
-                  id="push-notifications"
-                  checked={notifications.push_notifications}
-                  onCheckedChange={(checked) => updateNotificationField('push_notifications', checked)}
-                />
-              </div>
-
-              <div className="space-y-4">
-                <h4 className="font-medium">Email Frequency</h4>
-                <div className="space-y-3">
+            {/* Business Alerts */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5" />
+                  Business Alerts
+                </CardTitle>
+                <CardDescription>Stay informed about important business events</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Daily expense summaries</span>
+                    <div>
+                      <Label className="font-medium">Expense Alerts</Label>
+                      <p className="text-xs text-muted-foreground">New expenses added or processed</p>
+                    </div>
+                    <Switch 
+                      checked={notifications.expense_alerts}
+                      onCheckedChange={(checked) => updateNotificationField('expense_alerts', checked)}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="font-medium">Budget Warnings</Label>
+                      <p className="text-xs text-muted-foreground">When approaching budget limits</p>
+                    </div>
+                    <Switch 
+                      checked={notifications.budget_warnings}
+                      onCheckedChange={(checked) => updateNotificationField('budget_warnings', checked)}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="font-medium">Large Expense Alerts</Label>
+                      <p className="text-xs text-muted-foreground">Expenses above $500 threshold</p>
+                    </div>
+                    <Switch 
+                      checked={notifications.large_expense_threshold}
+                      onCheckedChange={(checked) => updateNotificationField('large_expense_threshold', checked)}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="font-medium">Duplicate Warnings</Label>
+                      <p className="text-xs text-muted-foreground">Potential duplicate expenses detected</p>
+                    </div>
+                    <Switch 
+                      checked={notifications.duplicate_expense_warnings}
+                      onCheckedChange={(checked) => updateNotificationField('duplicate_expense_warnings', checked)}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* AI & Automation */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Brain className="h-5 w-5" />
+                  AI & Automation
+                </CardTitle>
+                <CardDescription>AI-powered insights and automation updates</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="font-medium">AI Insights</Label>
+                      <p className="text-xs text-muted-foreground">Smart business recommendations</p>
+                    </div>
+                    <Switch 
+                      checked={notifications.ai_insights}
+                      onCheckedChange={(checked) => updateNotificationField('ai_insights', checked)}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="font-medium">Smart Categorization</Label>
+                      <p className="text-xs text-muted-foreground">AI category suggestions</p>
+                    </div>
+                    <Switch 
+                      checked={notifications.smart_categorization_suggestions}
+                      onCheckedChange={(checked) => updateNotificationField('smart_categorization_suggestions', checked)}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="font-medium">Receipt Processing</Label>
+                      <p className="text-xs text-muted-foreground">Upload and processing status</p>
+                    </div>
+                    <Switch 
+                      checked={notifications.receipt_processing_status}
+                      onCheckedChange={(checked) => updateNotificationField('receipt_processing_status', checked)}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Reports & Analytics */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Reports & Analytics
+                </CardTitle>
+                <CardDescription>Automated reports and business insights</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="font-medium">Daily Summaries</Label>
+                      <p className="text-xs text-muted-foreground">End-of-day expense summary</p>
+                    </div>
                     <Switch 
                       checked={notifications.daily_summaries}
                       onCheckedChange={(checked) => updateNotificationField('daily_summaries', checked)}
                     />
                   </div>
+                  
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Weekly business insights</span>
+                    <div>
+                      <Label className="font-medium">Weekly Insights</Label>
+                      <p className="text-xs text-muted-foreground">Business performance insights</p>
+                    </div>
                     <Switch 
                       checked={notifications.weekly_insights}
                       onCheckedChange={(checked) => updateNotificationField('weekly_insights', checked)}
                     />
                   </div>
+                  
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Monthly reports</span>
+                    <div>
+                      <Label className="font-medium">Monthly Reports</Label>
+                      <p className="text-xs text-muted-foreground">Comprehensive monthly analysis</p>
+                    </div>
                     <Switch 
                       checked={notifications.monthly_reports}
                       onCheckedChange={(checked) => updateNotificationField('monthly_reports', checked)}
                     />
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Security & Account */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Security & Account
+                </CardTitle>
+                <CardDescription>Important account and security notifications</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Feature updates</span>
+                    <div>
+                      <Label className="font-medium">Login Alerts</Label>
+                      <p className="text-xs text-muted-foreground">New device or location logins</p>
+                    </div>
+                    <Switch 
+                      checked={notifications.login_alerts}
+                      onCheckedChange={(checked) => updateNotificationField('login_alerts', checked)}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="font-medium">Account Changes</Label>
+                      <p className="text-xs text-muted-foreground">Profile or settings updates</p>
+                    </div>
+                    <Switch 
+                      checked={notifications.account_changes}
+                      onCheckedChange={(checked) => updateNotificationField('account_changes', checked)}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="font-medium">Data Export Status</Label>
+                      <p className="text-xs text-muted-foreground">Export completion notifications</p>
+                    </div>
+                    <Switch 
+                      checked={notifications.data_export_completion}
+                      onCheckedChange={(checked) => updateNotificationField('data_export_completion', checked)}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Integration Notifications */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5" />
+                  Integration Notifications
+                </CardTitle>
+                <CardDescription>Notifications from connected apps and services</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                        <MessageSquare className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <Label className="font-medium">Telegram</Label>
+                        <p className="text-xs text-muted-foreground">Bot notifications</p>
+                      </div>
+                    </div>
+                    <Switch 
+                      checked={notifications.telegram_notifications}
+                      onCheckedChange={(checked) => updateNotificationField('telegram_notifications', checked)}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                        <MessageSquare className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <Label className="font-medium">WhatsApp</Label>
+                        <p className="text-xs text-muted-foreground">Business messages</p>
+                      </div>
+                    </div>
+                    <Switch 
+                      checked={notifications.whatsapp_notifications}
+                      onCheckedChange={(checked) => updateNotificationField('whatsapp_notifications', checked)}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Product Updates */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <SettingsIcon className="h-5 w-5" />
+                  Product Updates
+                </CardTitle>
+                <CardDescription>Stay updated with new features and improvements</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="font-medium">Feature Updates</Label>
+                      <p className="text-xs text-muted-foreground">New features and improvements</p>
+                    </div>
                     <Switch 
                       checked={notifications.feature_updates}
                       onCheckedChange={(checked) => updateNotificationField('feature_updates', checked)}
                     />
                   </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="font-medium">Product Announcements</Label>
+                      <p className="text-xs text-muted-foreground">Major product news</p>
+                    </div>
+                    <Switch 
+                      checked={notifications.product_announcements}
+                      onCheckedChange={(checked) => updateNotificationField('product_announcements', checked)}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="font-medium">Tips & Tutorials</Label>
+                      <p className="text-xs text-muted-foreground">Helpful tips and guides</p>
+                    </div>
+                    <Switch 
+                      checked={notifications.tips_and_tutorials}
+                      onCheckedChange={(checked) => updateNotificationField('tips_and_tutorials', checked)}
+                    />
+                  </div>
                 </div>
-              </div>
-              
-              <div className="pt-4 border-t">
-                <Button 
-                  onClick={saveProfile}
-                  disabled={saving || !hasNotificationsChanged()}
-                  className="gap-2"
-                >
-                  {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {saving ? "Saving..." : "Save Notification Preferences"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {/* Notification Schedule */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Notification Schedule
+                </CardTitle>
+                <CardDescription>Control when and how often you receive notifications</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="font-medium">Quiet Hours</Label>
+                      <p className="text-xs text-muted-foreground">Disable notifications during specified hours</p>
+                    </div>
+                    <Switch 
+                      checked={notifications.quiet_hours_enabled}
+                      onCheckedChange={(checked) => updateNotificationField('quiet_hours_enabled', checked)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label className="font-medium">Notification Delivery</Label>
+                    <Select 
+                      value={notifications.notification_schedule}
+                      onValueChange={(value: 'immediate' | 'batched' | 'daily_digest') => 
+                        updateNotificationField('notification_schedule', value)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="immediate">Immediate - Send notifications right away</SelectItem>
+                        <SelectItem value="batched">Batched - Group notifications every 2 hours</SelectItem>
+                        <SelectItem value="daily_digest">Daily Digest - One summary email per day</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Save Button */}
+            <div className="flex justify-end">
+              <Button 
+                onClick={saveProfile}
+                disabled={saving || !hasNotificationsChanged()}
+                className="gap-2"
+                size="lg"
+              >
+                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                {saving ? "Saving..." : "Save Notification Preferences"}
+              </Button>
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="billing">
@@ -1540,13 +2192,6 @@ export function Settings() {
                   <Button variant="outline" className="w-full justify-start" disabled>
                     Two-Factor Authentication (Coming Soon)
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start border-blue-300 text-blue-600 hover:bg-blue-50" 
-                    onClick={testDataFetch}
-                  >
-                    🧪 Test Data Fetch (Debug)
-                  </Button>
                 </div>
               </div>
 
@@ -1560,14 +2205,6 @@ export function Settings() {
                         <p className="text-sm text-muted-foreground">Permanently delete your account and all data</p>
                       </div>
                       <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={testDeletionMethods}
-                          className="text-orange-600 border-orange-600 hover:bg-orange-50"
-                        >
-                          Test Methods
-                        </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="destructive" size="sm" className="gap-2" disabled={deleting}>
