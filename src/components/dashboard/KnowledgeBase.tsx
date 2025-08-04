@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BookOpen, Plus, Search, Edit3, Trash2, Link2, Building, Users, Package, Target, Bot, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,6 +20,33 @@ interface KnowledgeEntry {
   created_at?: string;
   updated_at?: string;
 }
+
+// Industry options that match the onboarding form
+const INDUSTRY_OPTIONS = [
+  { value: "consulting", label: "Consulting" },
+  { value: "ecommerce", label: "E-commerce" },
+  { value: "restaurant", label: "Restaurant" },
+  { value: "retail", label: "Retail" },
+  { value: "services", label: "Professional Services" },
+  { value: "technology", label: "Technology" },
+  { value: "healthcare", label: "Healthcare" },
+  { value: "finance", label: "Finance" },
+  { value: "education", label: "Education" },
+  { value: "manufacturing", label: "Manufacturing" },
+  { value: "other", label: "Other" }
+];
+
+// Helper function to get industry label from value
+const getIndustryLabel = (value: string): string => {
+  const option = INDUSTRY_OPTIONS.find(opt => opt.value === value);
+  return option ? option.label : value;
+};
+
+// Helper function to get industry value from label (for migration)
+const getIndustryValue = (label: string): string => {
+  const option = INDUSTRY_OPTIONS.find(opt => opt.label.toLowerCase() === label.toLowerCase());
+  return option ? option.value : label.toLowerCase();
+};
 
 export function KnowledgeBase() {
   const { user } = useAuth();
@@ -187,7 +215,7 @@ export function KnowledgeBase() {
         const migrationEntry = {
           id: `migration_${Date.now()}`,
           business_name: userMetadata.business_name,
-          industry: userMetadata.industry || 'Not specified',
+          industry: userMetadata.industry || 'other', // Use proper industry value or default to 'other'
           target_audience: 'Not specified during onboarding',
           products_services: 'Not specified during onboarding',
           created_at: new Date().toISOString(),
@@ -866,7 +894,7 @@ export function KnowledgeBase() {
                                 <Target className="h-4 w-4 mt-0.5 text-muted-foreground" />
                                 <div>
                                   <span className="font-medium">Industry:</span>
-                                  <p className="text-muted-foreground">{entry.industry}</p>
+                                  <p className="text-muted-foreground">{getIndustryLabel(entry.industry)}</p>
                                 </div>
                               </div>
                               <div className="flex items-start gap-2">
@@ -1022,12 +1050,21 @@ export function KnowledgeBase() {
                     <Target className="h-4 w-4" />
                     Industry
                   </Label>
-                  <Input 
-                    id="industry" 
-                    placeholder="e.g., Technology, Healthcare, Retail, Consulting"
+                  <Select 
                     value={formData.industry}
-                    onChange={(e) => setFormData({...formData, industry: e.target.value})}
-                  />
+                    onValueChange={(value) => setFormData({...formData, industry: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your industry" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INDUSTRY_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
@@ -1106,12 +1143,21 @@ export function KnowledgeBase() {
                     <Target className="h-4 w-4" />
                     Industry
                   </Label>
-                  <Input 
-                    id="add_industry" 
-                    placeholder="e.g., Technology, Healthcare, Retail, Consulting"
+                  <Select 
                     value={formData.industry}
-                    onChange={(e) => setFormData({...formData, industry: e.target.value})}
-                  />
+                    onValueChange={(value) => setFormData({...formData, industry: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select your industry" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {INDUSTRY_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
@@ -1188,12 +1234,21 @@ export function KnowledgeBase() {
                 <Target className="h-4 w-4" />
                 Industry
               </Label>
-              <Input 
-                id="industry" 
-                placeholder="e.g., Technology, Healthcare, Retail, Consulting"
+              <Select 
                 value={formData.industry}
-                onChange={(e) => setFormData({...formData, industry: e.target.value})}
-              />
+                onValueChange={(value) => setFormData({...formData, industry: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your industry" />
+                </SelectTrigger>
+                <SelectContent>
+                  {INDUSTRY_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
