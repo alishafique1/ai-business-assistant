@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Bell, CreditCard, Lock, User, Trash2, Loader2, MapPin, Clock, AlertTriangle } from "lucide-react";
+import { Bell, CreditCard, Lock, User, Trash2, Loader2, MapPin, Clock, AlertTriangle, Download, FileText } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlan } from "@/hooks/usePlan";
@@ -24,6 +24,21 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ProfileData {
   business_name: string;
@@ -130,6 +145,15 @@ export function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  
+  // Change password states
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [changingPassword, setChangingPassword] = useState(false);
 
   // Detect user's timezone and set defaults
   useEffect(() => {
@@ -422,19 +446,103 @@ export function Settings() {
   };
 
   const handleChangePassword = () => {
-    toast({
-      title: "Change Password",
-      description: "Password change functionality will be available soon. Use your email provider's password reset for now.",
-    });
+    setShowPasswordDialog(true);
   };
 
-  const handleDownloadData = async () => {
+  const handlePasswordChange = async () => {
+    if (!passwordData.newPassword || !passwordData.confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Please fill in all password fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast({
+        title: "Error", 
+        description: "New passwords don't match",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
-      const data = {
-        profile: profileData,
-        notifications: notifications,
-        exportDate: new Date().toISOString()
+      setChangingPassword(true);
+
+      const { error } = await supabase.auth.updateUser({
+        password: passwordData.newPassword
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Password Changed",
+        description: "Your password has been updated successfully",
+      });
+
+      // Reset form and close dialog
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      setShowPasswordDialog(false);
+
+    } catch (error) {
+      console.error('Password change error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to change password",
+        variant: "destructive"
+      });
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  const fetchAllUserData = async () => {
+    try {
+      // Fetch all user data from different sources
+      const [expenses, profile, notifications] = await Promise.all([
+        // Fetch expenses from Supabase
+        supabase.from('business_expenses').select('*').eq('user_id', user?.id),
+        // Profile is already in state
+        Promise.resolve({ data: profileData, error: null }),
+        // Notifications are already in state  
+        Promise.resolve({ data: notifications, error: null })
+      ]);
+
+      return {
+        profile: profile.data,
+        notifications: notifications.data,
+        expenses: expenses.data || [],
+        exportDate: new Date().toISOString(),
+        exportedBy: user?.email || 'Unknown',
+        totalExpenses: expenses.data?.length || 0,
+        totalExpenseAmount: expenses.data?.reduce((sum, exp) => sum + (exp.amount || 0), 0) || 0
       };
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      throw error;
+    }
+  };
+
+  const downloadDataAsJSON = async () => {
+    try {
+      const data = await fetchAllUserData();
       
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -447,13 +555,161 @@ export function Settings() {
       URL.revokeObjectURL(url);
       
       toast({
-        title: "Data Downloaded",
-        description: "Your user data has been downloaded successfully.",
+        title: "JSON Data Downloaded",
+        description: "Your complete user data has been downloaded as JSON.",
       });
     } catch (error) {
       toast({
         title: "Download Failed",
-        description: "Failed to download your data. Please try again.",
+        description: "Failed to download JSON data. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const downloadDataAsCSV = async () => {
+    try {
+      const data = await fetchAllUserData();
+      
+      // Create CSV content for expenses
+      const csvHeaders = ['Date', 'Title', 'Description', 'Amount', 'Category', 'Vendor'];
+      const csvRows = [csvHeaders.join(',')];
+      
+      data.expenses.forEach(expense => {
+        const row = [
+          expense.created_at || expense.date || '',
+          `"${(expense.title || '').replace(/"/g, '""')}"`,
+          `"${(expense.description || '').replace(/"/g, '""')}"`,
+          expense.amount || 0,
+          `"${(expense.category || '').replace(/"/g, '""')}"`,
+          `"${(expense.vendor || '').replace(/"/g, '""')}"`,
+        ];
+        csvRows.push(row.join(','));
+      });
+
+      // Add summary information
+      csvRows.push('');
+      csvRows.push('Summary Information');
+      csvRows.push(`Business Name,"${data.profile?.business_name || ''}"`);
+      csvRows.push(`Industry,"${data.profile?.industry || ''}"`);
+      csvRows.push(`Total Expenses,${data.totalExpenses}`);
+      csvRows.push(`Total Amount,${data.totalExpenseAmount}`);
+      csvRows.push(`Export Date,"${data.exportDate}"`);
+      
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `expenses-data-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: "CSV Data Downloaded",
+        description: "Your expense data has been downloaded as CSV.",
+      });
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Failed to download CSV data. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const downloadDataAsPDF = async () => {
+    try {
+      const data = await fetchAllUserData();
+      
+      // Create HTML content for PDF conversion
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>User Data Export</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+            .section { margin-bottom: 30px; }
+            .expense-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            .expense-table th, .expense-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            .expense-table th { background-color: #f2f2f2; }
+            .summary { background: #e8f5e8; padding: 15px; border-radius: 8px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>User Data Export</h1>
+            <p><strong>Business:</strong> ${data.profile?.business_name || 'N/A'}</p>
+            <p><strong>Industry:</strong> ${data.profile?.industry || 'N/A'}</p>
+            <p><strong>Export Date:</strong> ${new Date(data.exportDate).toLocaleDateString()}</p>
+          </div>
+          
+          <div class="section">
+            <h2>Expense Summary</h2>
+            <div class="summary">
+              <p><strong>Total Expenses:</strong> ${data.totalExpenses}</p>
+              <p><strong>Total Amount:</strong> $${data.totalExpenseAmount.toFixed(2)}</p>
+            </div>
+          </div>
+          
+          <div class="section">
+            <h2>Expenses</h2>
+            <table class="expense-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Title</th>
+                  <th>Description</th>
+                  <th>Amount</th>
+                  <th>Category</th>
+                  <th>Vendor</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${data.expenses.map(expense => `
+                  <tr>
+                    <td>${new Date(expense.created_at || expense.date || '').toLocaleDateString()}</td>
+                    <td>${expense.title || ''}</td>
+                    <td>${expense.description || ''}</td>
+                    <td>$${(expense.amount || 0).toFixed(2)}</td>
+                    <td>${expense.category || ''}</td>
+                    <td>${expense.vendor || ''}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </body>
+        </html>
+      `;
+      
+      // Create a new window to print/save as PDF
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.open();
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        
+        // Wait for content to load then trigger print
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+        
+        toast({
+          title: "PDF Generation",
+          description: "PDF print dialog has been opened. Choose 'Save as PDF' in print options.",
+        });
+      } else {
+        throw new Error('Popup blocked');
+      }
+    } catch (error) {
+      toast({
+        title: "PDF Generation Failed",
+        description: "Failed to generate PDF. Please try again or use CSV download.",
         variant: "destructive"
       });
     }
@@ -1150,11 +1406,30 @@ export function Settings() {
                   <Button variant="outline" className="w-full justify-start" onClick={handleChangePassword}>
                     Change Password
                   </Button>
-                  <Button variant="outline" className="w-full justify-start" onClick={handleDownloadData}>
-                    Download My Data
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start" onClick={handleChangePassword}>
-                    Two-Factor Authentication
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start">
+                        <Download className="h-4 w-4 mr-2" />
+                        Download My Data
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem onClick={downloadDataAsJSON}>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Download as JSON
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={downloadDataAsCSV}>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Download as CSV
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={downloadDataAsPDF}>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Download as PDF
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <Button variant="outline" className="w-full justify-start" disabled>
+                    Two-Factor Authentication (Coming Soon)
                   </Button>
                 </div>
               </div>
@@ -1243,6 +1518,58 @@ export function Settings() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Password Change Dialog */}
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Password</DialogTitle>
+            <DialogDescription>
+              Enter your new password below. Your new password must be at least 6 characters long.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-password">New Password</Label>
+              <Input
+                id="new-password"
+                type="password"
+                value={passwordData.newPassword}
+                onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                placeholder="Enter new password"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirm New Password</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                value={passwordData.confirmPassword}
+                onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                placeholder="Confirm new password"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowPasswordDialog(false);
+                setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handlePasswordChange}
+              disabled={changingPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+            >
+              {changingPassword && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {changingPassword ? "Changing..." : "Change Password"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
