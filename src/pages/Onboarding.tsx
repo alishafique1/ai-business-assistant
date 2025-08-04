@@ -206,6 +206,47 @@ export default function Onboarding() {
       const result = await response.json();
       console.log('Knowledge base entry created successfully via ML API:', result);
 
+      // ALSO save to localStorage so it's immediately available in dashboard
+      try {
+        console.log('🔄 ONBOARDING - Saving knowledge base data to localStorage as well...');
+        
+        const knowledgeEntry = {
+          id: result.id || `onboarding_${Date.now()}`,
+          business_name: formData.knowledgeBusinessName,
+          industry: formData.knowledgeIndustry,
+          target_audience: formData.targetAudience,
+          products_services: formData.productsServices,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        // Get existing entries from localStorage
+        const existingEntries = JSON.parse(localStorage.getItem('knowledgeBase_entries') || '[]');
+        
+        // Check if an entry with similar business name already exists
+        const existingIndex = existingEntries.findIndex(
+          entry => entry.business_name === formData.knowledgeBusinessName
+        );
+
+        if (existingIndex >= 0) {
+          // Update existing entry
+          existingEntries[existingIndex] = knowledgeEntry;
+          console.log('📝 Updated existing knowledge base entry in localStorage');
+        } else {
+          // Add new entry
+          existingEntries.push(knowledgeEntry);
+          console.log('➕ Added new knowledge base entry to localStorage');
+        }
+
+        // Save back to localStorage
+        localStorage.setItem('knowledgeBase_entries', JSON.stringify(existingEntries));
+        console.log('✅ ONBOARDING - Knowledge base data saved to localStorage:', existingEntries.length, 'entries');
+
+      } catch (localStorageError) {
+        console.error('⚠️ Failed to save to localStorage, but ML API succeeded:', localStorageError);
+        // Don't fail the entire operation just because localStorage failed
+      }
+
       toast({
         title: "Knowledge Base Saved!",
         description: "Your business information has been saved to your knowledge base.",

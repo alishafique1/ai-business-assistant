@@ -150,9 +150,91 @@ export function KnowledgeBase() {
       // Double-check localStorage before API call
       const preAPICheck = localStorage.getItem('knowledgeBase_entries');
       console.log('🔍 PRE-API CHECK - localStorage contains:', preAPICheck ? JSON.parse(preAPICheck).length : 0, 'entries');
+      
+      // Check if we need to migrate onboarding data
+      migrateOnboardingDataIfNeeded();
+      
       fetchKnowledgeBase();
     }
   }, [user]);
+
+  // Function to migrate onboarding data to knowledge base if needed
+  const migrateOnboardingDataIfNeeded = async () => {
+    try {
+      console.log('🔄 MIGRATION - Checking if onboarding data needs migration...');
+      
+      // Check if knowledge base is empty
+      const existingEntries = JSON.parse(localStorage.getItem('knowledgeBase_entries') || '[]');
+      if (existingEntries.length > 0) {
+        console.log('✅ MIGRATION - Knowledge base already has data, no migration needed');
+        return;
+      }
+
+      // Check if we have user preferences that indicate completed onboarding
+      const preferences = JSON.parse(localStorage.getItem(`preferences_${user?.id}`) || '{}');
+      const userMetadata = user?.user_metadata;
+      
+      console.log('🔍 MIGRATION - Checking user data:', {
+        hasUserMetadata: !!userMetadata,
+        businessName: userMetadata?.business_name,
+        hasPreferences: Object.keys(preferences).length > 0
+      });
+
+      // If user has business name in metadata, try to create a basic knowledge base entry
+      if (userMetadata?.business_name) {
+        console.log('🔄 MIGRATION - Creating knowledge base entry from onboarding data...');
+        
+        const migrationEntry = {
+          id: `migration_${Date.now()}`,
+          business_name: userMetadata.business_name,
+          industry: userMetadata.industry || 'Not specified',
+          target_audience: 'Not specified during onboarding',
+          products_services: 'Not specified during onboarding',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+
+        // Save to localStorage
+        localStorage.setItem('knowledgeBase_entries', JSON.stringify([migrationEntry]));
+        
+        // Also try to save to ML API for consistency
+        try {
+          const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/knowledge-base', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              business_name: migrationEntry.business_name,
+              industry: migrationEntry.industry,
+              target_audience: migrationEntry.target_audience,
+              products_services: migrationEntry.products_services
+            })
+          });
+          
+          if (response.ok) {
+            console.log('✅ MIGRATION - Successfully saved to ML API as well');
+          } else {
+            console.log('⚠️ MIGRATION - ML API save failed, but localStorage succeeded');
+          }
+        } catch (apiError) {
+          console.log('⚠️ MIGRATION - ML API error:', apiError.message);
+        }
+
+        console.log('✅ MIGRATION - Created basic knowledge base entry from onboarding data');
+        
+        toast({
+          title: "Knowledge Base Initialized",
+          description: "We've created a basic knowledge base entry from your onboarding data. You can edit it to add more details.",
+        });
+      } else {
+        console.log('ℹ️ MIGRATION - No onboarding data found to migrate');
+      }
+
+    } catch (error) {
+      console.error('❌ MIGRATION - Error during migration:', error);
+    }
+  };
 
   // Debug effect to monitor entries changes
   useEffect(() => {
@@ -182,6 +264,42 @@ export function KnowledgeBase() {
     return () => clearInterval(interval);
   }, [entries]);
 
+  // Add visibility change listener to preserve data when user navigates away
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && entries.length > 0) {
+        console.log('🔒 PAGE HIDDEN - Emergency save of', entries.length, 'entries to localStorage');
+        safeWriteToLocalStorage(entries).catch(error => {
+          console.error('❌ Emergency save failed:', error);
+        });
+      } else if (document.visibilityState === 'visible') {
+        console.log('👁️ PAGE VISIBLE - Checking for data consistency');
+        const storedEntries = JSON.parse(localStorage.getItem('knowledgeBase_entries') || '[]');
+        if (storedEntries.length > entries.length) {
+          console.log('🔄 RESTORING - Found more data in localStorage, restoring...');
+          setEntries(storedEntries);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Also add beforeunload as backup
+    const handleBeforeUnload = () => {
+      if (entries.length > 0) {
+        console.log('🔒 BEFORE UNLOAD - Final save of', entries.length, 'entries');
+        localStorage.setItem('knowledgeBase_entries', JSON.stringify(entries));
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [entries]);
+
   // Save entries to localStorage whenever they change (but not on initial load)
   useEffect(() => {
     if (!isInitialLoad) {
@@ -202,31 +320,83 @@ export function KnowledgeBase() {
     
     try {
       setLoading(true);
-      console.log('Attempting to fetch knowledge base from ML API...');
+      console.log('🔄 FETCHING - Starting knowledge base fetch from ML API...');
       
-      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/knowledge-base', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      console.log('ML API fetch response status:', response.status);
-      console.log('ML API fetch response headers:', Object.fromEntries(response.headers.entries()));
-      
-      if (!response.ok) {
-        // If GET endpoint doesn't exist, just show empty state
-        if (response.status === 404 || response.status === 405) {
-          console.log('GET endpoint not available, showing empty state');
-          setEntries([]);
-          return;
+      let apiEntries = [];
+      let fetchSuccessful = false;
+
+      // Try method 1: GET /knowledge-base
+      try {
+        console.log('📡 METHOD 1 - Trying GET /knowledge-base...');
+        const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/knowledge-base', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        console.log('📡 METHOD 1 - Response status:', response.status);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('📡 METHOD 1 - Success! Data:', data);
+          apiEntries = Array.isArray(data) ? data : (data.entries ? data.entries : []);
+          fetchSuccessful = true;
+        } else {
+          console.log('📡 METHOD 1 - Failed with status:', response.status);
         }
-        throw new Error(`Failed to fetch knowledge base: ${response.status} ${response.statusText}`);
+      } catch (method1Error) {
+        console.log('📡 METHOD 1 - Exception:', method1Error.message);
+      }
+
+      // Try method 2: GET /get-knowledge-base if method 1 failed
+      if (!fetchSuccessful) {
+        try {
+          console.log('📡 METHOD 2 - Trying GET /get-knowledge-base...');
+          const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/get-knowledge-base', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          console.log('📡 METHOD 2 - Response status:', response.status);
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('📡 METHOD 2 - Success! Data:', data);
+            
+            // Try to parse the response and extract knowledge base entries
+            if (data.knowledge_base || data.entries) {
+              apiEntries = Array.isArray(data.knowledge_base) ? data.knowledge_base : 
+                          Array.isArray(data.entries) ? data.entries : [];
+            } else if (typeof data === 'object' && data.business_name) {
+              // Single entry format
+              apiEntries = [data];
+            } else if (Array.isArray(data)) {
+              apiEntries = data;
+            }
+            fetchSuccessful = true;
+          } else {
+            console.log('📡 METHOD 2 - Failed with status:', response.status);
+          }
+        } catch (method2Error) {
+          console.log('📡 METHOD 2 - Exception:', method2Error.message);
+        }
       }
       
-      const data = await response.json();
-      console.log('ML API fetch response data:', data);
-      const apiEntries = Array.isArray(data) ? data : [];
+      if (!fetchSuccessful) {
+        console.log('📡 BOTH METHODS FAILED - Using localStorage fallback');
+        const currentEntries = await safeReadFromLocalStorage();
+        if (currentEntries.length === 0) {
+          console.log('📡 No localStorage data either, showing empty state');
+          setEntries([]);
+        } else {
+          console.log('📡 Using existing localStorage data:', currentEntries.length, 'entries');
+          // Don't call setEntries to avoid triggering save effect
+        }
+        return;
+      }
       
       // Get current localStorage data to compare using semaphore
       const currentEntries = await safeReadFromLocalStorage();
