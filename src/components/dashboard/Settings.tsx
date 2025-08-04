@@ -515,53 +515,94 @@ export function Settings() {
 
   const fetchAllUserData = async () => {
     try {
-      // Fetch all user data from different sources
-      const [expenses, profile, notifications] = await Promise.all([
-        // Fetch expenses from Supabase
-        supabase.from('business_expenses').select('*').eq('user_id', user?.id),
-        // Profile is already in state
-        Promise.resolve({ data: profileData, error: null }),
-        // Notifications are already in state  
-        Promise.resolve({ data: notifications, error: null })
-      ]);
+      console.log('🔍 Starting data fetch for user:', user?.id);
+      
+      if (!user?.id) {
+        throw new Error('No user ID available');
+      }
 
-      return {
-        profile: profile.data,
-        notifications: notifications.data,
-        expenses: expenses.data || [],
+      // Fetch expenses from Supabase with detailed logging
+      console.log('📊 Fetching expenses from business_expenses table...');
+      const { data: expenseData, error: expenseError } = await supabase
+        .from('business_expenses')
+        .select('*')
+        .eq('user_id', user.id);
+
+      console.log('📊 Expenses fetch result:', { 
+        data: expenseData, 
+        error: expenseError,
+        count: expenseData?.length || 0 
+      });
+
+      if (expenseError) {
+        console.error('❌ Error fetching expenses:', expenseError);
+        // Don't throw, just log the error and continue with empty expenses
+      }
+
+      // Prepare the final data object
+      const userData = {
+        profile: profileData,
+        notifications: notifications,
+        expenses: expenseData || [],
         exportDate: new Date().toISOString(),
         exportedBy: user?.email || 'Unknown',
-        totalExpenses: expenses.data?.length || 0,
-        totalExpenseAmount: expenses.data?.reduce((sum, exp) => sum + (exp.amount || 0), 0) || 0
+        totalExpenses: expenseData?.length || 0,
+        totalExpenseAmount: expenseData?.reduce((sum, exp) => sum + (exp.amount || 0), 0) || 0,
+        userId: user.id,
+        userEmail: user.email
       };
+
+      console.log('📋 Final user data prepared:', {
+        profileFields: Object.keys(userData.profile || {}),
+        notificationFields: Object.keys(userData.notifications || {}),
+        expenseCount: userData.expenses.length,
+        totalAmount: userData.totalExpenseAmount
+      });
+
+      return userData;
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.error('❌ Error fetching user data:', error);
       throw error;
     }
   };
 
   const downloadDataAsJSON = async () => {
     try {
+      console.log('📥 Starting JSON download...');
+      
       const data = await fetchAllUserData();
       
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      console.log('📄 Data to be exported as JSON:', data);
+      
+      // Create the JSON content
+      const jsonContent = JSON.stringify(data, null, 2);
+      console.log('📝 JSON content size:', jsonContent.length, 'characters');
+      
+      // Create blob and download
+      const blob = new Blob([jsonContent], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `user-data-${new Date().toISOString().split('T')[0]}.json`;
+      
+      console.log('⬇️ Triggering download:', a.download);
+      
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
+      console.log('✅ JSON download completed successfully');
+      
       toast({
         title: "JSON Data Downloaded",
-        description: "Your complete user data has been downloaded as JSON.",
+        description: `Downloaded ${data.totalExpenses} expenses and profile data as JSON.`,
       });
     } catch (error) {
+      console.error('❌ JSON download failed:', error);
       toast({
         title: "Download Failed",
-        description: "Failed to download JSON data. Please try again.",
+        description: `Failed to download JSON data: ${error.message}`,
         variant: "destructive"
       });
     }
@@ -569,52 +610,72 @@ export function Settings() {
 
   const downloadDataAsCSV = async () => {
     try {
+      console.log('📊 Starting CSV download...');
+      
       const data = await fetchAllUserData();
+      
+      console.log('📄 Data to be exported as CSV:', data);
       
       // Create CSV content for expenses
       const csvHeaders = ['Date', 'Title', 'Description', 'Amount', 'Category', 'Vendor'];
       const csvRows = [csvHeaders.join(',')];
       
-      data.expenses.forEach(expense => {
-        const row = [
-          expense.created_at || expense.date || '',
-          `"${(expense.title || '').replace(/"/g, '""')}"`,
-          `"${(expense.description || '').replace(/"/g, '""')}"`,
-          expense.amount || 0,
-          `"${(expense.category || '').replace(/"/g, '""')}"`,
-          `"${(expense.vendor || '').replace(/"/g, '""')}"`,
-        ];
-        csvRows.push(row.join(','));
-      });
+      console.log(`📝 Processing ${data.expenses.length} expenses for CSV...`);
+      
+      if (data.expenses.length === 0) {
+        csvRows.push('No expenses found');
+      } else {
+        data.expenses.forEach(expense => {
+          const row = [
+            expense.created_at || expense.date || '',
+            `"${(expense.title || '').replace(/"/g, '""')}"`,
+            `"${(expense.description || '').replace(/"/g, '""')}"`,
+            expense.amount || 0,
+            `"${(expense.category || '').replace(/"/g, '""')}"`,
+            `"${(expense.vendor || '').replace(/"/g, '""')}"`,
+          ];
+          csvRows.push(row.join(','));
+        });
+      }
 
       // Add summary information
       csvRows.push('');
       csvRows.push('Summary Information');
-      csvRows.push(`Business Name,"${data.profile?.business_name || ''}"`);
-      csvRows.push(`Industry,"${data.profile?.industry || ''}"`);
+      csvRows.push(`Business Name,"${data.profile?.business_name || 'Not set'}"`);
+      csvRows.push(`Industry,"${data.profile?.industry || 'Not set'}"`);
       csvRows.push(`Total Expenses,${data.totalExpenses}`);
       csvRows.push(`Total Amount,${data.totalExpenseAmount}`);
       csvRows.push(`Export Date,"${data.exportDate}"`);
+      csvRows.push(`User Email,"${data.userEmail || 'Not available'}"`);
       
       const csvContent = csvRows.join('\n');
+      console.log('📝 CSV content size:', csvContent.length, 'characters');
+      
+      // Create blob and download
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `expenses-data-${new Date().toISOString().split('T')[0]}.csv`;
+      
+      console.log('⬇️ Triggering CSV download:', a.download);
+      
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
+      console.log('✅ CSV download completed successfully');
+      
       toast({
         title: "CSV Data Downloaded",
-        description: "Your expense data has been downloaded as CSV.",
+        description: `Downloaded ${data.totalExpenses} expenses as CSV file.`,
       });
     } catch (error) {
+      console.error('❌ CSV download failed:', error);
       toast({
         title: "Download Failed",
-        description: "Failed to download CSV data. Please try again.",
+        description: `Failed to download CSV data: ${error.message}`,
         variant: "destructive"
       });
     }
@@ -622,7 +683,11 @@ export function Settings() {
 
   const downloadDataAsPDF = async () => {
     try {
+      console.log('📄 Starting PDF download...');
+      
       const data = await fetchAllUserData();
+      
+      console.log('📄 Data to be exported as PDF:', data);
       
       // Create HTML content for PDF conversion
       const htmlContent = `
@@ -638,13 +703,15 @@ export function Settings() {
             .expense-table th, .expense-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
             .expense-table th { background-color: #f2f2f2; }
             .summary { background: #e8f5e8; padding: 15px; border-radius: 8px; }
+            .no-data { text-align: center; padding: 40px; color: #666; }
           </style>
         </head>
         <body>
           <div class="header">
             <h1>User Data Export</h1>
-            <p><strong>Business:</strong> ${data.profile?.business_name || 'N/A'}</p>
-            <p><strong>Industry:</strong> ${data.profile?.industry || 'N/A'}</p>
+            <p><strong>Business:</strong> ${data.profile?.business_name || 'Not set'}</p>
+            <p><strong>Industry:</strong> ${data.profile?.industry || 'Not set'}</p>
+            <p><strong>User Email:</strong> ${data.userEmail || 'Not available'}</p>
             <p><strong>Export Date:</strong> ${new Date(data.exportDate).toLocaleDateString()}</p>
           </div>
           
@@ -658,36 +725,42 @@ export function Settings() {
           
           <div class="section">
             <h2>Expenses</h2>
-            <table class="expense-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Title</th>
-                  <th>Description</th>
-                  <th>Amount</th>
-                  <th>Category</th>
-                  <th>Vendor</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${data.expenses.map(expense => `
+            ${data.expenses.length === 0 ? 
+              '<div class="no-data"><p>No expenses found</p></div>' :
+              `<table class="expense-table">
+                <thead>
                   <tr>
-                    <td>${new Date(expense.created_at || expense.date || '').toLocaleDateString()}</td>
-                    <td>${expense.title || ''}</td>
-                    <td>${expense.description || ''}</td>
-                    <td>$${(expense.amount || 0).toFixed(2)}</td>
-                    <td>${expense.category || ''}</td>
-                    <td>${expense.vendor || ''}</td>
+                    <th>Date</th>
+                    <th>Title</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Category</th>
+                    <th>Vendor</th>
                   </tr>
-                `).join('')}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  ${data.expenses.map(expense => `
+                    <tr>
+                      <td>${new Date(expense.created_at || expense.date || '').toLocaleDateString()}</td>
+                      <td>${expense.title || 'N/A'}</td>
+                      <td>${expense.description || 'N/A'}</td>
+                      <td>$${(expense.amount || 0).toFixed(2)}</td>
+                      <td>${expense.category || 'N/A'}</td>
+                      <td>${expense.vendor || 'N/A'}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>`
+            }
           </div>
         </body>
         </html>
       `;
       
+      console.log('📝 HTML content size:', htmlContent.length, 'characters');
+      
       // Create a new window to print/save as PDF
+      console.log('🖨️ Opening print window...');
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         printWindow.document.open();
@@ -696,20 +769,56 @@ export function Settings() {
         
         // Wait for content to load then trigger print
         setTimeout(() => {
+          console.log('🖨️ Triggering print dialog...');
           printWindow.print();
         }, 500);
         
+        console.log('✅ PDF generation initiated successfully');
+        
         toast({
           title: "PDF Generation",
-          description: "PDF print dialog has been opened. Choose 'Save as PDF' in print options.",
+          description: `PDF print dialog opened for ${data.totalExpenses} expenses. Choose 'Save as PDF'.`,
         });
       } else {
-        throw new Error('Popup blocked');
+        throw new Error('Popup blocked - please allow popups for this site');
       }
     } catch (error) {
+      console.error('❌ PDF generation failed:', error);
       toast({
         title: "PDF Generation Failed",
-        description: "Failed to generate PDF. Please try again or use CSV download.",
+        description: `Failed to generate PDF: ${error.message}`,
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Test function specifically for data downloads
+  const testDataFetch = async () => {
+    try {
+      console.log('🧪 Testing data fetch functionality...');
+      
+      const data = await fetchAllUserData();
+      
+      console.log('🧪 Test results:', {
+        userIdExists: !!user?.id,
+        userEmail: user?.email,
+        profileData: profileData,
+        notificationsData: notifications,
+        expensesCount: data.expenses.length,
+        totalAmount: data.totalExpenseAmount,
+        fullData: data
+      });
+      
+      toast({
+        title: "Data Fetch Test",
+        description: `Found ${data.totalExpenses} expenses totaling $${data.totalExpenseAmount.toFixed(2)}. Check console for details.`,
+      });
+      
+    } catch (error) {
+      console.error('🧪 Test failed:', error);
+      toast({
+        title: "Test Failed", 
+        description: `Data fetch test failed: ${error.message}`,
         variant: "destructive"
       });
     }
@@ -1430,6 +1539,13 @@ export function Settings() {
                   </DropdownMenu>
                   <Button variant="outline" className="w-full justify-start" disabled>
                     Two-Factor Authentication (Coming Soon)
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start border-blue-300 text-blue-600 hover:bg-blue-50" 
+                    onClick={testDataFetch}
+                  >
+                    🧪 Test Data Fetch (Debug)
                   </Button>
                 </div>
               </div>
