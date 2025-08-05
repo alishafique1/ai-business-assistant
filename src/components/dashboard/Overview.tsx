@@ -28,7 +28,7 @@ export function Overview({ onViewChange }: OverviewProps) {
     try {
       // Fetch expenses from ML API, business_expenses table, and knowledge base
       const [mlApiResponse, businessExpensesResponse, knowledgeResponse] = await Promise.all([
-        fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/expenses', {
+        fetch('https://socialdots-ai-expense-backend.hf.space/expenses', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -172,7 +172,7 @@ export function Overview({ onViewChange }: OverviewProps) {
       setSummaryLoading(true);
       console.log('Fetching business summary from knowledge base...');
       
-      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/get-knowledge-base');
+      const response = await fetch('https://socialdots-ai-expense-backend.hf.space/get-knowledge-base');
       
       if (!response.ok) {
         throw new Error('Failed to fetch business summary');

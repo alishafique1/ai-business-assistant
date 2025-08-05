@@ -23,6 +23,13 @@ export function DashboardHeader() {
     return name.charAt(0).toUpperCase() + name.slice(1).replace(/[._]/g, ' ');
   };
 
+  const getDisplayName = () => {
+    if (!user?.email) return 'there';
+    
+    // Prioritize user name derived from email over business name
+    return getUserName(user.email);
+  };
+
   return (
     <header className="relative border-b bg-gradient-to-r from-card/80 to-primary/5 backdrop-blur-sm px-6 py-4 overflow-hidden">
       {/* Subtle background pattern */}
@@ -34,7 +41,7 @@ export function DashboardHeader() {
             Dashboard
           </h1>
           <p className="text-sm text-muted-foreground">
-            Welcome back, <span className="font-medium text-primary">{user?.email ? getUserName(user.email) : 'there'}</span> ✨
+            Welcome back, <span className="font-medium text-primary">{getDisplayName()}</span> ✨
           </p>
         </div>
         

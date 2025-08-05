@@ -182,7 +182,7 @@ export default function Onboarding() {
       });
 
       // Save business information using ML API
-      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/knowledge-base', {
+      const response = await fetch('https://socialdots-ai-expense-backend.hf.space/knowledge-base', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

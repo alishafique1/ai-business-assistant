@@ -813,15 +813,22 @@ export function Settings() {
         // Don't throw, just log the error and continue with empty expenses
       }
 
+      // Normalize expense data with proper fallback values for title and vendor
+      const normalizedExpenses = (expenseData || []).map(expense => ({
+        ...expense,
+        title: expense.title || 'not provided',
+        vendor: expense.vendor || 'not provided'
+      }));
+
       // Prepare the final data object
       const userData = {
         profile: profileData,
         notifications: notifications,
-        expenses: expenseData || [],
+        expenses: normalizedExpenses,
         exportDate: new Date().toISOString(),
         exportedBy: user?.email || 'Unknown',
-        totalExpenses: expenseData?.length || 0,
-        totalExpenseAmount: expenseData?.reduce((sum, exp) => sum + (exp.amount || 0), 0) || 0,
+        totalExpenses: normalizedExpenses.length,
+        totalExpenseAmount: normalizedExpenses.reduce((sum, exp) => sum + (exp.amount || 0), 0),
         userId: user.id,
         userEmail: user.email
       };

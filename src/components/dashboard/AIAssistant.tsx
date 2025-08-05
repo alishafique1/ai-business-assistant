@@ -43,7 +43,7 @@ export function AIAssistant() {
     
     try {
       console.log('🔍 Fetching knowledge base context for AI...');
-      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/get-knowledge-base');
+      const response = await fetch('https://socialdots-ai-expense-backend.hf.space/get-knowledge-base');
       
       if (!response.ok) {
         console.warn('Knowledge base context not available:', response.status);
@@ -139,7 +139,7 @@ export function AIAssistant() {
         ? `BUSINESS CONTEXT: ${knowledgeContext}\n\n---\n\nUSER REQUEST: ${userMessage.content}\n\nPlease use the business context above to provide personalized, relevant responses.`
         : userMessage.content;
       
-      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/generate', {
+      const response = await fetch('https://socialdots-ai-expense-backend.hf.space/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -201,8 +201,8 @@ export function AIAssistant() {
       console.log('Fetching expense data from ML API and Supabase...');
       
       const [mlApiResponse, summaryResponse, businessExpensesResponse] = await Promise.all([
-        fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/expenses'),
-        fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/summary'),
+        fetch('https://socialdots-ai-expense-backend.hf.space/expenses'),
+        fetch('https://socialdots-ai-expense-backend.hf.space/summary'),
         supabase
           .from('business_expenses')
           .select('*')
@@ -369,7 +369,7 @@ Based on your expense analysis, you've spent $${totalAmount.toFixed(2)} total wi
         ? `BUSINESS CONTEXT: ${knowledgeContext}\n\n---\n\nUSER REQUEST: ${prompt}\n\nPlease use the business context above to provide personalized, relevant responses.`
         : prompt;
       
-      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/generate', {
+      const response = await fetch('https://socialdots-ai-expense-backend.hf.space/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -573,19 +573,11 @@ Based on your expense analysis, you've spent $${totalAmount.toFixed(2)} total wi
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Voice Language</Label>
-                  <Button variant="outline" className="w-full justify-start">
-                    English (US)
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  <Label>Response Style</Label>
-                  <Button variant="outline" className="w-full justify-start">
-                    Professional
-                  </Button>
-                </div>
+              <div className="space-y-2">
+                <Label>Voice Language</Label>
+                <Button variant="outline" className="w-full justify-start">
+                  English (US)
+                </Button>
               </div>
 
               <div className="p-4 bg-muted/50 rounded-lg">

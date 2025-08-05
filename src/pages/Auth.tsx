@@ -167,7 +167,7 @@ export default function Auth() {
       if (error) throw error;
 
       if (data.user) {
-        const userName = data.user.user_metadata?.business_name || data.user.email?.split('@')[0] || 'User';
+        const userName = data.user.email?.split('@')[0] || data.user.user_metadata?.business_name || 'User';
         toast({
           title: `Welcome back, ${userName}!`,
           description: "You have been successfully signed in.",

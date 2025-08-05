@@ -179,12 +179,27 @@ export function KnowledgeBase() {
       const preAPICheck = localStorage.getItem('knowledgeBase_entries');
       console.log('🔍 PRE-API CHECK - localStorage contains:', preAPICheck ? JSON.parse(preAPICheck).length : 0, 'entries');
       
+      // If we have data in localStorage but entries state is empty, reload from localStorage
+      if (preAPICheck && entries.length === 0) {
+        try {
+          const storedEntries = JSON.parse(preAPICheck);
+          if (storedEntries.length > 0) {
+            console.log('🔄 RELOADING FROM LOCALSTORAGE - Found', storedEntries.length, 'entries');
+            setEntries(storedEntries);
+            setIsInitialLoad(false);
+            return; // Skip fetch if we loaded from localStorage
+          }
+        } catch (error) {
+          console.error('❌ Error parsing stored entries:', error);
+        }
+      }
+      
       // Check if we need to migrate onboarding data
       migrateOnboardingDataIfNeeded();
       
       fetchKnowledgeBase();
     }
-  }, [user]);
+  }, [user, entries.length]);
 
   // Function to migrate onboarding data to knowledge base if needed
   const migrateOnboardingDataIfNeeded = async () => {
@@ -227,7 +242,7 @@ export function KnowledgeBase() {
         
         // Also try to save to ML API for consistency
         try {
-          const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/knowledge-base', {
+          const response = await fetch('https://socialdots-ai-expense-backend.hf.space/knowledge-base', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -269,9 +284,18 @@ export function KnowledgeBase() {
     console.log('🔍 KNOWLEDGE BASE DEBUG - Entries changed:', {
       entriesCount: entries.length,
       isInitialLoad,
+      loading,
+      userId: user?.id,
       entries: entries.map(e => ({ id: e.id, business_name: e.business_name }))
     });
-  }, [entries, isInitialLoad]);
+    
+    // Also check localStorage to see if there's a mismatch
+    const stored = localStorage.getItem('knowledgeBase_entries');
+    const storedCount = stored ? JSON.parse(stored).length : 0;
+    if (storedCount !== entries.length) {
+      console.warn('⚠️ STATE/LOCALSTORAGE MISMATCH - State:', entries.length, 'localStorage:', storedCount);
+    }
+  }, [entries, isInitialLoad, loading, user?.id]);
 
   // Debug effect to monitor form data changes
   useEffect(() => {
@@ -291,6 +315,61 @@ export function KnowledgeBase() {
     const interval = setInterval(checkLocalStorage, 5000); // Check every 5 seconds
     return () => clearInterval(interval);
   }, [entries]);
+
+  // Debug helper function (can be called from browser console)
+  useEffect(() => {
+    // Make debug functions available globally for troubleshooting
+    (window as any).debugKnowledgeBase = () => {
+      console.log('=== KNOWLEDGE BASE DEBUG INFO ===');
+      console.log('Current entries in state:', entries.length);
+      console.log('Entries data:', entries);
+      
+      const stored = localStorage.getItem('knowledgeBase_entries');
+      console.log('Raw localStorage data:', stored);
+      
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          console.log('Parsed localStorage entries:', parsed.length);
+          console.log('localStorage data:', parsed);
+        } catch (e) {
+          console.error('Error parsing localStorage:', e);
+        }
+      } else {
+        console.log('No data in localStorage');
+      }
+      
+      console.log('Loading state:', loading);
+      console.log('Initial load:', isInitialLoad);
+      console.log('User ID:', user?.id);
+      console.log('Active tab:', activeTab);
+      console.log('Form data:', formData);
+      console.log('=== END DEBUG INFO ===');
+    };
+
+    // Add a test function to create a sample entry
+    (window as any).testCreateKnowledgeEntry = () => {
+      console.log('🧪 TESTING: Creating sample knowledge base entry...');
+      const testEntry = {
+        business_name: 'Test Business',
+        industry: 'technology',
+        target_audience: 'Tech professionals',
+        products_services: 'Software solutions'
+      };
+      
+      setFormData(testEntry);
+      console.log('🧪 Test form data set:', testEntry);
+      
+      setTimeout(() => {
+        createEntry();
+      }, 1000);
+    };
+    
+    return () => {
+      delete (window as any).debugKnowledgeBase;
+      delete (window as any).testCreateKnowledgeEntry;
+    };
+  }, [entries, loading, isInitialLoad, user, activeTab, formData]);
 
   // Add visibility change listener to preserve data when user navigates away
   useEffect(() => {
@@ -468,58 +547,60 @@ export function KnowledgeBase() {
 
     try {
       setLoading(true);
-      console.log('Creating knowledge base entry via ML API:', {
-        business_name: formData.business_name,
-        industry: formData.industry,
-        target_audience: formData.target_audience,
-        products_services: formData.products_services
-      });
       
-      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/knowledge-base', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          business_name: formData.business_name,
-          industry: formData.industry,
-          target_audience: formData.target_audience,
-          products_services: formData.products_services
-        })
-      });
-
-      console.log('ML API POST response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('ML API POST error:', errorText);
-        throw new Error(`Failed to create knowledge entry: ${response.status} ${response.statusText}`);
-      }
-      
-      const result = await response.json();
-      console.log('Knowledge base entry created successfully:', result);
-      
-      toast({
-        title: "Success",
-        description: "Business information saved to knowledge base successfully"
-      });
-      
-      // Add the new entry to local state with the ID returned from API
+      // Create the new entry object first
       const newEntry: KnowledgeEntry = {
-        id: result.id || result.entry_id || Date.now().toString(), // Handle different possible ID field names
+        id: Date.now().toString(), // Generate unique ID
         business_name: formData.business_name,
         industry: formData.industry,
         target_audience: formData.target_audience,
         products_services: formData.products_services,
-        created_at: result.created_at || new Date().toISOString()
+        created_at: new Date().toISOString()
       };
-      console.log('🆕 Adding new entry to state:', newEntry);
+      
+      console.log('🆕 Creating new entry:', newEntry);
+      
+      // Add to local state immediately for instant feedback
       setEntries(prev => {
         const updated = [newEntry, ...prev];
         console.log('📝 Updated entries array:', updated.length);
+        console.log('📝 Previous entries:', prev.length);
+        console.log('📝 New entry being added:', newEntry);
+        console.log('📝 Full updated array:', updated);
         // Immediately sync to localStorage to ensure persistence
         syncToLocalStorage(updated);
         return updated;
+      });
+      
+      // Try to sync with API in background (optional)
+      try {
+        console.log('📡 Attempting API sync (optional)...');
+        const response = await fetch('https://socialdots-ai-expense-backend.hf.space/knowledge-base', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            business_name: formData.business_name,
+            industry: formData.industry,
+            target_audience: formData.target_audience,
+            products_services: formData.products_services
+          })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('✅ API sync successful:', result);
+        } else {
+          console.warn('⚠️ API sync failed, but entry saved locally');
+        }
+      } catch (apiError) {
+        console.warn('⚠️ API sync failed, but entry saved locally:', apiError);
+      }
+      
+      toast({
+        title: "Success",
+        description: "Business information saved to knowledge base successfully"
       });
       
       // Clear form after successful creation
@@ -534,41 +615,13 @@ export function KnowledgeBase() {
       setActiveTab("browse");
       
     } catch (error) {
-      console.error('Error creating knowledge entry via API:', error);
-      
-      // Even if API fails, save to localStorage so user doesn't lose data
-      console.log('API failed, saving entry to localStorage only');
-      const fallbackEntry: KnowledgeEntry = {
-        id: Date.now().toString(),
-        business_name: formData.business_name,
-        industry: formData.industry,
-        target_audience: formData.target_audience,
-        products_services: formData.products_services,
-        created_at: new Date().toISOString()
-      };
-      
-      setEntries(prev => {
-        const updated = [fallbackEntry, ...prev];
-        syncToLocalStorage(updated);
-        return updated;
-      });
+      console.error('❌ Unexpected error in createEntry:', error);
       
       toast({
-        title: "Saved Locally",
-        description: "Business information saved locally. It will sync to the server when available.",
-        variant: "default"
+        title: "Error", 
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
       });
-      
-      // Clear form after successful local save
-      setFormData({ 
-        business_name: '', 
-        industry: '', 
-        target_audience: '', 
-        products_services: '' 
-      });
-      
-      // Switch to browse tab to show the new entry
-      setActiveTab("browse");
     } finally {
       setLoading(false);
     }
@@ -589,7 +642,7 @@ export function KnowledgeBase() {
       
       // Delete from ML API using DELETE endpoint
       try {
-        const response = await fetch(`https://dawoodAhmad12-ai-expense-backend.hf.space/knowledge-base/${entryId}`, {
+        const response = await fetch(`https://socialdots-ai-expense-backend.hf.space/knowledge-base/${entryId}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -653,7 +706,7 @@ export function KnowledgeBase() {
       });
       
       // Update via ML API using the PUT endpoint
-      const response = await fetch(`https://dawoodAhmad12-ai-expense-backend.hf.space/knowledge-base/${editingEntry.id}`, {
+      const response = await fetch(`https://socialdots-ai-expense-backend.hf.space/knowledge-base/${editingEntry.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -847,7 +900,7 @@ export function KnowledgeBase() {
                                 <Users className="h-4 w-4 mt-0.5 text-muted-foreground" />
                                 <div>
                                   <span className="font-medium">Target Audience:</span>
-                                  <p className="text-muted-foreground">{entry.target_audience}</p>
+                                  <div className="text-muted-foreground whitespace-pre-line">{entry.target_audience}</div>
                                 </div>
                               </div>
                             </div>
@@ -855,7 +908,7 @@ export function KnowledgeBase() {
                               <Package className="h-4 w-4 mt-0.5 text-muted-foreground" />
                               <div>
                                 <span className="font-medium">Products & Services:</span>
-                                <p className="text-muted-foreground text-sm line-clamp-3">{entry.products_services}</p>
+                                <div className="text-muted-foreground text-sm line-clamp-3 whitespace-pre-line">{entry.products_services}</div>
                               </div>
                             </div>
                           </div>

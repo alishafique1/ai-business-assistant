@@ -99,7 +99,7 @@ export function ExpenseTracker() {
       
       // Fetch expenses from both ML API and business_expenses table
       const [mlApiResponse, supabaseResponse] = await Promise.all([
-        fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/expenses', {
+        fetch(`https://socialdots-ai-expense-backend.hf.space/get-my-expenses/${user.id}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -153,8 +153,8 @@ export function ExpenseTracker() {
           if (isRecentExpense) {
             // Use the actual expense timestamp, not current time
             // This shows when the receipt was actually processed/logged
-            const expenseTimestamp = new Date(processedExpense.created_at || processedExpense.date || new Date());
-            const dateTimeString = expenseTimestamp.toLocaleString(undefined, {
+            const expenseTimestamp = new Date(processedExpense.created_at || processedExpense.date || new Date());  
+            const dateTimeString = formatDate(expenseTimestamp, {
               year: 'numeric',
               month: '2-digit',
               day: '2-digit',
@@ -454,14 +454,8 @@ export function ExpenseTracker() {
     
     // Enhanced mapping for common ML categories to existing user categories
     const categoryMap: Record<string, string> = {
-      // Direct ML API categories (from mock function)
-      'meals': 'Meals',
-      'travel': 'Travel', 
-      'office': 'Office Supplies',
-      'marketing': 'Marketing',
-      'software': 'Software',
-      
       // Food & Dining variations
+      'meals': 'Meals',
       'food & dining': 'Meals',
       'food': 'Meals',
       'restaurant': 'Meals',
@@ -540,7 +534,7 @@ export function ExpenseTracker() {
 
   const fetchCategorySummary = async () => {
     try {
-      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/summary', {
+      const response = await fetch('https://socialdots-ai-expense-backend.hf.space/summary', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -692,7 +686,7 @@ export function ExpenseTracker() {
   const findAndUpdateRecentExpense = async (originalCategory: string, newCategoryKey: string, amount: number) => {
     try {
       // Get the most recent expenses to find the one we just created
-      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/expenses', {
+      const response = await fetch(`https://socialdots-ai-expense-backend.hf.space/get-my-expenses/${user?.id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -954,7 +948,7 @@ export function ExpenseTracker() {
       console.log('Updating expense via ML API - delete and recreate approach');
       
       // Step 1: Delete the existing expense from ML API
-      const deleteResponse = await fetch(`https://dawoodAhmad12-ai-expense-backend.hf.space/expenses/${editingExpense.id}`, {
+      const deleteResponse = await fetch(`https://socialdots-ai-expense-backend.hf.space/expenses/${editingExpense.id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -1061,7 +1055,7 @@ export function ExpenseTracker() {
         console.log('Not found in business_expenses, trying ML API:', supabaseError);
         
         // If not found in Supabase, try ML API
-        const response = await fetch(`https://dawoodAhmad12-ai-expense-backend.hf.space/expenses/${expenseId}`, {
+        const response = await fetch(`https://socialdots-ai-expense-backend.hf.space/expenses/${expenseId}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
@@ -1188,7 +1182,7 @@ export function ExpenseTracker() {
 
       // Call ML model to extract expense data
       console.log('Uploading receipt to ML API...');
-      const response = await fetch('https://dawoodAhmad12-ai-expense-backend.hf.space/upload', {
+      const response = await fetch('https://socialdots-ai-expense-backend.hf.space/upload', {
         method: 'POST',
         body: formData,
       });
@@ -1210,7 +1204,7 @@ export function ExpenseTracker() {
           // Create digital receipt title with the actual processing time, not current time
           // Use the timestamp from when the receipt was processed/uploaded
           const processedTime = responseData.created_at ? new Date(responseData.created_at) : new Date();
-          const dateTimeString = processedTime.toLocaleString(undefined, {
+          const dateTimeString = formatDate(processedTime, {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
