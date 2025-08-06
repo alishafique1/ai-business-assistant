@@ -697,7 +697,7 @@ export function KnowledgeBase() {
 
     try {
       setLoading(true);
-      console.log('Updating knowledge base entry via ML API:', {
+      console.log('Updating knowledge base entry locally:', {
         id: editingEntry.id,
         business_name: formData.business_name,
         industry: formData.industry,
@@ -705,32 +705,7 @@ export function KnowledgeBase() {
         products_services: formData.products_services
       });
       
-      // Update via ML API using the PUT endpoint
-      const response = await fetch(`https://socialdots-ai-expense-backend.hf.space/knowledge-base/${editingEntry.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          business_name: formData.business_name,
-          industry: formData.industry,
-          target_audience: formData.target_audience,
-          products_services: formData.products_services
-        })
-      });
-
-      console.log('ML API PUT response status:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('ML API PUT error:', errorText);
-        throw new Error(`Failed to update knowledge entry: ${response.status} ${response.statusText}`);
-      }
-      
-      const result = await response.json();
-      console.log('Knowledge base entry updated successfully via ML API:', result);
-      
-      // Update local state regardless of API success
+      // Update local state directly (no API call)
       const updatedEntry: KnowledgeEntry = {
         ...editingEntry,
         business_name: formData.business_name,
@@ -740,13 +715,19 @@ export function KnowledgeBase() {
         updated_at: new Date().toISOString()
       };
       
-      setEntries(prev => {
-        const updated = prev.map(entry => 
-          entry.id === editingEntry.id ? updatedEntry : entry
-        );
-        syncToLocalStorage(updated);
-        return updated;
-      });
+      const updatedEntries = entries.map(entry => 
+        entry.id === editingEntry.id ? updatedEntry : entry
+      );
+      
+      // Update state and localStorage
+      setEntries(updatedEntries);
+      await safeWriteToLocalStorage(updatedEntries);
+      
+      // Clear AI Assistant cache when knowledge base changes
+      localStorage.removeItem('knowledgeBase_context');
+      localStorage.removeItem('knowledgeBase_cached');
+      
+      console.log('Knowledge base entry updated successfully in localStorage');
       
       toast({
         title: "Success",
@@ -830,18 +811,10 @@ export function KnowledgeBase() {
           <p className="text-muted-foreground">
             {entries.length > 0 
               ? "Edit or delete your business information. Business information is typically added during onboarding."
-              : "No business information found. Business information is added during the onboarding process, or you can add it manually below."
+              : "No business information found. Business information is added during the onboarding process."
             }
           </p>
         </div>
-        <Button className="gap-2" onClick={() => {
-          setEditingEntry(null);
-          setActiveTab("add");
-          console.log('🆕 Add Business Info button clicked');
-        }}>
-          <Plus className="h-4 w-4" />
-          {entries.length === 0 ? "Add Business Info" : "Add New Business"}
-        </Button>
       </div>
 
       {entries.length > 0 || editingEntry ? (
@@ -853,8 +826,8 @@ export function KnowledgeBase() {
             {!editingEntry && entries.length > 0 && (
               <TabsTrigger value="preview">AI Preview</TabsTrigger>
             )}
-            {!editingEntry && (
-              <TabsTrigger value="add">Add New Business</TabsTrigger>
+            {!editingEntry && entries.length > 0 && (
+              <TabsTrigger value="add">Add Information</TabsTrigger>
             )}
             {editingEntry && (
               <TabsTrigger value="edit">Edit Business Information</TabsTrigger>
@@ -1117,98 +1090,124 @@ export function KnowledgeBase() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Plus className="h-5 w-5" />
-                  Add New Business Information
+                  Add Business Information
                 </CardTitle>
                 <CardDescription>
-                  Add additional business details to expand your knowledge base
+                  Add additional products, services, or other business details to your existing business profile
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="add_business_name" className="flex items-center gap-2">
-                    <Building className="h-4 w-4" />
-                    Business Name
-                  </Label>
-                  <Input 
-                    id="add_business_name" 
-                    placeholder="Your Company Name"
-                    value={formData.business_name}
-                    onChange={(e) => setFormData({...formData, business_name: e.target.value})}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="add_industry" className="flex items-center gap-2">
-                    <Target className="h-4 w-4" />
-                    Industry
-                  </Label>
-                  <Select 
-                    value={formData.industry}
-                    onValueChange={(value) => setFormData({...formData, industry: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your industry" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {INDUSTRY_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="add_target_audience" className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Target Audience
-                  </Label>
-                  <Input 
-                    id="add_target_audience" 
-                    placeholder="e.g., Small businesses, Students, Enterprise clients"
-                    value={formData.target_audience}
-                    onChange={(e) => setFormData({...formData, target_audience: e.target.value})}
-                  />
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="add_products_services" className="flex items-center gap-2">
                     <Package className="h-4 w-4" />
-                    Products & Services
+                    Additional Products & Services
                   </Label>
                   <Textarea 
                     id="add_products_services" 
-                    placeholder="Describe your main products and services in detail..."
+                    placeholder="Describe additional products, services, or business information..."
                     value={formData.products_services}
                     onChange={(e) => setFormData({...formData, products_services: e.target.value})}
-                    rows={4}
+                    rows={6}
                   />
+                </div>
+
+                <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border-l-4 border-blue-500">
+                  <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-1">
+                    💡 Adding to Existing Business
+                  </h4>
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    This will be added to your existing business profile. Use this to add new products, services, 
+                    target markets, or any other relevant business information.
+                  </p>
                 </div>
 
                 <div className="flex gap-2 pt-4">
                   <Button 
-                    onClick={() => {
-                      console.log('🖱️ TAB BUTTON CLICKED - Add to Knowledge Base');
-                      createEntry();
+                    onClick={async () => {
+                      console.log('🖱️ TAB BUTTON CLICKED - Add Information to Business');
+                      if (!formData.products_services.trim()) {
+                        toast({
+                          title: "Error",
+                          description: "Please enter the additional business information",
+                          variant: "destructive"
+                        });
+                        return;
+                      }
+                      
+                      // Get the first business entry and add to its products_services
+                      if (entries.length > 0) {
+                        const firstEntry = entries[0];
+                        const updatedEntry = {
+                          ...firstEntry,
+                          products_services: firstEntry.products_services + '\n\n' + formData.products_services,
+                          updated_at: new Date().toISOString()
+                        };
+                        
+                        try {
+                          setLoading(true);
+                          
+                          // Update local state immediately
+                          const updatedEntries = entries.map(entry => 
+                            entry.id === firstEntry.id ? updatedEntry : entry
+                          );
+                          
+                          console.log('🔄 Updating entry:', firstEntry.id);
+                          console.log('📝 Original products_services:', firstEntry.products_services);
+                          console.log('➕ Adding:', formData.products_services);
+                          console.log('✅ Updated products_services:', updatedEntry.products_services);
+                          
+                          // Update state and wait for localStorage sync
+                          setEntries(updatedEntries);
+                          await safeWriteToLocalStorage(updatedEntries);
+                          
+                          // Clear AI Assistant cache when knowledge base changes
+                          localStorage.removeItem('knowledgeBase_context');
+                          localStorage.removeItem('knowledgeBase_cached');
+                          
+                          toast({
+                            title: "Success",
+                            description: "Additional information added to your business profile"
+                          });
+                          
+                          // Clear form and switch back to browse tab
+                          setFormData({ 
+                            business_name: '', 
+                            industry: '', 
+                            target_audience: '', 
+                            products_services: '' 
+                          });
+                          setActiveTab("browse");
+                          
+                        } catch (error) {
+                          console.error('Error adding information:', error);
+                          toast({
+                            title: "Error",
+                            description: "Failed to add information to business profile",
+                            variant: "destructive"
+                          });
+                        } finally {
+                          setLoading(false);
+                        }
+                      }
                     }}
                     disabled={loading}
                     className="flex-1"
                   >
-                    {loading ? "Saving..." : "Add to Knowledge Base"}
+                    {loading ? "Adding..." : "Add to Business Profile"}
                   </Button>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
+
         </Tabs>
       ) : (
-        // Show add form only when no entries exist
+        // Show add form when no entries exist
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Plus className="h-5 w-5" />
-              Add Business Information
+              Add Entry
             </CardTitle>
             <CardDescription>
               Add your business details to help AI provide personalized assistance
