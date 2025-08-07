@@ -44,6 +44,14 @@ interface GroupedExpenses {
 export function ExpenseHistory({ expenses, loading, onEdit, onDelete }: ExpenseHistoryProps) {
   const { formatAmount } = useCurrency();
   const { formatExpenseDate, formatDateTime, getTimezoneDisplay } = useTimezone();
+  
+  // Debug log to see what data ExpenseHistory is receiving
+  console.log('🔍 EXPENSE HISTORY DEBUG - Received data:', {
+    expensesCount: expenses.length,
+    loading,
+    expensesData: expenses.slice(0, 3), // Show first 3 expenses for debugging
+    allExpenseIds: expenses.map(e => e.id)
+  });
   const [viewMode, setViewMode] = useState<ViewMode>('today');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());

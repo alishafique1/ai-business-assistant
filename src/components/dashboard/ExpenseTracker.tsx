@@ -154,14 +154,7 @@ export function ExpenseTracker() {
             // Use the actual expense timestamp, not current time
             // This shows when the receipt was actually processed/logged
             const expenseTimestamp = new Date(processedExpense.created_at || processedExpense.date || new Date());  
-            const dateTimeString = formatDate(expenseTimestamp, {
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit',
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: true
-            });
+            const dateTimeString = formatDateTime(expenseTimestamp);
             
             // Move original title to description and create standardized title
             const originalTitle = processedExpense.title || '';
@@ -1182,36 +1175,67 @@ export function ExpenseTracker() {
 
       // Call ML model to extract expense data
       console.log('Uploading receipt to ML API...');
+      console.log('File details:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      });
+      
       const response = await fetch('https://socialdots-ai-expense-backend.hf.space/upload', {
         method: 'POST',
         body: formData,
+        headers: {
+          // Don't set Content-Type - let browser set it with boundary for FormData
+        },
+        mode: 'cors', // Explicitly set CORS mode
+        credentials: 'omit' // Don't include credentials for cross-origin requests
       });
 
       console.log('ML API upload response status:', response.status);
+      console.log('ML API upload response headers:', Object.fromEntries(response.headers.entries()));
       
-      if (!response.ok) throw new Error('Failed to process receipt');
-      const data = await response.json();
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('ML API Error Response:', errorText);
+        console.error('Response status:', response.status);
+        console.error('Response statusText:', response.statusText);
+        throw new Error(`API Error (${response.status}): ${errorText}`);
+      }
+      
+      const responseText = await response.text();
+      console.log('Raw API response:', responseText);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse JSON response:', parseError);
+        console.error('Raw response was:', responseText);
+        throw new Error('Invalid JSON response from API');
+      }
       
       console.log('ML API upload response data:', data);
       console.log('Data type:', typeof data, 'Is array:', Array.isArray(data));
       
       // Handle array response from ML API
       const responseData = Array.isArray(data) ? data[0] : data;
-      console.log('Processed response data:', responseData);
+      console.log('🔍 UPLOAD DEBUG - Processed response data:', responseData);
+      console.log('🔍 UPLOAD DEBUG - Amount check:', {
+        amount: responseData?.amount,
+        amountType: typeof responseData?.amount,
+        amountNotUndefined: responseData?.amount !== undefined,
+        amountNotNull: responseData?.amount !== null,
+        category: responseData?.category,
+        categoryExists: !!responseData?.category
+      });
 
-      if (responseData?.amount && responseData?.category) {
+      if (responseData?.amount !== undefined && responseData?.amount !== null && responseData?.category) {
+        console.log('✅ UPLOAD DEBUG - Validation passed, processing expense...');
         try {
           // Create digital receipt title with the actual processing time, not current time
           // Use the timestamp from when the receipt was processed/uploaded
           const processedTime = responseData.created_at ? new Date(responseData.created_at) : new Date();
-          const dateTimeString = formatDate(processedTime, {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-          });
+          const dateTimeString = formatDateTime(processedTime);
           
           // Move ML-generated title to description and create new standardized title
           const mlGeneratedTitle = responseData.title || '';
@@ -1392,22 +1416,43 @@ export function ExpenseTracker() {
           });
         }
       } else {
-        console.log('Missing required data:', {
-          hasAmount: !!responseData?.amount,
+        console.log('❌ UPLOAD DEBUG - Validation failed:', {
+          hasAmount: responseData?.amount !== undefined && responseData?.amount !== null,
           hasCategory: !!responseData?.category,
-          responseData
+          actualAmount: responseData?.amount,
+          actualCategory: responseData?.category,
+          fullResponseData: responseData
         });
         toast({
           title: "No Data Found",
-          description: "Could not extract expense data from this receipt. Missing amount or category information.",
+          description: `Could not extract expense data from this receipt. Missing ${!responseData?.category ? 'category' : ''} ${(!responseData?.category && (responseData?.amount === undefined || responseData?.amount === null)) ? 'and ' : ''}${(responseData?.amount === undefined || responseData?.amount === null) ? 'amount' : ''} information.`,
           variant: "destructive"
         });
       }
     } catch (error) {
       console.error('Error processing receipt:', error);
+      
+      let errorMessage = "Failed to process receipt. Please try again or enter manually.";
+      let errorTitle = "Processing Failed";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('API Error')) {
+          errorTitle = "API Error";
+          errorMessage = `Server error: ${error.message}. The AI service may be temporarily unavailable.`;
+        } else if (error.message.includes('Invalid JSON')) {
+          errorTitle = "Response Error";
+          errorMessage = "Received invalid response from AI service. Please try again.";
+        } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+          errorTitle = "Network Error";
+          errorMessage = "Cannot reach the AI service. Please check your internet connection and try again.";
+        } else {
+          errorMessage = `Error: ${error.message}`;
+        }
+      }
+      
       toast({
-        title: "Processing Failed",
-        description: "Failed to process receipt. Please try again or enter manually.",
+        title: errorTitle,
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {

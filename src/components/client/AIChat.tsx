@@ -9,6 +9,134 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
+// Component to format AI assistant responses with proper structure
+function FormattedAIContent({ content }: { content: string }) {
+  // Enhanced formatting function for AI responses
+  const formatContent = (text: string) => {
+    // Split content by double newlines to create sections
+    const sections = text.split(/\n\s*\n/);
+    
+    return sections.map((section, sectionIndex) => {
+      const trimmedSection = section.trim();
+      if (!trimmedSection) return null;
+
+      // Check for headers (lines that end with : or are in ALL CAPS)
+      const headerRegex = /^[A-Z\s]+:?\s*$|^.*:$/;
+      const lines = trimmedSection.split('\n');
+      
+      // Check if first line is a header
+      const firstLine = lines[0]?.trim();
+      const isHeader = headerRegex.test(firstLine) && lines.length > 1;
+      
+      if (isHeader) {
+        const headerText = firstLine.replace(/:$/, '');
+        const contentLines = lines.slice(1).filter(line => line.trim());
+        
+        return (
+          <div key={sectionIndex} className="mb-4">
+            <h4 className="font-semibold text-sm mb-3 text-primary">
+              {headerText}
+            </h4>
+            <div className="ml-2">
+              {contentLines.map((line, lineIndex) => {
+                const trimmedLine = line.trim();
+                
+                // Check if this line is a list item
+                if (/^[\d\w]*[\.\)\-\*•]\s/.test(trimmedLine)) {
+                  const cleanedLine = trimmedLine.replace(/^[\d\w]*[\.\)\-\*•]\s*/, '').trim();
+                  return (
+                    <div key={lineIndex} className="mb-1 pl-4 relative">
+                      <span className="absolute left-0 top-0 text-primary">•</span>
+                      <span className="text-sm">{cleanedLine}</span>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <p key={lineIndex} className="text-sm mb-2 leading-relaxed">
+                      {trimmedLine}
+                    </p>
+                  );
+                }
+              })}
+            </div>
+          </div>
+        );
+      }
+      
+      // Check if section is a list (multiple lines with list markers)
+      const listItemRegex = /^[\d\w]*[\.\)\-\*•]\s/;
+      const isList = lines.length > 1 && lines.filter(line => line.trim()).some(line => listItemRegex.test(line.trim()));
+      
+      if (isList) {
+        // Handle as a list
+        const listItems = lines
+          .filter(line => line.trim())
+          .map((line, lineIndex) => {
+            const trimmedLine = line.trim();
+            if (!trimmedLine) return null;
+            
+            // Check if this is a list item or just text
+            if (listItemRegex.test(trimmedLine)) {
+              const cleanedLine = trimmedLine.replace(/^[\d\w]*[\.\)\-\*•]\s*/, '').trim();
+              return (
+                <div key={lineIndex} className="mb-2 pl-4 relative">
+                  <span className="absolute left-0 top-0 text-primary">•</span>
+                  <span className="text-sm">{cleanedLine}</span>
+                </div>
+              );
+            } else {
+              // Non-list line within a list section
+              return (
+                <p key={lineIndex} className="text-sm mb-2 leading-relaxed">
+                  {trimmedLine}
+                </p>
+              );
+            }
+          })
+          .filter(Boolean);
+
+        return (
+          <div key={sectionIndex} className="mb-4">
+            {listItems}
+          </div>
+        );
+      } else {
+        // Handle as paragraph(s)
+        const paragraphLines = lines.filter(line => line.trim());
+        
+        return (
+          <div key={sectionIndex} className="mb-4">
+            {paragraphLines.map((line, lineIndex) => {
+              const trimmedLine = line.trim();
+              
+              // Check if line might be a subheading (shorter, ends with :)
+              if (trimmedLine.endsWith(':') && trimmedLine.length < 50) {
+                return (
+                  <h5 key={lineIndex} className="font-medium text-sm mb-2 text-foreground">
+                    {trimmedLine.replace(/:$/, '')}
+                  </h5>
+                );
+              }
+              
+              return (
+                <p key={lineIndex} className="text-sm mb-2 leading-relaxed">
+                  {trimmedLine}
+                </p>
+              );
+            })}
+          </div>
+        );
+      }
+    }).filter(Boolean);
+  };
+
+  return (
+    <div className="formatted-ai-content">
+      {formatContent(content)}
+    </div>
+  );
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -137,7 +265,11 @@ export function AIChat() {
                       : 'bg-muted'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  {message.role === 'assistant' ? (
+                    <FormattedAIContent content={message.content} />
+                  ) : (
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  )}
                   <p className={`text-xs mt-1 opacity-70 ${
                     message.role === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'
                   }`}>

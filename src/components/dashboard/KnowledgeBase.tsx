@@ -651,10 +651,14 @@ export function KnowledgeBase() {
         
         console.log('ML API DELETE response status:', response.status);
         
-        if (!response.ok && response.status !== 404) {
+        if (response.ok) {
+          console.log('✅ API delete successful');
+        } else if (response.status !== 404) {
           const errorText = await response.text();
           console.error('ML API DELETE error:', errorText);
           // Continue with local removal even if API delete fails
+        } else {
+          console.warn('⚠️ API delete failed (404 - endpoint not found), falling back to local delete');
         }
       } catch (deleteError) {
         console.warn('ML API DELETE error:', deleteError);
@@ -705,7 +709,36 @@ export function KnowledgeBase() {
         products_services: formData.products_services
       });
       
-      // Update local state directly (no API call)
+      // Try to update via API first, fallback to local-only update
+      let apiUpdateSuccessful = false;
+      
+      try {
+        console.log('📡 Attempting API update...');
+        const response = await fetch(`https://socialdots-ai-expense-backend.hf.space/knowledge-base/${editingEntry.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            business_name: formData.business_name,
+            industry: formData.industry,
+            target_audience: formData.target_audience,
+            products_services: formData.products_services
+          })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('✅ API update successful:', result);
+          apiUpdateSuccessful = true;
+        } else {
+          console.warn('⚠️ API update failed, falling back to local update');
+        }
+      } catch (apiError) {
+        console.warn('⚠️ API update failed, falling back to local update:', apiError);
+      }
+
+      // Update local state regardless of API success
       const updatedEntry: KnowledgeEntry = {
         ...editingEntry,
         business_name: formData.business_name,

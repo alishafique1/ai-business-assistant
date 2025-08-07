@@ -28,7 +28,7 @@ export function Overview({ onViewChange }: OverviewProps) {
     try {
       // Fetch expenses from ML API, business_expenses table, and knowledge base
       const [mlApiResponse, businessExpensesResponse, knowledgeResponse] = await Promise.all([
-        fetch('https://socialdots-ai-expense-backend.hf.space/expenses', {
+        fetch(`https://socialdots-ai-expense-backend.hf.space/get-my-expenses/${user?.id}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -49,7 +49,9 @@ export function Overview({ onViewChange }: OverviewProps) {
       // Process ML API expenses
       if (mlApiResponse.ok) {
         const mlExpenses = await mlApiResponse.json();
-        console.log('ML API expenses:', mlExpenses);
+        console.log('🔍 OVERVIEW DEBUG - ML API expenses:', mlExpenses);
+        console.log('🔍 OVERVIEW DEBUG - ML API expenses count:', mlExpenses.length);
+        console.log('🔍 OVERVIEW DEBUG - ML API response URL was:', `https://socialdots-ai-expense-backend.hf.space/get-my-expenses/${user?.id}`);
         
         // Fix ML API expenses dates to always use today's date
         const todayDate = new Date().toISOString().split('T')[0];
@@ -76,7 +78,9 @@ export function Overview({ onViewChange }: OverviewProps) {
           title: expense.description,
           amount: expense.amount
         }));
-        console.log('Business expenses for overview:', businessExpenses);
+        console.log('🔍 OVERVIEW DEBUG - Business expenses for overview:', businessExpenses);
+        console.log('🔍 OVERVIEW DEBUG - Business expenses count:', businessExpenses.length);
+        console.log('🔍 OVERVIEW DEBUG - Business expenses user filtering - current user:', user?.id);
         allExpenses = [...allExpenses, ...businessExpenses];
       }
       
@@ -85,8 +89,15 @@ export function Overview({ onViewChange }: OverviewProps) {
         arr.findIndex(e => e.id === expense.id) === index
       );
       
-      console.log('Combined expenses for overview:', expenses);
-      console.log('Number of total expenses:', expenses.length);
+      console.log('🔍 OVERVIEW DEBUG - Combined expenses for overview:', expenses);
+      console.log('🔍 OVERVIEW DEBUG - Number of total expenses:', expenses.length);
+      console.log('🔍 OVERVIEW DEBUG - Current user ID:', user?.id);
+      console.log('🔍 OVERVIEW DEBUG - Expenses with user IDs:', expenses.map(e => ({
+        id: e.id,
+        user_id: e.user_id,
+        title: e.title,
+        amount: e.amount
+      })));
       
       const currentMonth = new Date().getMonth();
       const currentYear = new Date().getFullYear();
@@ -131,11 +142,24 @@ export function Overview({ onViewChange }: OverviewProps) {
               expenseDate = new Date(dateStr);
             }
             
-            return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
+            const isCurrentMonth = expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
+            console.log('🔍 OVERVIEW DEBUG - Expense filter check:', {
+              title: expense.title,
+              amount: expense.amount,
+              user_id: expense.user_id,
+              dateStr,
+              expenseDate,
+              expenseMonth: expenseDate.getMonth(),
+              expenseYear: expenseDate.getFullYear(),
+              currentMonth,
+              currentYear,
+              isCurrentMonth
+            });
+            return isCurrentMonth;
           })
           .reduce((sum: number, expense: { amount: number }) => sum + expense.amount, 0);
         
-        console.log('Monthly expenses total:', monthlyExpenses);
+        console.log('🔍 OVERVIEW DEBUG - Monthly expenses total:', monthlyExpenses);
         
       setStats(prev => ({
         ...prev,

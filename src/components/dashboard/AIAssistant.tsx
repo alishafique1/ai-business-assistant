@@ -18,6 +18,134 @@ interface Message {
   timestamp: Date;
 }
 
+// Component to format AI assistant responses with proper structure
+function FormattedAIContent({ content }: { content: string }) {
+  // Enhanced formatting function for AI responses
+  const formatContent = (text: string) => {
+    // Split content by double newlines to create sections
+    const sections = text.split(/\n\s*\n/);
+    
+    return sections.map((section, sectionIndex) => {
+      const trimmedSection = section.trim();
+      if (!trimmedSection) return null;
+
+      // Check for headers (lines that end with : or are in ALL CAPS)
+      const headerRegex = /^[A-Z\s]+:?\s*$|^.*:$/;
+      const lines = trimmedSection.split('\n');
+      
+      // Check if first line is a header
+      const firstLine = lines[0]?.trim();
+      const isHeader = headerRegex.test(firstLine) && lines.length > 1;
+      
+      if (isHeader) {
+        const headerText = firstLine.replace(/:$/, '');
+        const contentLines = lines.slice(1).filter(line => line.trim());
+        
+        return (
+          <div key={sectionIndex} className="mb-4">
+            <h4 className="font-semibold text-sm mb-3 text-primary">
+              {headerText}
+            </h4>
+            <div className="ml-2">
+              {contentLines.map((line, lineIndex) => {
+                const trimmedLine = line.trim();
+                
+                // Check if this line is a list item
+                if (/^[\d\w]*[\.\)\-\*•]\s/.test(trimmedLine)) {
+                  const cleanedLine = trimmedLine.replace(/^[\d\w]*[\.\)\-\*•]\s*/, '').trim();
+                  return (
+                    <div key={lineIndex} className="mb-1 pl-4 relative">
+                      <span className="absolute left-0 top-0 text-primary">•</span>
+                      <span className="text-sm">{cleanedLine}</span>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <p key={lineIndex} className="text-sm mb-2 leading-relaxed">
+                      {trimmedLine}
+                    </p>
+                  );
+                }
+              })}
+            </div>
+          </div>
+        );
+      }
+      
+      // Check if section is a list (multiple lines with list markers)
+      const listItemRegex = /^[\d\w]*[\.\)\-\*•]\s/;
+      const isList = lines.length > 1 && lines.filter(line => line.trim()).some(line => listItemRegex.test(line.trim()));
+      
+      if (isList) {
+        // Handle as a list
+        const listItems = lines
+          .filter(line => line.trim())
+          .map((line, lineIndex) => {
+            const trimmedLine = line.trim();
+            if (!trimmedLine) return null;
+            
+            // Check if this is a list item or just text
+            if (listItemRegex.test(trimmedLine)) {
+              const cleanedLine = trimmedLine.replace(/^[\d\w]*[\.\)\-\*•]\s*/, '').trim();
+              return (
+                <div key={lineIndex} className="mb-2 pl-4 relative">
+                  <span className="absolute left-0 top-0 text-primary">•</span>
+                  <span className="text-sm">{cleanedLine}</span>
+                </div>
+              );
+            } else {
+              // Non-list line within a list section
+              return (
+                <p key={lineIndex} className="text-sm mb-2 leading-relaxed">
+                  {trimmedLine}
+                </p>
+              );
+            }
+          })
+          .filter(Boolean);
+
+        return (
+          <div key={sectionIndex} className="mb-4">
+            {listItems}
+          </div>
+        );
+      } else {
+        // Handle as paragraph(s)
+        const paragraphLines = lines.filter(line => line.trim());
+        
+        return (
+          <div key={sectionIndex} className="mb-4">
+            {paragraphLines.map((line, lineIndex) => {
+              const trimmedLine = line.trim();
+              
+              // Check if line might be a subheading (shorter, ends with :)
+              if (trimmedLine.endsWith(':') && trimmedLine.length < 50) {
+                return (
+                  <h5 key={lineIndex} className="font-medium text-sm mb-2 text-foreground">
+                    {trimmedLine.replace(/:$/, '')}
+                  </h5>
+                );
+              }
+              
+              return (
+                <p key={lineIndex} className="text-sm mb-2 leading-relaxed">
+                  {trimmedLine}
+                </p>
+              );
+            })}
+          </div>
+        );
+      }
+    }).filter(Boolean);
+  };
+
+  return (
+    <div className="formatted-ai-content">
+      {formatContent(content)}
+    </div>
+  );
+}
+
 export function AIAssistant() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -201,7 +329,7 @@ export function AIAssistant() {
       console.log('Fetching expense data from ML API and Supabase...');
       
       const [mlApiResponse, summaryResponse, businessExpensesResponse] = await Promise.all([
-        fetch('https://socialdots-ai-expense-backend.hf.space/expenses'),
+        fetch(`https://socialdots-ai-expense-backend.hf.space/get-my-expenses/${user?.id}`),
         fetch('https://socialdots-ai-expense-backend.hf.space/summary'),
         supabase
           .from('business_expenses')
@@ -289,21 +417,62 @@ Once you have some expense data, I'll be able to provide detailed analysis inclu
 
 Would you like me to help you set up your first expense entry or explain how the expense tracking system works?`;
         } else {
-          // Create expense listing
-          const expensesList = expenseData.expenses.map((expense: { title?: string; description?: string; amount?: number; category?: string; date?: string; created_at?: string }, index: number) => 
-            `${index + 1}. ${expense.title || expense.description || 'Unnamed expense'} - $${expense.amount} (${expense.category || 'Uncategorized'}) - ${expense.date || expense.created_at}`
-          ).join('\n');
-          
+          // Calculate summary statistics
           const totalAmount = expenseData.expenses.reduce((sum: number, expense: { amount?: number }) => sum + (expense.amount || 0), 0);
+          const expenseCount = expenseData.expenses.length;
+          const avgExpense = totalAmount / expenseCount;
           
-          // Generate comprehensive analysis based on the expense data
-          assistantContent = `Here are your current expenses:
+          // Calculate category breakdown
+          const categoryTotals: Record<string, { amount: number; count: number }> = {};
+          expenseData.expenses.forEach((expense: { category?: string; amount?: number }) => {
+            const category = expense.category || 'Uncategorized';
+            if (!categoryTotals[category]) {
+              categoryTotals[category] = { amount: 0, count: 0 };
+            }
+            categoryTotals[category].amount += (expense.amount || 0);
+            categoryTotals[category].count += 1;
+          });
+          
+          // Sort categories by total amount (highest first)
+          const sortedCategories = Object.entries(categoryTotals)
+            .sort(([, a], [, b]) => b.amount - a.amount);
+          
+          // Get recent expenses (last 5)
+          const recentExpenses = expenseData.expenses
+            .sort((a: { created_at?: string; date?: string }, b: { created_at?: string; date?: string }) => {
+              const dateA = new Date(a.created_at || a.date || 0);
+              const dateB = new Date(b.created_at || b.date || 0);
+              return dateB.getTime() - dateA.getTime();
+            })
+            .slice(0, 5);
+          
+          // Create formatted summary
+          assistantContent = `# 💰 Expense Summary
 
-${expensesList}
+## 📊 Overview
+• **Total Expenses:** ${expenseCount}
+• **Total Amount:** $${totalAmount.toFixed(2)}
+• **Average per Expense:** $${avgExpense.toFixed(2)}
 
-**Total: $${totalAmount.toFixed(2)}**
+## 📈 Category Breakdown
+${sortedCategories.map(([category, data]) => {
+  const percentage = ((data.amount / totalAmount) * 100).toFixed(1);
+  return `• **${category}:** $${data.amount.toFixed(2)} (${data.count} expenses, ${percentage}%)`;
+}).join('\n')}
 
-Based on your expense analysis, you've spent $${totalAmount.toFixed(2)} total with your main category being ${expenseData.expenses[0]?.category || 'Uncategorized'}. This appears to be ${expenseData.expenses.length === 1 ? 'a single expense' : `${expenseData.expenses.length} expenses`} for this period. Consider tracking more expenses to get better insights into your spending patterns and identify areas for cost optimization.`;
+## 🕒 Recent Expenses
+${recentExpenses.map((expense: { title?: string; description?: string; amount?: number; category?: string; date?: string; created_at?: string }, index: number) => {
+  const date = expense.date || expense.created_at;
+  const formattedDate = date ? new Date(date).toLocaleDateString() : 'No date';
+  return `${index + 1}. **${expense.title || expense.description || 'Unnamed expense'}**
+   $${(expense.amount || 0).toFixed(2)} • ${expense.category || 'Uncategorized'} • ${formattedDate}`;
+}).join('\n\n')}
+
+## 💡 Insights
+${sortedCategories.length > 0 ? `• Your highest spending category is **${sortedCategories[0][0]}** with $${sortedCategories[0][1].amount.toFixed(2)}` : ''}
+${totalAmount > 1000 ? '• Consider reviewing expenses over $1,000 for potential cost savings' : ''}
+${sortedCategories.length > 3 ? '• You have expenses across multiple categories - good diversification!' : ''}
+${expenseCount > 10 ? '• Great job tracking your expenses regularly!' : '• Try to log more expenses for better insights'}`;
         }
         
         // Send the message directly from assistant
@@ -460,7 +629,11 @@ Based on your expense analysis, you've spent $${totalAmount.toFixed(2)} total wi
                                 ? 'bg-primary text-primary-foreground' 
                                 : 'bg-muted'
                             }`}>
-                              <p className="text-sm">{msg.content}</p>
+                              {msg.role === 'assistant' ? (
+                                <FormattedAIContent content={msg.content} />
+                              ) : (
+                                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                              )}
                             </div>
                           </div>
                         ))}
