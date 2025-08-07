@@ -938,18 +938,62 @@ export function ExpenseTracker() {
         categoryToStore = fullCategoryName;
       }
       
-      console.log('Updating expense via ML API - delete and recreate approach');
+      console.log('Updating expense - smart delete and recreate approach');
       
-      // Step 1: Delete the existing expense from ML API
-      const deleteResponse = await fetch(`https://socialdots-ai-expense-backend.hf.space/expenses/${editingExpense.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      // Step 1: Determine expense type and delete appropriately
+      const isManualExpense = typeof editingExpense.id === 'string' && 
+                             (editingExpense.id.length === 36 && editingExpense.id.includes('-'));
+      
+      console.log('Update expense type detection:', {
+        expenseId: editingExpense.id,
+        isManualExpense,
+        idLength: editingExpense.id.length,
+        hasUUIDFormat: editingExpense.id.includes('-')
       });
 
-      if (!deleteResponse.ok) {
-        throw new Error('Failed to delete old expense');
+      if (isManualExpense) {
+        // Delete from business_expenses table (manual expense)
+        console.log('Deleting manual expense from business_expenses table');
+        const { error: supabaseDeleteError } = await supabase
+          .from('business_expenses')
+          .delete()
+          .eq('id', editingExpense.id);
+
+        if (supabaseDeleteError) {
+          console.error('Failed to delete from business_expenses:', supabaseDeleteError);
+          throw new Error(`Failed to delete manual expense: ${supabaseDeleteError.message}`);
+        }
+        console.log('Manual expense deleted from business_expenses successfully');
+      } else {
+        // Delete from both ML API and business_expenses (ML-processed expense)
+        console.log('Deleting ML-processed expense from both sources');
+        
+        // Try ML API first
+        const deleteResponse = await fetch(`https://socialdots-ai-expense-backend.hf.space/expenses/${editingExpense.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!deleteResponse.ok) {
+          console.log('ML API delete failed, continuing with business_expenses delete');
+        } else {
+          console.log('ML API expense deleted successfully');
+        }
+
+        // Also try to delete from business_expenses (ML-processed expenses are now saved there too)
+        const { error: supabaseDeleteError } = await supabase
+          .from('business_expenses')
+          .delete()
+          .eq('id', editingExpense.id);
+
+        if (supabaseDeleteError) {
+          console.log('business_expenses delete failed (might not exist there):', supabaseDeleteError);
+          // Don't throw error - ML expense might only exist in ML API
+        } else {
+          console.log('business_expenses expense deleted successfully');
+        }
       }
 
       // Use the user-selected date from the form, fallback to today if not set
