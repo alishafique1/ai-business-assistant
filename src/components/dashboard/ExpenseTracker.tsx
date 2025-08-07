@@ -1204,6 +1204,7 @@ export function ExpenseTracker() {
       
       const responseText = await response.text();
       console.log('Raw API response:', responseText);
+      console.log('Raw API response length:', responseText.length);
       
       let data;
       try {
@@ -1229,7 +1230,21 @@ export function ExpenseTracker() {
         categoryExists: !!responseData?.category
       });
 
-      if (responseData?.amount !== undefined && responseData?.amount !== null && responseData?.category) {
+      // Enhanced validation with better error messages
+      const hasValidAmount = responseData?.amount !== undefined && responseData?.amount !== null;
+      const hasValidCategory = responseData?.category && responseData?.category.trim() !== '';
+      
+      console.log('🔍 DETAILED VALIDATION CHECK:', {
+        responseData: responseData,
+        hasValidAmount,
+        hasValidCategory,
+        amount: responseData?.amount,
+        amountType: typeof responseData?.amount,
+        category: responseData?.category,
+        categoryType: typeof responseData?.category
+      });
+
+      if (hasValidAmount && hasValidCategory) {
         console.log('✅ UPLOAD DEBUG - Validation passed, processing expense...');
         try {
           // Create digital receipt title with the actual processing time, not current time
@@ -1417,15 +1432,27 @@ export function ExpenseTracker() {
         }
       } else {
         console.log('❌ UPLOAD DEBUG - Validation failed:', {
-          hasAmount: responseData?.amount !== undefined && responseData?.amount !== null,
-          hasCategory: !!responseData?.category,
+          hasAmount: hasValidAmount,
+          hasCategory: hasValidCategory,
           actualAmount: responseData?.amount,
           actualCategory: responseData?.category,
           fullResponseData: responseData
         });
+        // Determine specific error message based on what's missing
+        let errorMessage = "Could not extract expense data from this receipt. ";
+        const missingParts = [];
+        if (!hasValidAmount) missingParts.push('amount');
+        if (!hasValidCategory) missingParts.push('category');
+        
+        if (missingParts.length > 0) {
+          errorMessage += `Missing ${missingParts.join(' and ')} information. Please try manual entry.`;
+        } else {
+          errorMessage += "Please try manual entry.";
+        }
+        
         toast({
           title: "No Data Found",
-          description: `Could not extract expense data from this receipt. Missing ${!responseData?.category ? 'category' : ''} ${(!responseData?.category && (responseData?.amount === undefined || responseData?.amount === null)) ? 'and ' : ''}${(responseData?.amount === undefined || responseData?.amount === null) ? 'amount' : ''} information.`,
+          description: errorMessage,
           variant: "destructive"
         });
       }
