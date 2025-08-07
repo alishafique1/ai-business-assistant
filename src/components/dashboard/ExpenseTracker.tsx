@@ -1393,6 +1393,33 @@ export function ExpenseTracker() {
           });
         }
         
+        // Save the expense to the database
+        console.log('💾 Saving ML processed expense to database...');
+        const { data: savedExpense, error: saveError } = await supabase
+          .from('business_expenses')
+          .insert({
+            description: responseData.description || `Digital receipt processed: ${responseData.title || 'Expense'}`,
+            amount: parseFloat(responseData.amount),
+            category: responseData.category, // Use mapped category
+            expense_date: responseData.date, // Use formatted date
+            user_id: user.id,
+            title: responseData.title
+          })
+          .select()
+          .single();
+
+        if (saveError) {
+          console.error('❌ Error saving ML expense to database:', saveError);
+          toast({
+            title: "Save Error", 
+            description: "Receipt processed but failed to save to database. Please try manual entry.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        console.log('✅ ML expense saved to database:', savedExpense);
+
         // Increment receipt count for free users
         console.log('Calling incrementCount() for photo upload...');
         const incrementResult = await incrementCount();
