@@ -1395,15 +1395,23 @@ export function ExpenseTracker() {
         
         // Save the expense to the database
         console.log('💾 Saving ML processed expense to database...');
+        console.log('💾 Save data:', {
+          description: responseData.description || `Digital receipt processed: ${responseData.title || 'Expense'}`,
+          amount: parseFloat(responseData.amount),
+          category: mlReturnedCategory, // Use the original ML category name (not the mapped key)
+          expense_date: responseData.date,
+          user_id: user.id
+        });
+
         const { data: savedExpense, error: saveError } = await supabase
           .from('business_expenses')
           .insert({
             description: responseData.description || `Digital receipt processed: ${responseData.title || 'Expense'}`,
             amount: parseFloat(responseData.amount),
-            category: responseData.category, // Use mapped category
+            category: mlReturnedCategory, // Use the original ML category name (not the mapped key)
             expense_date: responseData.date, // Use formatted date
-            user_id: user.id,
-            title: responseData.title
+            user_id: user.id
+            // Note: business_expenses table doesn't have a 'title' field, only 'description'
           })
           .select()
           .single();
