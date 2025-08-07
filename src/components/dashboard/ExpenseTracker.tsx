@@ -1247,28 +1247,32 @@ export function ExpenseTracker() {
       if (hasValidAmount && hasValidCategory) {
         console.log('✅ UPLOAD DEBUG - Validation passed, processing expense...');
         try {
-          // Create digital receipt title with the actual processing time, not current time
-          // Use the timestamp from when the receipt was processed/uploaded
-          const processedTime = responseData.created_at ? new Date(responseData.created_at) : new Date();
-          const dateTimeString = formatDateTime(processedTime);
+          // Create digital receipt description with the logging datetime (current time when expense is being logged)
+          const loggingTime = new Date(); // Current datetime when expense is being logged to database
+          const dateTimeString = formatDateTime(loggingTime);
           
-          // Move ML-generated title to description and create new standardized title
+          // Move ML-generated title to description and create new standardized format
           const mlGeneratedTitle = responseData.title || '';
           const mlGeneratedDescription = responseData.description || '';
           
-          // Combine ML title and description for the description field
-          let combinedDescription = '';
-          if (mlGeneratedTitle && mlGeneratedDescription) {
-            combinedDescription = `${mlGeneratedTitle} - ${mlGeneratedDescription}`;
-          } else if (mlGeneratedTitle) {
-            combinedDescription = mlGeneratedTitle;
-          } else if (mlGeneratedDescription) {
-            combinedDescription = mlGeneratedDescription;
+          // Create the main description with Digital Receipt title format
+          let combinedDescription = `Digital Receipt: ${dateTimeString}`;
+          
+          // Add ML-generated content if available
+          if (mlGeneratedTitle || mlGeneratedDescription) {
+            combinedDescription += ' - ';
+            if (mlGeneratedTitle && mlGeneratedDescription) {
+              combinedDescription += `${mlGeneratedTitle} - ${mlGeneratedDescription}`;
+            } else if (mlGeneratedTitle) {
+              combinedDescription += mlGeneratedTitle;
+            } else if (mlGeneratedDescription) {
+              combinedDescription += mlGeneratedDescription;
+            }
           }
           
-          // Set standardized title and apply character limits
-          responseData.title = `Digital Receipt: ${dateTimeString}`.slice(0, 75);
-          responseData.description = combinedDescription.slice(0, 150);
+          // Apply character limits for database storage
+          responseData.description = combinedDescription.slice(0, 200); // Increased limit for full description
+          responseData.title = `Digital Receipt: ${dateTimeString}`.slice(0, 75); // Keep for compatibility
           
           // Debug logging for receipt processing
           console.log('Receipt processing - Original ML data:', {
@@ -1276,11 +1280,11 @@ export function ExpenseTracker() {
             originalDescription: mlGeneratedDescription,
             originalTimestamp: responseData.created_at || responseData.date
           });
-          console.log('Receipt processing - Final formatted data:', {
+          console.log('Receipt processing - Final formatted data (with logging datetime):', {
+            loggingDateTime: dateTimeString,
             newTitle: responseData.title,
             newDescription: responseData.description,
-            processedTime: processedTime.toISOString(),
-            displayTime: dateTimeString,
+            loggingTime: loggingTime.toISOString(),
             userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone
           });
           
@@ -1396,7 +1400,7 @@ export function ExpenseTracker() {
         // Save the expense to the database
         console.log('💾 Saving ML processed expense to database...');
         console.log('💾 Save data:', {
-          description: responseData.description || `Digital receipt processed: ${responseData.title || 'Expense'}`,
+          description: responseData.description, // Already formatted with "Digital Receipt: <datetime>"
           amount: parseFloat(responseData.amount),
           category: mlReturnedCategory, // Use the original ML category name (not the mapped key)
           expense_date: responseData.date,
@@ -1406,7 +1410,7 @@ export function ExpenseTracker() {
         const { data: savedExpense, error: saveError } = await supabase
           .from('business_expenses')
           .insert({
-            description: responseData.description || `Digital receipt processed: ${responseData.title || 'Expense'}`,
+            description: responseData.description, // Already formatted with "Digital Receipt: <datetime>"
             amount: parseFloat(responseData.amount),
             category: mlReturnedCategory, // Use the original ML category name (not the mapped key)
             expense_date: responseData.date, // Use formatted date
