@@ -1474,6 +1474,55 @@ export function ExpenseTracker() {
     }
   };
 
+  // Debug function to test API with minimal data
+  const testVoiceAPI = async () => {
+    try {
+      console.log('Testing voice API with minimal request...');
+      
+      // Create a minimal test blob (just some bytes that represent audio-like data)
+      const testData = new Uint8Array([
+        0x52, 0x49, 0x46, 0x46, 0x24, 0x00, 0x00, 0x00, // RIFF header
+        0x57, 0x41, 0x56, 0x45, 0x66, 0x6d, 0x74, 0x20, // WAVE fmt
+        0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, // PCM mono
+        0x44, 0xac, 0x00, 0x00, 0x88, 0x58, 0x01, 0x00, // 44.1kHz
+        0x02, 0x00, 0x10, 0x00, 0x64, 0x61, 0x74, 0x61, // data header
+        0x00, 0x00, 0x00, 0x00 // empty data
+      ]);
+      
+      const testBlob = new Blob([testData], { type: 'audio/wav' });
+      console.log('Test blob created:', { size: testBlob.size, type: testBlob.type });
+      
+      const formData = new FormData();
+      formData.append('file', testBlob, 'test.wav');
+      
+      console.log('Sending test request...');
+      const response = await fetch('https://socialdots-ai-expense-backend.hf.space/voice-suggestion', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+      
+      console.log('Test response status:', response.status);
+      const responseText = await response.text();
+      console.log('Test response body:', responseText);
+      
+      toast({
+        title: "Test Complete",
+        description: `Status: ${response.status}. Check console for details.`
+      });
+      
+    } catch (error) {
+      console.error('Test API error:', error);
+      toast({
+        title: "Test Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
   const clearVoiceResponse = () => {
     setVoiceResponse('');
   };
@@ -2337,10 +2386,20 @@ export function ExpenseTracker() {
               )}
 
               {!isVoiceRecording && !processingVoice && !voiceResponse && (
-                <p className="text-sm text-muted-foreground">
-                  Click "Record Expense" and speak about your business expenses or marketing ideas. 
-                  The AI will provide detailed suggestions and play an audio confirmation.
-                </p>
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Click "Record Expense" and speak about your business expenses or marketing ideas. 
+                    The AI will provide detailed suggestions and play an audio confirmation.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={testVoiceAPI}
+                    className="text-xs"
+                  >
+                    🔧 Test API Connection
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
