@@ -1135,6 +1135,80 @@ export function ExpenseTracker() {
   };
 
   // Voice recording functions
+  
+  // Convert audio blob to WAV format using Web Audio API
+  const convertToWav = async (audioBlob: Blob): Promise<Blob> => {
+    try {
+      // Create audio context
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Convert blob to array buffer
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      
+      // Decode audio data
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      
+      // Convert to WAV format
+      const wavBuffer = audioBufferToWav(audioBuffer);
+      
+      // Create WAV blob
+      return new Blob([wavBuffer], { type: 'audio/wav' });
+      
+    } catch (error) {
+      console.error('Error converting to WAV:', error);
+      // Return original blob if conversion fails
+      return audioBlob;
+    }
+  };
+
+  // Convert AudioBuffer to WAV format
+  const audioBufferToWav = (buffer: AudioBuffer): ArrayBuffer => {
+    const length = buffer.length;
+    const numberOfChannels = buffer.numberOfChannels;
+    const sampleRate = buffer.sampleRate;
+    const bytesPerSample = 2;
+    const blockAlign = numberOfChannels * bytesPerSample;
+    const byteRate = sampleRate * blockAlign;
+    const dataSize = length * blockAlign;
+    const bufferSize = 44 + dataSize;
+
+    const arrayBuffer = new ArrayBuffer(bufferSize);
+    const view = new DataView(arrayBuffer);
+
+    // RIFF header
+    const writeString = (offset: number, string: string) => {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    };
+
+    writeString(0, 'RIFF');
+    view.setUint32(4, bufferSize - 8, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, numberOfChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, byteRate, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, 16, true);
+    writeString(36, 'data');
+    view.setUint32(40, dataSize, true);
+
+    // Convert audio data
+    let offset = 44;
+    for (let i = 0; i < length; i++) {
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        const sample = Math.max(-1, Math.min(1, buffer.getChannelData(channel)[i]));
+        view.setInt16(offset, sample * 0x7FFF, true);
+        offset += 2;
+      }
+    }
+
+    return arrayBuffer;
+  };
+
   const playBase64Audio = (base64String: string) => {
     try {
       // 1. Decode the Base64 string into binary data
@@ -1283,20 +1357,35 @@ export function ExpenseTracker() {
         console.warn('Recording might be too small:', audioBlob.size, 'bytes');
       }
       
-      // Create FormData for the API call
-      const formData = new FormData();
+      // Try converting to WAV format for better API compatibility
+      console.log('Converting audio to WAV format...');
+      let processedBlob = audioBlob;
+      let fileName = 'user_voice.wav';
       
-      // Determine file extension based on blob type
-      let fileName = 'user_voice.webm'; // default
-      if (blobType.includes('mp4')) {
-        fileName = 'user_voice.mp4';
-      } else if (blobType.includes('wav')) {
-        fileName = 'user_voice.wav';
-      } else if (blobType.includes('webm')) {
-        fileName = 'user_voice.webm';
+      try {
+        processedBlob = await convertToWav(audioBlob);
+        console.log('Successfully converted to WAV:', {
+          originalSize: audioBlob.size,
+          originalType: audioBlob.type,
+          convertedSize: processedBlob.size,
+          convertedType: processedBlob.type
+        });
+      } catch (conversionError) {
+        console.warn('WAV conversion failed, using original blob:', conversionError);
+        // Fallback to original file naming logic
+        fileName = 'user_voice.webm'; // default
+        if (blobType.includes('mp4')) {
+          fileName = 'user_voice.mp4';
+        } else if (blobType.includes('wav')) {
+          fileName = 'user_voice.wav';
+        } else if (blobType.includes('webm')) {
+          fileName = 'user_voice.webm';
+        }
       }
       
-      formData.append('file', audioBlob, fileName);
+      // Create FormData for the API call
+      const formData = new FormData();
+      formData.append('file', processedBlob, fileName);
       
       console.log('Sending voice recording to API:', {
         fileName,
@@ -1304,10 +1393,23 @@ export function ExpenseTracker() {
         size: audioBlob.size
       });
       
+      // Add debugging for FormData contents
+      console.log('FormData contents:');
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
+        if (pair[1] instanceof Blob) {
+          console.log('  - File size:', pair[1].size);
+          console.log('  - File type:', pair[1].type);
+        }
+      }
+
       const response = await fetch('https://socialdots-ai-expense-backend.hf.space/voice-suggestion', {
         method: 'POST',
         body: formData,
-        // Don't set Content-Type header - let the browser set it with boundary for FormData
+        // Try adding some headers for debugging
+        headers: {
+          'Accept': 'application/json',
+        }
       });
       
       console.log('API Response status:', response.status);
@@ -1315,8 +1417,22 @@ export function ExpenseTracker() {
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('API Error Response:', errorText);
-        throw new Error(`API Error (${response.status}): ${errorText}`);
+        console.error('Full API Error Response:', errorText);
+        console.error('Response status text:', response.statusText);
+        
+        // Try to provide more specific error information
+        let errorMessage = `API Error (${response.status}): `;
+        if (response.status === 400) {
+          errorMessage += 'Bad Request - Audio format might be unsupported or corrupted';
+        } else if (response.status === 422) {
+          errorMessage += 'Unprocessable Entity - Audio file might be too short or invalid';
+        } else if (response.status === 500) {
+          errorMessage += 'Server Error - API might be temporarily unavailable';
+        } else {
+          errorMessage += response.statusText || 'Unknown error';
+        }
+        
+        throw new Error(`${errorMessage}\n\nFull response: ${errorText}`);
       }
       
       const result = await response.json();
