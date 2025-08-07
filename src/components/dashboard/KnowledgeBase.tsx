@@ -36,6 +36,24 @@ const INDUSTRY_OPTIONS = [
   { value: "other", label: "Other" }
 ];
 
+// Target audience options for easier selection
+const TARGET_AUDIENCE_OPTIONS = [
+  { value: "small-businesses", label: "Small Businesses" },
+  { value: "enterprise-clients", label: "Enterprise Clients" },
+  { value: "startups", label: "Startups" },
+  { value: "students", label: "Students" },
+  { value: "professionals", label: "Working Professionals" },
+  { value: "entrepreneurs", label: "Entrepreneurs" },
+  { value: "freelancers", label: "Freelancers" },
+  { value: "consumers", label: "General Consumers" },
+  { value: "healthcare-providers", label: "Healthcare Providers" },
+  { value: "retail-customers", label: "Retail Customers" },
+  { value: "tech-companies", label: "Technology Companies" },
+  { value: "nonprofits", label: "Non-profit Organizations" },
+  { value: "government", label: "Government Agencies" },
+  { value: "custom", label: "Custom (Enter manually)" }
+];
+
 // Helper function to get industry label from value
 const getIndustryLabel = (value: string): string => {
   const option = INDUSTRY_OPTIONS.find(opt => opt.value === value);
@@ -45,6 +63,18 @@ const getIndustryLabel = (value: string): string => {
 // Helper function to get industry value from label (for migration)
 const getIndustryValue = (label: string): string => {
   const option = INDUSTRY_OPTIONS.find(opt => opt.label.toLowerCase() === label.toLowerCase());
+  return option ? option.value : label.toLowerCase();
+};
+
+// Helper function to get target audience label from value
+const getTargetAudienceLabel = (value: string): string => {
+  const option = TARGET_AUDIENCE_OPTIONS.find(opt => opt.value === value);
+  return option ? option.label : value;
+};
+
+// Helper function to get target audience value from label
+const getTargetAudienceValue = (label: string): string => {
+  const option = TARGET_AUDIENCE_OPTIONS.find(opt => opt.label.toLowerCase() === label.toLowerCase());
   return option ? option.value : label.toLowerCase();
 };
 
@@ -87,6 +117,8 @@ export function KnowledgeBase() {
     target_audience: '',
     products_services: ''
   });
+  const [selectedTargetAudience, setSelectedTargetAudience] = useState<string>("");
+  const [isCustomTargetAudience, setIsCustomTargetAudience] = useState<boolean>(false);
   const [knowledgeBasePreview, setKnowledgeBasePreview] = useState<string>("");
   const [previewLoading, setPreviewLoading] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -415,7 +447,10 @@ export function KnowledgeBase() {
         // Clear AI Assistant cache when knowledge base changes
         localStorage.removeItem('knowledgeBase_context');
         localStorage.removeItem('knowledgeBase_cached');
-        console.log('💾 AUTO SAVE - Complete with cache cleared');
+        
+        // Trigger overview refresh by dispatching a custom event
+        window.dispatchEvent(new CustomEvent('knowledgeBaseUpdated'));
+        console.log('💾 AUTO SAVE - Complete with cache cleared and overview notified');
       });
     } else {
       console.log('⏭️ Skipping auto save (initial load)');
@@ -472,7 +507,10 @@ export function KnowledgeBase() {
       // Clear AI Assistant cache when knowledge base changes
       localStorage.removeItem('knowledgeBase_context');
       localStorage.removeItem('knowledgeBase_cached');
-      console.log('💾 MANUAL SYNC - Complete with cache cleared');
+      
+      // Trigger overview refresh by dispatching a custom event
+      window.dispatchEvent(new CustomEvent('knowledgeBaseUpdated'));
+      console.log('💾 MANUAL SYNC - Complete with cache cleared and overview notified');
     });
   };
 
@@ -559,6 +597,8 @@ export function KnowledgeBase() {
       };
       
       console.log('🆕 Creating new entry:', newEntry);
+      console.log('📝 Form data target_audience value:', formData.target_audience);
+      console.log('📝 Form data target_audience length:', formData.target_audience.length);
       
       // Add to local state immediately for instant feedback
       setEntries(prev => {
@@ -610,6 +650,8 @@ export function KnowledgeBase() {
         target_audience: '', 
         products_services: '' 
       });
+      setSelectedTargetAudience("");
+      setIsCustomTargetAudience(false);
       
       // Switch to browse tab to show the new entry
       setActiveTab("browse");
@@ -760,6 +802,9 @@ export function KnowledgeBase() {
       localStorage.removeItem('knowledgeBase_context');
       localStorage.removeItem('knowledgeBase_cached');
       
+      // Trigger overview refresh by dispatching a custom event
+      window.dispatchEvent(new CustomEvent('knowledgeBaseUpdated'));
+      
       console.log('Knowledge base entry updated successfully in localStorage');
       
       toast({
@@ -782,6 +827,8 @@ export function KnowledgeBase() {
         target_audience: '', 
         products_services: '' 
       });
+      setSelectedTargetAudience("");
+      setIsCustomTargetAudience(false);
       
     } catch (error) {
       console.error('Error updating knowledge entry:', error);
@@ -816,6 +863,20 @@ export function KnowledgeBase() {
     };
     setFormData(entryData);
     setOriginalFormData(entryData); // Store original data for comparison
+    
+    // Check if target audience matches a predefined option
+    const matchingOption = TARGET_AUDIENCE_OPTIONS.find(opt => 
+      opt.label.toLowerCase() === entry.target_audience.toLowerCase() ||
+      opt.value === entry.target_audience
+    );
+    
+    if (matchingOption) {
+      setSelectedTargetAudience(matchingOption.value);
+      setIsCustomTargetAudience(false);
+    } else {
+      setSelectedTargetAudience("custom");
+      setIsCustomTargetAudience(true);
+    }
   };
 
   const cancelEditing = () => {
@@ -833,6 +894,8 @@ export function KnowledgeBase() {
       target_audience: '', 
       products_services: '' 
     });
+    setSelectedTargetAudience("");
+    setIsCustomTargetAudience(false);
   };
 
 
@@ -906,7 +969,9 @@ export function KnowledgeBase() {
                                 <Users className="h-4 w-4 mt-0.5 text-muted-foreground" />
                                 <div>
                                   <span className="font-medium">Target Audience:</span>
-                                  <div className="text-muted-foreground whitespace-pre-line">{entry.target_audience}</div>
+                                  <div className="text-muted-foreground whitespace-pre-line" title={`Full value: ${entry.target_audience}`}>
+                                    {entry.target_audience}
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -1077,12 +1142,40 @@ export function KnowledgeBase() {
                     <Users className="h-4 w-4" />
                     Target Audience
                   </Label>
-                  <Input 
-                    id="target_audience" 
-                    placeholder="e.g., Small businesses, Students, Enterprise clients"
-                    value={formData.target_audience}
-                    onChange={(e) => setFormData({...formData, target_audience: e.target.value})}
-                  />
+                  <Select 
+                    value={selectedTargetAudience}
+                    onValueChange={(value) => {
+                      setSelectedTargetAudience(value);
+                      if (value === "custom") {
+                        setIsCustomTargetAudience(true);
+                      } else {
+                        setIsCustomTargetAudience(false);
+                        const selectedOption = TARGET_AUDIENCE_OPTIONS.find(opt => opt.value === value);
+                        setFormData({...formData, target_audience: selectedOption?.label || value});
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select target audience" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TARGET_AUDIENCE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  {isCustomTargetAudience && (
+                    <Input 
+                      id="custom_target_audience" 
+                      placeholder="Enter your specific target audience"
+                      value={formData.target_audience}
+                      onChange={(e) => setFormData({...formData, target_audience: e.target.value})}
+                      className="mt-2"
+                    />
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -1197,6 +1290,9 @@ export function KnowledgeBase() {
                           localStorage.removeItem('knowledgeBase_context');
                           localStorage.removeItem('knowledgeBase_cached');
                           
+                          // Trigger overview refresh by dispatching a custom event
+                          window.dispatchEvent(new CustomEvent('knowledgeBaseUpdated'));
+                          
                           toast({
                             title: "Success",
                             description: "Additional information added to your business profile"
@@ -1287,12 +1383,40 @@ export function KnowledgeBase() {
                 <Users className="h-4 w-4" />
                 Target Audience
               </Label>
-              <Input 
-                id="target_audience" 
-                placeholder="e.g., Small businesses, Students, Enterprise clients"
-                value={formData.target_audience}
-                onChange={(e) => setFormData({...formData, target_audience: e.target.value})}
-              />
+              <Select 
+                value={selectedTargetAudience}
+                onValueChange={(value) => {
+                  setSelectedTargetAudience(value);
+                  if (value === "custom") {
+                    setIsCustomTargetAudience(true);
+                  } else {
+                    setIsCustomTargetAudience(false);
+                    const selectedOption = TARGET_AUDIENCE_OPTIONS.find(opt => opt.value === value);
+                    setFormData({...formData, target_audience: selectedOption?.label || value});
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select target audience" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TARGET_AUDIENCE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              {isCustomTargetAudience && (
+                <Input 
+                  id="custom_target_audience" 
+                  placeholder="Enter your specific target audience"
+                  value={formData.target_audience}
+                  onChange={(e) => setFormData({...formData, target_audience: e.target.value})}
+                  className="mt-2"
+                />
+              )}
             </div>
 
             <div className="space-y-2">

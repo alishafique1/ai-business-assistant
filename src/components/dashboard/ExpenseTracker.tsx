@@ -1395,7 +1395,7 @@ export function ExpenseTracker() {
       
       // Add debugging for FormData contents
       console.log('FormData contents:');
-      for (let pair of formData.entries()) {
+      for (const pair of formData.entries()) {
         console.log(pair[0], pair[1]);
         if (pair[1] instanceof Blob) {
           console.log('  - File size:', pair[1].size);
@@ -1403,7 +1403,7 @@ export function ExpenseTracker() {
         }
       }
 
-      const response = await fetch('https://socialdots-ai-expense-backend.hf.space/voice-suggestion', {
+      const response = await fetch('https://socialdots-ai-expense-backend.hf.space/voice-expense', {
         method: 'POST',
         body: formData,
         // Try adding some headers for debugging
@@ -1496,7 +1496,7 @@ export function ExpenseTracker() {
       formData.append('file', testBlob, 'test.wav');
       
       console.log('Sending test request...');
-      const response = await fetch('https://socialdots-ai-expense-backend.hf.space/voice-suggestion', {
+      const response = await fetch('https://socialdots-ai-expense-backend.hf.space/voice-expense', {
         method: 'POST',
         body: formData,
         headers: {

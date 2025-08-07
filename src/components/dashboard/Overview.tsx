@@ -167,24 +167,32 @@ export function Overview({ onViewChange }: OverviewProps) {
         totalExpenses: expenses.length
       }));
       
-      console.log('Knowledge response full object:', knowledgeResponse);
-      console.log('Knowledge response data:', knowledgeResponse.data);
-      console.log('Knowledge response error:', knowledgeResponse.error);
+      // Handle knowledge base response (with localStorage fallback)
+      console.log('Knowledge response:', knowledgeResponse);
+      let knowledgeCount = 0;
       
       if (knowledgeResponse.data?.entries) {
-        console.log('Knowledge entries array:', knowledgeResponse.data.entries);
-        console.log('Knowledge entries count:', knowledgeResponse.data.entries.length);
-        setStats(prev => ({
-          ...prev,
-          knowledgeEntries: knowledgeResponse.data.entries.length
-        }));
+        knowledgeCount = knowledgeResponse.data.entries.length;
+        console.log('📡 Using Supabase knowledge entries count:', knowledgeCount);
       } else {
-        console.log('No knowledge entries found or API error - setting to 0');
-        setStats(prev => ({
-          ...prev,
-          knowledgeEntries: 0
-        }));
+        // Fallback to localStorage
+        const storedEntries = localStorage.getItem('knowledgeBase_entries');
+        if (storedEntries) {
+          try {
+            const parsedEntries = JSON.parse(storedEntries);
+            knowledgeCount = parsedEntries.length;
+            console.log('📦 Using localStorage knowledge entries count as fallback:', knowledgeCount);
+          } catch (error) {
+            console.error('Error parsing localStorage knowledge entries:', error);
+          }
+        }
       }
+      
+      console.log('✅ Final knowledge entries count:', knowledgeCount);
+      setStats(prev => ({
+        ...prev,
+        knowledgeEntries: knowledgeCount
+      }));
       
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -194,37 +202,40 @@ export function Overview({ onViewChange }: OverviewProps) {
   const fetchBusinessSummary = async () => {
     try {
       setSummaryLoading(true);
-      console.log('Fetching business summary from knowledge base...');
+      console.log('Generating business summary from user data...');
       
-      const response = await fetch('https://socialdots-ai-expense-backend.hf.space/get-knowledge-base');
+      // Use localStorage data instead of external API
+      const storedEntries = localStorage.getItem('knowledgeBase_entries');
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch business summary');
+      if (!storedEntries) {
+        setBusinessSummary("No business information available to preview.\n\nAdd your business information using the Knowledge Base section to see how the AI will use it for personalized responses.");
+        return;
       }
       
-      const data = await response.json();
-      console.log('Business summary data:', data);
+      const userEntries = JSON.parse(storedEntries);
       
-      // Extract business summary from knowledge base data
-      let summary = '';
-      if (data.formatted_knowledge) {
-        summary = data.formatted_knowledge;
-      } else if (data.content) {
-        summary = data.content;
-      } else if (data.knowledge_base) {
-        summary = data.knowledge_base;
-      } else {
-        // Try to create a summary from the raw data
-        if (data.business_name || data.industry) {
-          summary = `Business: ${data.business_name || 'Unknown'}
-Industry: ${data.industry || 'Not specified'}
-Target Audience: ${data.target_audience || 'Not specified'}
-Products/Services: ${data.products_services || 'Not specified'}`;
-        } else {
-          summary = 'No business information available';
+      // Generate a formatted summary of the user's business knowledge
+      let summary = "=== YOUR BUSINESS KNOWLEDGE BASE ===\n\n";
+      
+      userEntries.forEach((entry, index) => {
+        summary += `Business ${index + 1}:\n`;
+        summary += `• Company: ${entry.business_name}\n`;
+        summary += `• Industry: ${entry.industry}\n`;
+        summary += `• Target Audience: ${entry.target_audience}\n`;
+        summary += `• Products & Services: ${entry.products_services}\n`;
+        if (entry.created_at) {
+          summary += `• Added: ${new Date(entry.created_at).toLocaleDateString()}\n`;
         }
-      }
+        summary += "\n" + "=".repeat(50) + "\n\n";
+      });
       
+      summary += "HOW AI USES THIS INFORMATION:\n";
+      summary += "• Provides personalized business advice\n";
+      summary += "• Creates content relevant to your industry\n";
+      summary += "• Understands your target audience for marketing suggestions\n";
+      summary += "• Gives context-aware recommendations for your specific business\n";
+      
+      console.log('✅ Generated summary from', userEntries.length, 'user entries');
       setBusinessSummary(summary);
       
     } catch (error) {
@@ -255,10 +266,24 @@ Products/Services: ${data.products_services || 'Not specified'}`;
       checkIntegrations();
     };
     
+    // Listen for knowledge base updates
+    const handleKnowledgeBaseUpdate = () => {
+      console.log('🔔 Knowledge base update event received - refreshing stats');
+      // Update knowledge base counter from localStorage
+      const storedEntries = localStorage.getItem('knowledgeBase_entries');
+      const knowledgeCount = storedEntries ? JSON.parse(storedEntries).length : 0;
+      setStats(prev => ({
+        ...prev,
+        knowledgeEntries: knowledgeCount
+      }));
+    };
+    
     window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('knowledgeBaseUpdated', handleKnowledgeBaseUpdate);
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('knowledgeBaseUpdated', handleKnowledgeBaseUpdate);
     };
   }, [user, fetchStats]);
 

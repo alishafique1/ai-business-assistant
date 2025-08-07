@@ -51,8 +51,8 @@ function FormattedAIContent({ content }: { content: string }) {
                 const trimmedLine = line.trim();
                 
                 // Check if this line is a list item
-                if (/^[\d\w]*[\.\)\-\*•]\s/.test(trimmedLine)) {
-                  const cleanedLine = trimmedLine.replace(/^[\d\w]*[\.\)\-\*•]\s*/, '').trim();
+                if (/^[\d\w]*[.)\-*•]\s/.test(trimmedLine)) {
+                  const cleanedLine = trimmedLine.replace(/^[\d\w]*[.)\-*•]\s*/, '').trim();
                   return (
                     <div key={lineIndex} className="mb-1 pl-4 relative">
                       <span className="absolute left-0 top-0 text-primary">•</span>
@@ -73,7 +73,7 @@ function FormattedAIContent({ content }: { content: string }) {
       }
       
       // Check if section is a list (multiple lines with list markers)
-      const listItemRegex = /^[\d\w]*[\.\)\-\*•]\s/;
+      const listItemRegex = /^[\d\w]*[.)\-*•]\s/;
       const isList = lines.length > 1 && lines.filter(line => line.trim()).some(line => listItemRegex.test(line.trim()));
       
       if (isList) {
@@ -86,7 +86,7 @@ function FormattedAIContent({ content }: { content: string }) {
             
             // Check if this is a list item or just text
             if (listItemRegex.test(trimmedLine)) {
-              const cleanedLine = trimmedLine.replace(/^[\d\w]*[\.\)\-\*•]\s*/, '').trim();
+              const cleanedLine = trimmedLine.replace(/^[\d\w]*[.)\-*•]\s*/, '').trim();
               return (
                 <div key={lineIndex} className="mb-2 pl-4 relative">
                   <span className="absolute left-0 top-0 text-primary">•</span>
@@ -160,6 +160,11 @@ export function AIAssistant() {
   const [knowledgeBaseCached, setKnowledgeBaseCached] = useState<boolean>(() => {
     return localStorage.getItem('knowledgeBase_cached') === 'true';
   });
+  
+  // Voice suggestion recording states
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [voiceSuggestionLoading, setVoiceSuggestionLoading] = useState(false);
 
   // Fetch knowledge base context for AI with caching
   const fetchKnowledgeBaseContext = async (): Promise<string> => {
@@ -170,22 +175,36 @@ export function AIAssistant() {
     }
     
     try {
-      console.log('🔍 Fetching knowledge base context for AI...');
-      const response = await fetch('https://socialdots-ai-expense-backend.hf.space/get-knowledge-base');
+      console.log('🔍 Generating knowledge base context from user data...');
       
-      if (!response.ok) {
-        console.warn('Knowledge base context not available:', response.status);
+      // Use localStorage data instead of external API
+      const storedEntries = localStorage.getItem('knowledgeBase_entries');
+      
+      if (!storedEntries) {
+        console.warn('No knowledge base entries found in localStorage');
         return '';
       }
       
-      const data = await response.json();
-      console.log('✅ Knowledge base context fetched successfully:', data);
+      const userEntries = JSON.parse(storedEntries);
+      console.log('✅ Found', userEntries.length, 'knowledge base entries');
       
-      // The API might return different formats, handle gracefully
-      const context = data.formatted_knowledge || data.content || data.knowledge_base || JSON.stringify(data);
+      // Generate formatted context for AI
+      let context = "=== USER BUSINESS CONTEXT ===\n\n";
+      
+      userEntries.forEach((entry, index) => {
+        context += `Business ${index + 1}:\n`;
+        context += `Company: ${entry.business_name}\n`;
+        context += `Industry: ${entry.industry}\n`;
+        context += `Target Audience: ${entry.target_audience}\n`;
+        context += `Products & Services: ${entry.products_services}\n\n`;
+      });
+      
+      context += "=== INSTRUCTIONS FOR AI ===\n";
+      context += "Use this business context to provide personalized advice and recommendations.\n";
+      context += "Reference the user's specific industry, target audience, and services when relevant.\n";
       
       if (context && context.length > 10) {
-        console.log('📝 Using knowledge base context (length:', context.length, 'chars)');
+        console.log('📝 Generated knowledge base context (length:', context.length, 'chars)');
         // Cache the context
         setKnowledgeBaseContext(context);
         setKnowledgeBaseCached(true);
@@ -578,6 +597,172 @@ ${expenseCount > 10 ? '• Great job tracking your expenses regularly!' : '• T
     }  
   };
 
+  // Voice suggestion recording functions
+  const startVoiceRecording = async () => {
+    try {
+      setIsRecording(true);
+      setVoiceSuggestionLoading(false);
+      
+      console.log('🎤 Starting voice recording for marketing suggestions...');
+      
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100,
+        } 
+      });
+
+      let mimeType = 'audio/webm;codecs=opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/webm';
+      }
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/mp4';
+      }
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/wav';
+      }
+
+      const recorder = new MediaRecorder(stream, { mimeType });
+      const audioChunks: BlobPart[] = [];
+
+      recorder.addEventListener('dataavailable', event => {
+        if (event.data.size > 0) {
+          audioChunks.push(event.data);
+        }
+      });
+
+      recorder.addEventListener('stop', () => {
+        const audioBlob = new Blob(audioChunks, { type: mimeType });
+        stream.getTracks().forEach(track => track.stop());
+        handleVoiceSuggestion(audioBlob);
+      });
+
+      recorder.start();
+      setMediaRecorder(recorder);
+
+      console.log('✅ Voice recording started successfully');
+      toast({
+        title: "Recording Started",
+        description: "Speak your marketing idea request. Click stop when finished.",
+      });
+
+    } catch (error) {
+      console.error('Error starting voice recording:', error);
+      setIsRecording(false);
+      toast({
+        title: "Recording Error", 
+        description: "Failed to start voice recording. Please check microphone permissions.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopVoiceRecording = () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      console.log('🛑 Stopping voice recording...');
+      mediaRecorder.stop();
+      setIsRecording(false);
+      setVoiceSuggestionLoading(true);
+      
+      toast({
+        title: "Processing...",
+        description: "Processing your voice request for marketing ideas..."
+      });
+    }
+  };
+
+  const handleVoiceSuggestion = async (audioBlob: Blob) => {
+    try {
+      setVoiceSuggestionLoading(true);
+      console.log('🎤 Processing voice suggestion...', { size: audioBlob.size, type: audioBlob.type });
+
+      // Create FormData for the API call
+      const formData = new FormData();
+      formData.append('file', audioBlob, 'user_voice.wav');
+
+      console.log('📤 Sending to voice-suggestion endpoint...');
+      
+      const response = await fetch('https://socialdots-ai-expense-backend.hf.space/voice-suggestion', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        throw new Error(`API Error (${response.status}): ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Voice suggestion response:', result);
+
+      // Handle the JSON response with text and audio
+      if (result.full_text_response) {
+        // Add the marketing suggestion to chat messages
+        const assistantMessage: Message = {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: result.full_text_response,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+
+        // Play the audio confirmation if available
+        if (result.audio_base64) {
+          playBase64Audio(result.audio_base64);
+        }
+
+        toast({
+          title: "Marketing Idea Generated!",
+          description: "Your personalized marketing suggestion is ready."
+        });
+      } else {
+        throw new Error('No marketing suggestion received from API');
+      }
+
+    } catch (error) {
+      console.error('Error processing voice suggestion:', error);
+      toast({
+        title: "Processing Error",
+        description: "Failed to process your voice request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setVoiceSuggestionLoading(false);
+    }
+  };
+
+  // Function to decode and play Base64 audio
+  const playBase64Audio = (base64String: string) => {
+    try {
+      console.log('🔊 Playing audio confirmation...');
+      
+      // Decode the Base64 string into binary data
+      const binaryString = window.atob(base64String);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      // Create a Blob (like a temporary in-memory file)
+      const audioBlob = new Blob([bytes], { type: 'audio/wav' });
+      
+      // Create a temporary URL for the Blob
+      const audioUrl = URL.createObjectURL(audioBlob);
+      
+      // Create a new Audio object and play it
+      const audio = new Audio(audioUrl);
+      audio.play();
+      
+      console.log('✅ Audio confirmation played successfully');
+    } catch (error) {
+      console.error('Error playing audio confirmation:', error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -667,8 +852,18 @@ ${expenseCount > 10 ? '• Great job tracking your expenses regularly!' : '• T
                       <Button size="sm" onClick={sendMessage} disabled={!message.trim() || isLoading}>
                         {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                       </Button>
-                      <Button size="sm" variant="outline">
-                        <Mic className="h-4 w-4" />
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
+                        disabled={voiceSuggestionLoading}
+                        className={isRecording ? "bg-red-100 border-red-300 text-red-700 hover:bg-red-200" : ""}
+                      >
+                        {voiceSuggestionLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Mic className={`h-4 w-4 ${isRecording ? 'animate-pulse' : ''}`} />
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -700,6 +895,19 @@ ${expenseCount > 10 ? '• Great job tracking your expenses regularly!' : '• T
                 >
                   <MessageSquare className="h-4 w-4" />
                   Create Content
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className={`w-full justify-start gap-2 ${isRecording ? 'bg-red-50 border-red-300 text-red-700' : ''}`}
+                  onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
+                  disabled={voiceSuggestionLoading}
+                >
+                  {voiceSuggestionLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Mic className={`h-4 w-4 ${isRecording ? 'animate-pulse text-red-600' : ''}`} />
+                  )}
+                  {isRecording ? "Stop Recording" : "Voice Marketing Ideas"}
                 </Button>
                 <Button 
                   variant="outline" 
