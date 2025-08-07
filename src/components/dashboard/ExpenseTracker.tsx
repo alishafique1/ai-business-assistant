@@ -41,7 +41,7 @@ export function ExpenseTracker() {
   const { canAddReceipt, remainingReceipts, incrementCount, limitData, loading: limitLoading, error: limitError, liveTimer, formatTimeRemaining, shouldShowTimer } = useReceiptLimit();
   const { formatExpenseDate, formatDateTime, getCurrentDate, getTimezoneDisplay } = useTimezone();
   const { notifyExpenseAdded, notifyLargeExpense, notifyDuplicateExpense, notifyReceiptProcessed } = useNotifications();
-  const [isRecording, setIsRecording] = useState(false);
+  // const [isRecording, setIsRecording] = useState(false); // Replaced by isVoiceRecording
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categorySummary, setCategorySummary] = useState<Record<string, { total: number; count: number }>>({});
   const [userCategories, setUserCategories] = useState<string[]>([]);
@@ -51,6 +51,12 @@ export function ExpenseTracker() {
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Voice recording states
+  const [isVoiceRecording, setIsVoiceRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [voiceResponse, setVoiceResponse] = useState<string>('');
+  const [processingVoice, setProcessingVoice] = useState(false);
 
   const [formData, setFormData] = useState({
     amount: '',
@@ -1128,49 +1134,165 @@ export function ExpenseTracker() {
     }
   };
 
-  const handleVoiceRecord = async () => {
-    // Check if integrations are set up
-    const integrationConnected = localStorage.getItem('telegram_connected') === 'true' || 
-                                localStorage.getItem('whatsapp_connected') === 'true';
-    
-    if (!integrationConnected) {
+  // Voice recording functions
+  const playBase64Audio = (base64String: string) => {
+    try {
+      // 1. Decode the Base64 string into binary data
+      const binaryString = window.atob(base64String);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      // 2. Create a Blob (like a temporary in-memory file)
+      const audioBlob = new Blob([bytes], { type: 'audio/wav' });
+      // 3. Create a temporary URL for the Blob
+      const audioUrl = URL.createObjectURL(audioBlob);
+      // 4. Create a new Audio object and play it
+      const audio = new Audio(audioUrl);
+      audio.play();
+    } catch (error) {
+      console.error('Error playing audio:', error);
       toast({
-        title: "Integration Required",
-        description: "Please set up Telegram or WhatsApp integration first",
+        title: "Audio Error",
+        description: "Failed to play audio response",
         variant: "destructive"
       });
-      return;
     }
+  };
 
-    setIsRecording(!isRecording);
-    
-    if (!isRecording) {
-      toast({
-        title: "Voice Recording Started",
-        description: "Send a voice message via your connected app or speak now"
+  const startVoiceRecording = async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast({
+          title: "Not Supported",
+          description: "Voice recording is not supported in your browser",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: { 
+          sampleRate: 16000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true
+        } 
       });
       
-      // Simulate voice recording timeout
-      setTimeout(() => {
-        if (isRecording) {
-          setIsRecording(false);
-          toast({
-            title: "Recording Stopped",
-            description: "Processing your voice command..."
-          });
+      const recorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+      
+      const chunks: BlobPart[] = [];
+      
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data);
         }
-      }, 30000); // 30 second timeout
-    } else {
+      };
+      
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(chunks, { type: 'audio/wav' });
+        await processVoiceRecording(audioBlob);
+        
+        // Stop all tracks to release microphone
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsVoiceRecording(true);
+      
       toast({
-        title: "Recording Stopped",
-        description: "Processing your voice command..."
+        title: "Recording Started",
+        description: "Speak your expense suggestion now. Click again to stop."
       });
       
-      // Note: When voice processing is implemented, ensure character limits are applied:
-      // - Title: max 75 characters
-      // - Description: max 150 characters
-      // This should be handled in the voice-to-expense processing pipeline
+    } catch (error) {
+      console.error('Error starting voice recording:', error);
+      toast({
+        title: "Recording Error",
+        description: "Failed to start voice recording. Please check microphone permissions.",
+        variant: "destructive"
+      });
     }
+  };
+
+  const stopVoiceRecording = () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+      setIsVoiceRecording(false);
+      setProcessingVoice(true);
+      
+      toast({
+        title: "Processing",
+        description: "Processing your voice recording..."
+      });
+    }
+  };
+
+  const processVoiceRecording = async (audioBlob: Blob) => {
+    try {
+      setProcessingVoice(true);
+      
+      // Create FormData for the API call
+      const formData = new FormData();
+      formData.append('file', audioBlob, 'user_voice.wav');
+      
+      console.log('Sending voice recording to API...');
+      
+      const response = await fetch('https://socialdots-ai-expense-backend.hf.space/voice-suggestion', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      console.log('Voice API response:', result);
+      
+      // Handle the response
+      if (result.full_text_response) {
+        setVoiceResponse(result.full_text_response);
+        toast({
+          title: "Voice Processed",
+          description: "Got your expense suggestion! Check the response below."
+        });
+        
+        // Play the audio confirmation if available
+        if (result.audio_base64) {
+          playBase64Audio(result.audio_base64);
+        }
+      } else {
+        throw new Error('No response received from voice processing');
+      }
+      
+    } catch (error) {
+      console.error('Error processing voice recording:', error);
+      toast({
+        title: "Processing Error",
+        description: "Failed to process voice recording. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setProcessingVoice(false);
+    }
+  };
+
+  const handleVoiceRecord = () => {
+    if (isVoiceRecording) {
+      stopVoiceRecording();
+    } else {
+      startVoiceRecording();
+    }
+  };
+
+  const clearVoiceResponse = () => {
+    setVoiceResponse('');
   };
 
   const handleReceiptUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1786,11 +1908,18 @@ export function ExpenseTracker() {
                   variant="outline" 
                   className="h-20 flex-col gap-2"
                   onClick={handleVoiceRecord}
-                  disabled={isRecording || !canAddReceipt}
+                  disabled={processingVoice || !canAddReceipt}
                 >
-                  <Mic className={`h-6 w-6 ${isRecording ? 'animate-pulse text-red-500' : !canAddReceipt ? 'opacity-50' : ''}`} />
+                  <Mic className={`h-6 w-6 ${isVoiceRecording ? 'animate-pulse text-red-500' : !canAddReceipt ? 'opacity-50' : processingVoice ? 'animate-spin' : ''}`} />
                   <span className="text-sm">
-                    {isRecording ? 'Recording...' : !canAddReceipt ? 'Limit Reached' : 'Voice Entry'}
+                    {processingVoice 
+                      ? 'Processing...' 
+                      : isVoiceRecording 
+                      ? 'Recording...' 
+                      : !canAddReceipt 
+                      ? 'Limit Reached' 
+                      : 'Voice Entry'
+                    }
                   </span>
                 </Button>
                 
@@ -1968,31 +2097,66 @@ export function ExpenseTracker() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Mic className="h-5 w-5" />
-                Voice Expense Entry
+                Voice Expense Suggestions
               </CardTitle>
               <CardDescription>
-                Say something like "Add $25 lunch expense at Joe's Cafe for client meeting"
+                Record your voice to get AI-powered marketing ideas and expense suggestions
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 mb-4">
                 <Button
                   onClick={handleVoiceRecord}
-                  variant={isRecording ? "destructive" : "default"}
+                  variant={isVoiceRecording ? "destructive" : "default"}
                   className="gap-2"
+                  disabled={processingVoice}
                 >
-                  <Mic className={`h-4 w-4 ${isRecording ? "animate-pulse" : ""}`} />
-                  {isRecording ? "Stop Recording" : "Start Voice Entry"}
+                  <Mic className={`h-4 w-4 ${isVoiceRecording ? "animate-pulse" : ""}`} />
+                  {processingVoice 
+                    ? "Processing..." 
+                    : isVoiceRecording 
+                    ? "Stop Recording" 
+                    : "Record Expense"
+                  }
                 </Button>
-                {isRecording && (
+                
+                {isVoiceRecording && (
                   <Badge variant="destructive" className="animate-pulse">
-                    Recording...
+                    🎤 Recording...
+                  </Badge>
+                )}
+                
+                {processingVoice && (
+                  <Badge variant="secondary" className="animate-pulse">
+                    🤖 Processing...
                   </Badge>
                 )}
               </div>
-              {!isRecording && (
-                <p className="text-sm text-muted-foreground mt-3">
-                  Connect your Telegram or WhatsApp to enable voice commands from those apps
+
+              {/* Voice Response Display */}
+              {voiceResponse && (
+                <div className="mt-4 p-4 bg-muted rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-medium text-sm">AI Response:</h4>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearVoiceResponse}
+                      className="h-6 w-6 p-0"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                  <div className="text-sm whitespace-pre-wrap max-h-48 overflow-y-auto">
+                    {voiceResponse}
+                  </div>
+                </div>
+              )}
+
+              {!isVoiceRecording && !processingVoice && !voiceResponse && (
+                <p className="text-sm text-muted-foreground">
+                  Click "Record Expense" and speak about your business expenses or marketing ideas. 
+                  The AI will provide detailed suggestions and play an audio confirmation.
                 </p>
               )}
             </CardContent>
