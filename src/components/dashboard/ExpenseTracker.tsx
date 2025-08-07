@@ -1181,9 +1181,23 @@ export function ExpenseTracker() {
         } 
       });
       
-      const recorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
+      // Try different audio formats for better compatibility
+      let mimeType = 'audio/webm;codecs=opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/webm';
+      }
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/mp4';
+      }
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = ''; // Use default
+      }
+      
+      console.log('Using MIME type for recording:', mimeType);
+      
+      const recorder = new MediaRecorder(stream, 
+        mimeType ? { mimeType } : {}
+      );
       
       const chunks: BlobPart[] = [];
       
@@ -1194,8 +1208,17 @@ export function ExpenseTracker() {
       };
       
       recorder.onstop = async () => {
-        const audioBlob = new Blob(chunks, { type: 'audio/wav' });
-        await processVoiceRecording(audioBlob);
+        // Use the same MIME type for the blob as was used for recording
+        const blobType = mimeType || 'audio/webm';
+        const audioBlob = new Blob(chunks, { type: blobType });
+        
+        console.log('Created audio blob:', {
+          size: audioBlob.size,
+          type: audioBlob.type,
+          originalMimeType: mimeType
+        });
+        
+        await processVoiceRecording(audioBlob, blobType);
         
         // Stop all tracks to release microphone
         stream.getTracks().forEach(track => track.stop());
@@ -1204,6 +1227,9 @@ export function ExpenseTracker() {
       recorder.start();
       setMediaRecorder(recorder);
       setIsVoiceRecording(true);
+      
+      // Store recording start time for minimum duration check
+      (recorder as any).recordingStartTime = Date.now();
       
       toast({
         title: "Recording Started",
@@ -1222,6 +1248,17 @@ export function ExpenseTracker() {
 
   const stopVoiceRecording = () => {
     if (mediaRecorder && mediaRecorder.state === 'recording') {
+      // Check minimum recording duration
+      const recordingDuration = Date.now() - (mediaRecorder as any).recordingStartTime;
+      if (recordingDuration < 1000) { // Less than 1 second
+        toast({
+          title: "Recording Too Short",
+          description: "Please record for at least 1 second. Try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       mediaRecorder.stop();
       setIsVoiceRecording(false);
       setProcessingVoice(true);
@@ -1233,23 +1270,53 @@ export function ExpenseTracker() {
     }
   };
 
-  const processVoiceRecording = async (audioBlob: Blob) => {
+  const processVoiceRecording = async (audioBlob: Blob, blobType: string) => {
     try {
       setProcessingVoice(true);
       
+      // Check if the blob has any content
+      if (audioBlob.size === 0) {
+        throw new Error('Recording is empty. Please try recording again.');
+      }
+      
+      if (audioBlob.size < 1024) { // Less than 1KB might be too small
+        console.warn('Recording might be too small:', audioBlob.size, 'bytes');
+      }
+      
       // Create FormData for the API call
       const formData = new FormData();
-      formData.append('file', audioBlob, 'user_voice.wav');
       
-      console.log('Sending voice recording to API...');
+      // Determine file extension based on blob type
+      let fileName = 'user_voice.webm'; // default
+      if (blobType.includes('mp4')) {
+        fileName = 'user_voice.mp4';
+      } else if (blobType.includes('wav')) {
+        fileName = 'user_voice.wav';
+      } else if (blobType.includes('webm')) {
+        fileName = 'user_voice.webm';
+      }
+      
+      formData.append('file', audioBlob, fileName);
+      
+      console.log('Sending voice recording to API:', {
+        fileName,
+        blobType,
+        size: audioBlob.size
+      });
       
       const response = await fetch('https://socialdots-ai-expense-backend.hf.space/voice-suggestion', {
         method: 'POST',
-        body: formData
+        body: formData,
+        // Don't set Content-Type header - let the browser set it with boundary for FormData
       });
       
+      console.log('API Response status:', response.status);
+      console.log('API Response headers:', Object.fromEntries(response.headers.entries()));
+      
       if (!response.ok) {
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('API Error Response:', errorText);
+        throw new Error(`API Error (${response.status}): ${errorText}`);
       }
       
       const result = await response.json();
