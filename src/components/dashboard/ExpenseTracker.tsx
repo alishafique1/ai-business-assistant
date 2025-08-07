@@ -1247,16 +1247,16 @@ export function ExpenseTracker() {
       if (hasValidAmount && hasValidCategory) {
         console.log('✅ UPLOAD DEBUG - Validation passed, processing expense...');
         try {
-          // Create digital receipt description with the logging datetime (current time when expense is being logged)
+          // Create digital receipt description with the logging date (current date when expense is being logged)
           const loggingTime = new Date(); // Current datetime when expense is being logged to database
-          const dateTimeString = formatDateTime(loggingTime);
+          const dateOnlyString = formatExpenseDate(loggingTime); // Use date-only format for receipts
           
           // Move ML-generated title to description and create new standardized format
           const mlGeneratedTitle = responseData.title || '';
           const mlGeneratedDescription = responseData.description || '';
           
-          // Create the main description with Digital Receipt title format
-          let combinedDescription = `Digital Receipt: ${dateTimeString}`;
+          // Create the main description with Digital Receipt title format (date only)
+          let combinedDescription = `Digital Receipt: ${dateOnlyString}`;
           
           // Add ML-generated content if available
           if (mlGeneratedTitle || mlGeneratedDescription) {
@@ -1272,7 +1272,7 @@ export function ExpenseTracker() {
           
           // Apply character limits for database storage
           responseData.description = combinedDescription.slice(0, 200); // Increased limit for full description
-          responseData.title = `Digital Receipt: ${dateTimeString}`.slice(0, 75); // Keep for compatibility
+          responseData.title = `Digital Receipt: ${dateOnlyString}`.slice(0, 75); // Keep for compatibility
           
           // Debug logging for receipt processing
           console.log('Receipt processing - Original ML data:', {
@@ -1280,8 +1280,8 @@ export function ExpenseTracker() {
             originalDescription: mlGeneratedDescription,
             originalTimestamp: responseData.created_at || responseData.date
           });
-          console.log('Receipt processing - Final formatted data (with logging datetime):', {
-            loggingDateTime: dateTimeString,
+          console.log('Receipt processing - Final formatted data (with logging date only):', {
+            loggingDateOnly: dateOnlyString,
             newTitle: responseData.title,
             newDescription: responseData.description,
             loggingTime: loggingTime.toISOString(),
