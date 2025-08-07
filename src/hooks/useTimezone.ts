@@ -69,13 +69,27 @@ export function useTimezone() {
     }
   };
 
-  // Format date for expense display (date only)
+  // Format date for expense display (date only) - separate implementation to avoid time defaults
   const formatExpenseDate = (date: string | Date): string => {
-    return formatDate(date, {
-      year: 'numeric',
-      month: 'short', 
-      day: 'numeric'
-    });
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      
+      // Use safe timezone fallback
+      const timezone = preferences.timezone || 'UTC';
+      
+      // Define date-only options explicitly (no hour/minute defaults)
+      const dateOnlyOptions: Intl.DateTimeFormatOptions = {
+        year: 'numeric',
+        month: 'short', 
+        day: 'numeric',
+        timeZone: timezone
+      };
+
+      return new Intl.DateTimeFormat('en-US', dateOnlyOptions).format(dateObj);
+    } catch (error) {
+      console.error('Error formatting expense date:', error);
+      return typeof date === 'string' ? date : date.toISOString();
+    }
   };
 
   // Format datetime for timestamps
