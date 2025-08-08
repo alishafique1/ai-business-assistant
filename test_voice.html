@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Voice API Test</title>
+</head>
+<body>
+    <h1>Voice API Test</h1>
+    <button onclick="testVoiceAPI()">Test Voice API</button>
+    <div id="result"></div>
+
+    <script>
+        async function testVoiceAPI() {
+            try {
+                console.log('Testing voice API...');
+                
+                // Create a minimal test audio file (empty webm)
+                const testBlob = new Blob([], { type: 'audio/webm' });
+                console.log('Test blob created:', testBlob.size, testBlob.type);
+                
+                const formData = new FormData();
+                formData.append('file', testBlob, 'test.webm');
+                
+                console.log('Sending test request...');
+                const response = await fetch('https://socialdots-ai-expense-backend.hf.space/voice-suggestion', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Error response:', errorText);
+                    document.getElementById('result').innerHTML = `<pre>Error ${response.status}: ${errorText}</pre>`;
+                } else {
+                    const result = await response.json();
+                    console.log('Success response:', result);
+                    document.getElementById('result').innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+                }
+                
+            } catch (error) {
+                console.error('Fetch error:', error);
+                document.getElementById('result').innerHTML = `<pre>Fetch Error: ${error.message}</pre>`;
+            }
+        }
+    </script>
+</body>
+</html>
