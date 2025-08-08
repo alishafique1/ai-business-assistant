@@ -16,6 +16,7 @@ import {
   Zap
 } from "lucide-react";
 import { useScrollAnimation, useStaggeredAnimation } from "@/hooks/useScrollAnimation";
+import { VantaNet } from "@/components/backgrounds/VantaNet";
 import expenseTrackingImg from "@/assets/expense-tracking.jpg";
 import aiContentImg from "@/assets/ai-content.jpg";
 import voiceModelImg from "@/assets/voice-model.jpg";
@@ -93,20 +94,11 @@ export const FeaturesSection = () => {
   return (
     <section id="features" className="py-24 bg-gradient-to-br from-gradient-feature via-primary/8 to-accent/12 relative overflow-hidden">
 
-      {/* Beautiful floating orbs */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-16 right-16 w-96 h-96 bg-gradient-to-r from-primary/15 to-accent/12 rounded-full blur-3xl animate-pulse-glow"></div>
-        <div className="absolute bottom-16 left-16 w-80 h-80 bg-gradient-to-l from-accent/10 to-primary/8 rounded-full blur-3xl animate-gentle-breathe"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-radial from-primary/8 via-accent/6 to-transparent rounded-full animate-pulse-very-slow"></div>
-      </div>
+      {/* Vanta.js Net Animation Background */}
+      <VantaNet className="opacity-90" />
       
-      {/* Elegant hexagon pattern */}
-      <div className="absolute inset-0 opacity-[0.03]" style={{
-        backgroundImage: `
-          radial-gradient(circle at 50% 50%, hsl(var(--primary) / 0.4) 2px, transparent 3px)
-        `,
-        backgroundSize: '50px 50px'
-      }}></div>
+      {/* Subtle overlay for better text readability */}
+      <div className="absolute inset-0 bg-gradient-feature/10 pointer-events-none" />
 
       <div className="container mx-auto px-6 relative z-10">
         <div 
