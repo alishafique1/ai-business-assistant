@@ -15,11 +15,16 @@ import {
   Cpu,
   Zap
 } from "lucide-react";
+import { useScrollAnimation, useStaggeredAnimation } from "@/hooks/useScrollAnimation";
 import expenseTrackingImg from "@/assets/expense-tracking.jpg";
 import aiContentImg from "@/assets/ai-content.jpg";
 import voiceModelImg from "@/assets/voice-model.jpg";
 
 export const FeaturesSection = () => {
+  const { elementRef: titleRef, isVisible: titleVisible } = useScrollAnimation({ threshold: 0.2 });
+  const { containerRef: featuresRef, visibleItems: visibleFeatures } = useStaggeredAnimation(3, 200);
+  const { containerRef: techRef, visibleItems: visibleTech } = useStaggeredAnimation(4, 150);
+
   const features = [
     {
       icon: Receipt,
@@ -86,10 +91,32 @@ export const FeaturesSection = () => {
   ];
 
   return (
-    <section id="features" className="py-24 bg-gradient-feature">
-      <div className="container mx-auto px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
+    <section id="features" className="py-24 bg-gradient-feature relative overflow-hidden">
+      {/* Background animated elements */}
+      <div className="absolute inset-0 pointer-events-none">
+        {[...Array(15)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute animate-morphic-float opacity-20"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              width: `${8 + Math.random() * 16}px`,
+              height: `${8 + Math.random() * 16}px`,
+              background: i % 2 === 0 ? 'hsl(var(--primary))' : 'hsl(var(--accent))',
+              animationDelay: `${Math.random() * 8}s`,
+              animationDuration: `${12 + Math.random() * 8}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="container mx-auto px-6 relative z-10">
+        <div 
+          ref={titleRef as React.RefObject<HTMLDivElement>}
+          className={`text-center mb-16 transition-all duration-1000 ${titleVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+        >
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6 animate-text-reveal">
             Three Powerful AI Agents,
             <span className="bg-gradient-primary bg-clip-text text-transparent"> One Platform</span>
           </h2>
@@ -99,18 +126,29 @@ export const FeaturesSection = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
+        <div 
+          ref={featuresRef as React.RefObject<HTMLDivElement>}
+          className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16"
+        >
           {features.map((feature, index) => (
-            <Card key={index} className="relative overflow-hidden bg-card/90 backdrop-blur-sm border-0 shadow-feature hover:shadow-hero transition-all duration-300 group">
+            <Card 
+              key={index} 
+              className={`relative overflow-hidden bg-card/90 backdrop-blur-sm border-0 shadow-feature hover:shadow-hero transition-all duration-500 group transform-gpu ${
+                visibleFeatures.has(index) 
+                  ? 'opacity-100 translate-y-0 rotate-0' 
+                  : 'opacity-0 translate-y-12 rotate-3'
+              } hover:scale-105 hover:animate-magnetic-hover`}
+            >
               <div className="aspect-video relative overflow-hidden">
                 <img 
                   src={feature.image} 
                   alt={feature.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 filter group-hover:brightness-110"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-holographic-shimmer" />
                 <div className="absolute bottom-4 left-4">
-                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${feature.gradient} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${feature.gradient} flex items-center justify-center group-hover:scale-110 transition-all duration-300`}>
                     <feature.icon className="w-6 h-6 text-white" />
                   </div>
                 </div>
@@ -136,7 +174,7 @@ export const FeaturesSection = () => {
                 </ul>
                 
                 <Button variant="feature" className="w-full">
-                  Learn More
+                  <span>Learn More</span>
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </CardContent>
@@ -146,13 +184,23 @@ export const FeaturesSection = () => {
 
         {/* Technology Stack */}
         <div className="text-center">
-          <h3 className="text-2xl font-bold text-foreground mb-8">
+          <h3 className="text-2xl font-bold text-foreground mb-8 animate-text-reveal">
             Powered by Enterprise-Grade Technology
           </h3>
-          <div className="flex flex-wrap justify-center items-center gap-8">
+          <div 
+            ref={techRef as React.RefObject<HTMLDivElement>}
+            className="flex flex-wrap justify-center items-center gap-8"
+          >
             {technologies.map((tech, index) => (
-              <div key={index} className="flex items-center gap-3 bg-card/60 backdrop-blur-sm rounded-lg px-4 py-3 shadow-soft hover:shadow-feature transition-all duration-300">
-                <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+              <div 
+                key={index} 
+                className={`flex items-center gap-3 bg-card/60 backdrop-blur-sm rounded-lg px-4 py-3 shadow-soft hover:shadow-feature transition-all duration-500 transform-gpu hover:scale-110 hover:animate-magnetic-hover group ${
+                  visibleTech.has(index) 
+                    ? 'opacity-100 translate-y-0 rotate-0' 
+                    : 'opacity-0 translate-y-8 rotate-2'
+                }`}
+              >
+                <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center transition-all duration-300">
                   <tech.icon className="w-4 h-4 text-white" />
                 </div>
                 <div className="text-left">

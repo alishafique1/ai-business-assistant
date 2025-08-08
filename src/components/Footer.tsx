@@ -156,31 +156,13 @@ export const Footer = () => {
         { label: "Blog", href: "https://socialdots.ca/blog/", external: true },
         { label: "Contact", href: "mailto:hr@socialdots.ca", isEmail: true }
       ]
-    },
-    {
-      title: "Resources",
-      links: [
-        { label: "Documentation", href: "#docs" },
-        { label: "Help Center", href: "#help" },
-        { label: "Community", href: "#community" },
-        { label: "Tutorials", href: "#tutorials" }
-      ]
-    },
-    {
-      title: "Legal",
-      links: [
-        { label: "Privacy Policy", href: "#privacy" },
-        { label: "Terms of Service", href: "#terms" },
-        { label: "Cookie Policy", href: "#cookies" },
-        { label: "GDPR", href: "#gdpr" }
-      ]
     }
   ];
 
   return (
-    <footer className="bg-foreground text-background py-16">
+    <footer className="bg-foreground text-background py-8">
       <div className="container mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-6">
           {/* Brand section */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-3 mb-4">
@@ -266,7 +248,7 @@ export const Footer = () => {
         </div>
 
         {/* Newsletter signup */}
-        <div className="border-t border-background/20 pt-8 mb-8">
+        <div className="border-t border-background/20 pt-6 mb-4">
           <div className="max-w-md">
             <h3 className="font-semibold text-background mb-2">Stay updated</h3>
             <p className="text-background/70 mb-4">
@@ -295,7 +277,7 @@ export const Footer = () => {
         </div>
 
         {/* Bottom section */}
-        <div className="border-t border-background/20 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="border-t border-background/20 pt-4 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-background/70 text-sm">
             © 2024 BusinessAI. All rights reserved.
           </p>

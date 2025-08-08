@@ -97,12 +97,10 @@ export const CTASection = () => {
         {[...Array(15)].map((_, i) => (
           <div
             key={i}
-            className="absolute w-2 h-2 bg-white/20 rounded-full animate-gentle-breathe"
+            className="absolute w-2 h-2 bg-white/20 rounded-full"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 8}s`,
-              animationDuration: `${10 + Math.random() * 8}s`,
             }}
           />
         ))}
@@ -111,12 +109,10 @@ export const CTASection = () => {
         {sparklePositions.map((sparkle) => (
           <Sparkles
             key={sparkle.id}
-            className="absolute w-4 h-4 text-white/30 animate-gentle-breathe"
+            className="absolute w-4 h-4 text-white/30"
             style={{
               left: `${sparkle.x}%`,
               top: `${sparkle.y}%`,
-              animationDelay: `${sparkle.id * 0.5}s`,
-              animationDuration: `${6 + sparkle.id}s`,
             }}
           />
         ))}
@@ -140,22 +136,22 @@ export const CTASection = () => {
       
       {/* Background decoration */}
       <div className="absolute inset-0 bg-black/10"></div>
-      <div className="absolute top-10 left-10 w-32 h-32 bg-white/10 rounded-full blur-xl animate-gentle-breathe"></div>
-      <div className="absolute bottom-10 right-10 w-40 h-40 bg-white/5 rounded-full blur-xl animate-slow-float"></div>
+      <div className="absolute top-10 left-10 w-32 h-32 bg-white/10 rounded-full blur-xl"></div>
+      <div className="absolute bottom-10 right-10 w-40 h-40 bg-white/5 rounded-full blur-xl"></div>
       <div className="absolute top-1/2 left-1/2 w-20 h-20 border-2 border-white/20 rounded-full animate-spin" style={{ animationDuration: '20s' }}></div>
-      <div className="absolute top-1/4 left-3/4 w-16 h-16 border border-white/10 rounded-lg rotate-45 animate-gentle-breathe" style={{ animationDelay: '4s' }}></div>
+      <div className="absolute top-1/4 left-3/4 w-16 h-16 border border-white/10 rounded-lg rotate-45"></div>
       
       <div className="container mx-auto px-6 relative z-10">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className={`text-4xl md:text-6xl font-bold text-white mb-6 transition-all duration-1000 relative ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             <span className="inline-block hover:scale-105 transition-transform duration-500 group relative">
               Ready to Transform
-              <Zap className="absolute -top-2 -right-2 w-6 h-6 text-yellow-300 opacity-0 group-hover:opacity-100 group-hover:animate-gentle-breathe transition-all duration-500" />
+              <Zap className="absolute -top-2 -right-2 w-6 h-6 text-yellow-300 opacity-0 group-hover:opacity-100 transition-all duration-500" />
             </span>
             <br />
             <span className="inline-block hover:scale-105 transition-transform duration-500 delay-100 group relative">
               Your Business?
-              <Sparkles className="absolute -top-1 -right-1 w-5 h-5 text-white opacity-0 group-hover:opacity-100 group-hover:animate-gentle-breathe transition-all duration-500" />
+              <Sparkles className="absolute -top-1 -right-1 w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-all duration-500" />
             </span>
           </h2>
           
@@ -169,19 +165,19 @@ export const CTASection = () => {
           {/* Features list */}
           <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 transition-all duration-1000 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             <div className="flex items-center justify-center gap-3 text-white hover:scale-110 transition-all duration-500 group relative">
-              <CheckCircle className="w-6 h-6 text-white group-hover:animate-gentle-breathe group-hover:text-green-300 transition-all duration-300" />
+              <CheckCircle className="w-6 h-6 text-white group-hover:text-green-300 transition-all duration-300" />
               <span className="font-medium group-hover:drop-shadow-md relative z-10">Free 14-day trial</span>
               {/* Hover background */}
               <div className="absolute inset-0 bg-white/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 -m-2 blur-sm"></div>
             </div>
             <div className="flex items-center justify-center gap-3 text-white hover:scale-110 transition-all duration-500 group relative">
-              <CheckCircle className="w-6 h-6 text-white group-hover:animate-gentle-breathe group-hover:text-green-300 transition-all duration-300" />
+              <CheckCircle className="w-6 h-6 text-white group-hover:text-green-300 transition-all duration-300" />
               <span className="font-medium group-hover:drop-shadow-md relative z-10">No credit card required</span>
               {/* Hover background */}
               <div className="absolute inset-0 bg-white/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 -m-2 blur-sm"></div>
             </div>
             <div className="flex items-center justify-center gap-3 text-white hover:scale-110 transition-all duration-500 group relative">
-              <CheckCircle className="w-6 h-6 text-white group-hover:animate-gentle-breathe group-hover:text-green-300 transition-all duration-300" />
+              <CheckCircle className="w-6 h-6 text-white group-hover:text-green-300 transition-all duration-300" />
               <span className="font-medium group-hover:drop-shadow-md relative z-10">Cancel anytime</span>
               {/* Hover background */}
               <div className="absolute inset-0 bg-white/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 -m-2 blur-sm"></div>

@@ -98,24 +98,25 @@ export default function RoadmapSection() {
         <div className="mb-16">
           <div className="flex items-center gap-3 mb-8">
             <h3 className="text-2xl font-bold text-foreground">Live Right Now</h3>
-            <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 border-emerald-200">
+            <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 border-emerald-200 animate-pulse">
               Ready to Use
             </Badge>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {currentFeatures.map((feature, index) => (
-              <Card key={index} className="border-emerald-200 bg-emerald-50/50">
-                <CardHeader className="pb-4">
+              <Card key={index} className="border-emerald-200 bg-emerald-50/50 shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all duration-300 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-transparent to-emerald-500/5 animate-pulse"></div>
+                <CardHeader className="pb-4 relative z-10">
                   <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
+                    <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.5)]">
                       <feature.icon className="w-5 h-5 text-white" />
                     </div>
-                    <Badge className="bg-emerald-500 text-white">Live</Badge>
+                    <Badge className="bg-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.4)] animate-pulse">Live</Badge>
                   </div>
                   <CardTitle className="text-lg">{feature.title}</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="relative z-10">
                   <CardDescription>{feature.description}</CardDescription>
                 </CardContent>
               </Card>
@@ -129,28 +130,29 @@ export default function RoadmapSection() {
         <div>
           <div className="flex items-center gap-3 mb-8">
             <h3 className="text-2xl font-bold text-foreground">Coming Soon</h3>
-            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+            <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-blue-200 animate-pulse">
               In Development
             </Badge>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {upcomingFeatures.map((feature, index) => (
-              <Card key={index} className="border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-feature">
-                <CardHeader className="pb-4">
+              <Card key={index} className="border-blue-200 bg-blue-50/30 shadow-[0_0_20px_rgba(59,130,246,0.2)] hover:shadow-[0_0_30px_rgba(59,130,246,0.3)] transition-all duration-300 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-blue-500/5 animate-pulse"></div>
+                <CardHeader className="pb-4 relative z-10">
                   <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center">
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.4)]">
                       <feature.icon className="w-5 h-5 text-white" />
                     </div>
-                    <Badge variant="outline">{feature.category}</Badge>
+                    <Badge variant="outline" className="border-blue-300 text-blue-700">{feature.category}</Badge>
                   </div>
                   <CardTitle className="text-lg">{feature.title}</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="relative z-10">
                   <CardDescription className="mb-3">{feature.description}</CardDescription>
                   <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-primary" />
-                    <span className="text-sm text-primary font-medium">{feature.eta}</span>
+                    <Zap className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm text-blue-600 font-medium">{feature.eta}</span>
                   </div>
                 </CardContent>
               </Card>

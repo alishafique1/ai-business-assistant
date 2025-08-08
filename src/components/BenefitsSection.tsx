@@ -7,8 +7,12 @@ import {
   DollarSign,
   Users
 } from "lucide-react";
+import { useScrollAnimation, useStaggeredAnimation } from "@/hooks/useScrollAnimation";
 
 export const BenefitsSection = () => {
+  const { elementRef: titleRef, isVisible: titleVisible } = useScrollAnimation({ threshold: 0.2 });
+  const { containerRef: benefitsRef, visibleItems: visibleBenefits } = useStaggeredAnimation(6, 150);
+
   const benefits = [
     {
       icon: DollarSign,
@@ -55,10 +59,33 @@ export const BenefitsSection = () => {
   ];
 
   return (
-    <section id="benefits" className="py-24 bg-background">
-      <div className="container mx-auto px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
+    <section id="benefits" className="py-24 bg-background relative overflow-hidden">
+      {/* Animated background */}
+      <div className="absolute inset-0 pointer-events-none">
+        {[...Array(12)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute animate-liquid-move opacity-10"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              width: `${6 + Math.random() * 10}px`,
+              height: `${6 + Math.random() * 10}px`,
+              background: 'hsl(var(--accent))',
+              borderRadius: '50%',
+              animationDelay: `${Math.random() * 10}s`,
+              animationDuration: `${15 + Math.random() * 10}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="container mx-auto px-6 relative z-10">
+        <div 
+          ref={titleRef as React.RefObject<HTMLDivElement>}
+          className={`text-center mb-16 transition-all duration-1000 ${titleVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+        >
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6 animate-text-reveal">
             Why Pay Multiple AI Companies When
             <span className="bg-gradient-primary bg-clip-text text-transparent"> One Platform Does It All?</span>
           </h2>
@@ -67,13 +94,23 @@ export const BenefitsSection = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div 
+          ref={benefitsRef as React.RefObject<HTMLDivElement>}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+        >
           {benefits.map((benefit, index) => (
-            <Card key={index} className="relative group hover:shadow-feature transition-all duration-300 bg-card border-border/50">
+            <Card 
+              key={index} 
+              className={`relative group hover:shadow-lg hover:shadow-primary/20 transition-all duration-300 bg-card border-border/50 hover:scale-102 hover:-translate-y-1 transform-gpu ${
+                visibleBenefits.has(index) 
+                  ? 'opacity-100 translate-y-0 rotate-0' 
+                  : 'opacity-0 translate-y-8 rotate-1'
+              }`}
+            >
               <CardContent className="p-8">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center flex-shrink-0">
-                    <benefit.icon className="w-6 h-6 text-white" />
+                  <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-300 group-hover:brightness-110 group-hover:scale-110">
+                    <benefit.icon className="w-6 h-6 text-white transition-transform duration-300" />
                   </div>
                   <div className="flex-1">
                     <h3 className="text-xl font-bold text-foreground mb-2">

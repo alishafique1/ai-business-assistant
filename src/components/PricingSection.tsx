@@ -133,7 +133,7 @@ export default function PricingSection() {
           {plans.map((plan, index) => (
             <Card 
               key={index} 
-              className={`relative border-border/50 transition-all duration-300 ${
+              className={`relative border-border/50 transition-all duration-300 overflow-visible ${
                 plan.popular 
                   ? 'ring-2 ring-primary shadow-hero scale-105 border-primary/50' 
                   : index === 0 
@@ -141,6 +141,11 @@ export default function PricingSection() {
                     : 'hover:border-primary/50 hover:shadow-feature'
               }`}
             >
+              {plan.popular && (
+                <div className="absolute top-1/2 left-1/2 pointer-events-none z-0">
+                  <div className="w-2 h-2 bg-yellow-400 rounded-full shadow-[0_0_12px_rgba(251,191,36,0.8)] animate-circle-outline"></div>
+                </div>
+              )}
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
                   <span className="bg-gradient-primary text-white px-6 py-2 rounded-full text-sm font-medium shadow-lg">

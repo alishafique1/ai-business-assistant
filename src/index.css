@@ -216,6 +216,209 @@ All colors MUST be HSL.
     66% { transform: translateY(-10px) rotate(-1deg) scale(0.95); }
   }
 
+  @keyframes morphicFloat {
+    0%, 100% { 
+      transform: translateY(0px) rotate(0deg) scale(1);
+      border-radius: 50%;
+    }
+    25% { 
+      transform: translateY(-15px) rotate(90deg) scale(1.1);
+      border-radius: 40% 60% 70% 30% / 50% 80% 20% 50%;
+    }
+    50% { 
+      transform: translateY(-30px) rotate(180deg) scale(0.9);
+      border-radius: 60% 40% 30% 70% / 80% 20% 50% 50%;
+    }
+    75% { 
+      transform: translateY(-15px) rotate(270deg) scale(1.05);
+      border-radius: 30% 70% 50% 50% / 20% 50% 80% 50%;
+    }
+  }
+
+  @keyframes liquidMove {
+    0%, 100% { 
+      transform: translateX(0px) translateY(0px) scale(1);
+      filter: blur(20px);
+    }
+    25% { 
+      transform: translateX(50px) translateY(-20px) scale(1.2);
+      filter: blur(25px);
+    }
+    50% { 
+      transform: translateX(-30px) translateY(-40px) scale(0.8);
+      filter: blur(30px);
+    }
+    75% { 
+      transform: translateX(-60px) translateY(-10px) scale(1.1);
+      filter: blur(20px);
+    }
+  }
+
+  @keyframes neonGlow {
+    0%, 100% {
+      box-shadow: 
+        0 0 5px currentColor,
+        0 0 10px currentColor,
+        0 0 15px currentColor,
+        0 0 20px currentColor;
+      filter: brightness(1);
+    }
+    25% {
+      box-shadow: 
+        0 0 10px currentColor,
+        0 0 20px currentColor,
+        0 0 35px currentColor,
+        0 0 50px currentColor;
+      filter: brightness(1.2);
+    }
+    50% {
+      box-shadow: 
+        0 0 15px currentColor,
+        0 0 30px currentColor,
+        0 0 45px currentColor,
+        0 0 60px currentColor;
+      filter: brightness(1.4);
+    }
+    75% {
+      box-shadow: 
+        0 0 10px currentColor,
+        0 0 20px currentColor,
+        0 0 35px currentColor,
+        0 0 50px currentColor;
+      filter: brightness(1.2);
+    }
+  }
+
+  @keyframes magneticHover {
+    0% { transform: translate(0, 0) rotate(0deg) scale(1); }
+    25% { transform: translate(-2px, -4px) rotate(1deg) scale(1.02); }
+    50% { transform: translate(4px, -2px) rotate(-1deg) scale(1.04); }
+    75% { transform: translate(-1px, 2px) rotate(0.5deg) scale(1.02); }
+    100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+  }
+
+  @keyframes textReveal {
+    0% { 
+      opacity: 0;
+      transform: translateY(30px) rotateX(90deg);
+      filter: blur(10px);
+    }
+    50% {
+      opacity: 0.7;
+      transform: translateY(10px) rotateX(45deg);
+      filter: blur(5px);
+    }
+    100% { 
+      opacity: 1;
+      transform: translateY(0px) rotateX(0deg);
+      filter: blur(0px);
+    }
+  }
+
+  @keyframes holographicShimmer {
+    0% { 
+      background-position: -200% 0%;
+      opacity: 0;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% { 
+      background-position: 200% 0%;
+      opacity: 0;
+    }
+  }
+
+  @keyframes particleOrbit {
+    0% { 
+      transform: rotate(0deg) translateX(50px) rotate(0deg);
+    }
+    100% { 
+      transform: rotate(360deg) translateX(50px) rotate(-360deg);
+    }
+  }
+
+  @keyframes quantumFlicker {
+    0%, 100% { 
+      opacity: 1;
+      transform: scale(1);
+      filter: hue-rotate(0deg);
+    }
+    10% { 
+      opacity: 0.8;
+      transform: scale(1.02);
+      filter: hue-rotate(30deg);
+    }
+    20% { 
+      opacity: 0.9;
+      transform: scale(0.98);
+      filter: hue-rotate(-20deg);
+    }
+    30% { 
+      opacity: 1;
+      transform: scale(1.01);
+      filter: hue-rotate(10deg);
+    }
+    50% { 
+      opacity: 0.95;
+      transform: scale(1);
+      filter: hue-rotate(0deg);
+    }
+  }
+
+  @keyframes revolvingBeacon {
+    0% {
+      transform: rotate(0deg) translateX(80px) rotate(0deg);
+      opacity: 0;
+    }
+    10%, 90% {
+      opacity: 1;
+    }
+    100% {
+      transform: rotate(360deg) translateX(80px) rotate(-360deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes beaconPulse {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 0.8;
+    }
+    50% {
+      transform: scale(1.2);
+      opacity: 1;
+    }
+  }
+
+  @keyframes circleOutline {
+    0% {
+      transform: translateX(-50%) translateY(-50%) rotate(0deg) translateX(180px) rotate(0deg);
+    }
+    100% {
+      transform: translateX(-50%) translateY(-50%) rotate(360deg) translateX(180px) rotate(-360deg);
+    }
+  }
+
+  @keyframes dataStream {
+    0% {
+      transform: translateY(100vh) scaleY(0);
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+      transform: translateY(80vh) scaleY(0.2);
+    }
+    90% {
+      opacity: 1;
+      transform: translateY(-20vh) scaleY(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-100vh) scaleY(0);
+    }
+  }
+
   .animate-shimmer {
     animation: shimmer 1.5s ease-out;
   }
@@ -269,6 +472,42 @@ All colors MUST be HSL.
     animation: slowFloat 12s ease-in-out infinite;
   }
 
+  .animate-morphic-float {
+    animation: morphicFloat 16s ease-in-out infinite;
+  }
+
+  .animate-liquid-move {
+    animation: liquidMove 20s ease-in-out infinite;
+  }
+
+  .animate-neon-glow {
+    animation: neonGlow 3s ease-in-out infinite;
+  }
+
+  .animate-magnetic-hover {
+    animation: magneticHover 2s ease-in-out infinite;
+  }
+
+  .animate-text-reveal {
+    animation: textReveal 1s ease-out forwards;
+  }
+
+  .animate-holographic-shimmer {
+    animation: holographicShimmer 3s ease-in-out infinite;
+  }
+
+  .animate-particle-orbit {
+    animation: particleOrbit 8s linear infinite;
+  }
+
+  .animate-quantum-flicker {
+    animation: quantumFlicker 4s ease-in-out infinite;
+  }
+
+  .animate-data-stream {
+    animation: dataStream 6s ease-in-out infinite;
+  }
+
   /* Enhanced card styles */
   .card-surreal {
     @apply relative overflow-hidden;
@@ -299,5 +538,172 @@ All colors MUST be HSL.
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  /* 3D Transform utilities */
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  .transform-gpu {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+
+  .rotate-x-90 {
+    transform: rotateX(90deg);
+  }
+
+  /* Advanced hover effects */
+  .hover-lift {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Magnetic effect */
+  .magnetic {
+    transition: transform 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+  }
+
+  .magnetic:hover {
+    transform: translate(0, -2px);
+  }
+
+  /* Liquid button effect */
+  .liquid-button {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(45deg, var(--primary), var(--accent));
+    transition: all 0.3s ease;
+  }
+
+  .liquid-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transition: all 0.5s;
+  }
+
+  .liquid-button:hover::before {
+    left: 100%;
+  }
+
+  /* Neon border effect */
+  .neon-border {
+    position: relative;
+    border: 2px solid transparent;
+  }
+
+  .neon-border::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    padding: 2px;
+    background: linear-gradient(45deg, var(--primary), var(--accent), var(--primary));
+    border-radius: inherit;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: xor;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .neon-border:hover::before {
+    opacity: 1;
+  }
+
+  /* Quantum dot effect */
+  .quantum-dots::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle at 20% 50%, transparent 20%, rgba(255,255,255,0.3) 21%, rgba(255,255,255,0.3) 34%, transparent 35%, transparent),
+                      linear-gradient(0deg, rgba(255,255,255,0) 50%, rgba(255,255,255,0.1) 50%);
+    background-size: 10px 10px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .quantum-dots:hover::before {
+    opacity: 1;
+  }
+
+  /* Custom scale utilities */
+  .hover\:scale-102:hover {
+    transform: scale(1.02);
+  }
+
+  /* Mobile optimizations */
+  @media (max-width: 768px) {
+    /* Reduce animation intensity on mobile for better performance */
+    .animate-morphic-float,
+    .animate-liquid-move,
+    .animate-particle-orbit,
+    .animate-data-stream {
+      animation-duration: calc(var(--animation-duration, 12s) * 1.5);
+      transform: scale(0.8);
+    }
+
+    /* Disable some heavy animations on mobile */
+    .animate-neon-glow,
+    .animate-quantum-flicker {
+      animation: none;
+    }
+
+    /* Simplify hover effects on mobile */
+    .hover-lift:hover,
+    .magnetic:hover {
+      transform: none;
+    }
+
+    /* Reduce particle count effects */
+    .morphic-particles {
+      display: none;
+    }
+  }
+
+  .animate-revolving-beacon {
+    animation: revolvingBeacon 4s linear infinite;
+  }
+
+  .animate-beacon-pulse {
+    animation: beaconPulse 2s ease-in-out infinite;
+  }
+
+  .animate-circle-outline {
+    animation: circleOutline 4s linear infinite;
+  }
+
+  /* Reduced motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-morphic-float,
+    .animate-liquid-move,
+    .animate-neon-glow,
+    .animate-magnetic-hover,
+    .animate-holographic-shimmer,
+    .animate-particle-orbit,
+    .animate-quantum-flicker,
+    .animate-data-stream,
+    .animate-revolving-beacon,
+    .animate-beacon-pulse,
+    .animate-circle-outline {
+      animation: none;
+    }
+
+    .hover-lift,
+    .magnetic {
+      transition: none;
+    }
+
+    .animate-text-reveal {
+      animation: fade-in 0.5s ease-out forwards;
+    }
   }
 }

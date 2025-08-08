@@ -76,7 +76,7 @@ export default function Navigation() {
         {[...Array(6)].map((_, i) => (
           <div
             key={i}
-            className="absolute w-1 h-1 bg-primary/30 rounded-full animate-gentle-breathe"
+            className="absolute w-1 h-1 bg-primary/30 rounded-full"
             style={{
               left: `${10 + i * 15}%`,
               top: `${20 + (i % 2) * 60}%`,
@@ -101,7 +101,7 @@ export default function Navigation() {
                 isRefreshing ? 'animate-spin' : 'group-hover:rotate-12 group-hover:scale-110'
               }`} />
               {/* Sparkle effect on hover */}
-              <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-accent opacity-0 group-hover:opacity-100 group-hover:animate-gentle-breathe transition-all duration-500" />
+              <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-accent opacity-0 group-hover:opacity-100 transition-all duration-500" />
             </div>
             <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent group-hover:drop-shadow-sm transition-all duration-500 group-hover:scale-105 relative">
               AI Business Hub
