@@ -117,8 +117,24 @@ export default function PricingSection() {
   ];
 
   return (
-    <section id="pricing" className="py-24 bg-gradient-subtle">
-      <div className="container mx-auto px-6">
+    <section id="pricing" className="py-24 bg-gradient-to-br from-background via-secondary/20 to-primary/10 relative overflow-hidden">
+      {/* Sophisticated background elements */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 via-transparent to-accent/5"></div>
+        <div className="absolute top-40 right-20 w-80 h-80 bg-gradient-to-r from-accent/12 to-primary/8 rounded-full blur-3xl animate-gentle-beat-2s"></div>
+        <div className="absolute bottom-40 left-20 w-60 h-60 bg-gradient-to-l from-primary/10 to-accent/6 rounded-full blur-2xl animate-pulse-slow"></div>
+      </div>
+      
+      {/* Elegant grid pattern */}
+      <div className="absolute inset-0 opacity-[0.015]" style={{
+        backgroundImage: `
+          linear-gradient(hsl(var(--primary) / 0.3) 1px, transparent 1px),
+          linear-gradient(90deg, hsl(var(--primary) / 0.3) 1px, transparent 1px)
+        `,
+        backgroundSize: '60px 60px'
+      }}></div>
+
+      <div className="container mx-auto px-6 relative z-10">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
             Pre-Launch Pricing:
@@ -141,11 +157,6 @@ export default function PricingSection() {
                     : 'hover:border-primary/50 hover:shadow-feature'
               }`}
             >
-              {plan.popular && (
-                <div className="absolute top-1/2 left-1/2 pointer-events-none z-0">
-                  <div className="w-2 h-2 bg-yellow-400 rounded-full shadow-[0_0_12px_rgba(251,191,36,0.8)] animate-circle-outline"></div>
-                </div>
-              )}
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
                   <span className="bg-gradient-primary text-white px-6 py-2 rounded-full text-sm font-medium shadow-lg">

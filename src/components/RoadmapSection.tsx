@@ -82,8 +82,25 @@ export default function RoadmapSection() {
   ];
 
   return (
-    <section className="py-24 bg-gradient-subtle">
-      <div className="container mx-auto px-6">
+    <section className="py-24 bg-gradient-to-br from-muted/30 via-background to-accent/8 relative overflow-hidden">
+      {/* Tech-inspired background */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-10 left-1/4 w-64 h-64 bg-gradient-to-r from-emerald-500/10 to-blue-500/10 rounded-full blur-3xl animate-slow-float"></div>
+        <div className="absolute bottom-10 right-1/4 w-80 h-80 bg-gradient-to-l from-blue-500/8 to-emerald-500/8 rounded-full blur-3xl animate-pulse-very-slow"></div>
+        <div className="absolute top-1/3 right-10 w-48 h-48 bg-gradient-to-br from-accent/12 to-primary/8 rounded-full blur-2xl animate-gentle-breathe"></div>
+      </div>
+      
+      {/* Subtle circuit pattern */}
+      <div className="absolute inset-0 opacity-[0.02]" style={{
+        backgroundImage: `
+          radial-gradient(circle at 25% 25%, hsl(var(--emerald-500) / 0.3) 2px, transparent 3px),
+          linear-gradient(90deg, hsl(var(--primary) / 0.2) 1px, transparent 1px),
+          linear-gradient(hsl(var(--accent) / 0.2) 1px, transparent 1px)
+        `,
+        backgroundSize: '80px 80px, 40px 40px, 40px 40px'
+      }}></div>
+
+      <div className="container mx-auto px-6 relative z-10">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
             What's Coming Next:

@@ -53,10 +53,11 @@ All colors MUST be HSL.
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     
-    /* Enhanced gradients for surreal effects */
+    /* Enhanced gradients for elegant effects */
     --gradient-surreal: linear-gradient(135deg, hsl(220 90% 60%), hsl(260 85% 65%), hsl(300 80% 70%), hsl(220 90% 60%));
     --gradient-magical: conic-gradient(from 0deg, hsl(220 90% 60%), hsl(260 85% 65%), hsl(300 80% 70%), hsl(340 75% 65%), hsl(220 90% 60%));
     --gradient-ethereal: radial-gradient(circle at 50% 50%, hsl(220 90% 60% / 0.3), hsl(260 85% 65% / 0.2), transparent);
+    --gradient-elegant: linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--accent) / 0.08), transparent);
     
     /* Floating animations */
     --float-duration: 6s;
@@ -175,6 +176,35 @@ All colors MUST be HSL.
   @keyframes gentle-beat-2s {
     0%, 100% { opacity: 0.95; transform: scale(1); }
     50% { opacity: 1; transform: scale(1.008); }
+  }
+  
+  @keyframes elegant-float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.7; }
+    25% { transform: translateY(-8px) rotate(1deg); opacity: 0.9; }
+    50% { transform: translateY(-12px) rotate(0deg); opacity: 1; }
+    75% { transform: translateY(-8px) rotate(-1deg); opacity: 0.9; }
+  }
+  
+  @keyframes sophisticatedPulse {
+    0%, 100% { 
+      transform: scale(1);
+      opacity: 0.6;
+      filter: blur(20px);
+    }
+    50% { 
+      transform: scale(1.05);
+      opacity: 0.9;
+      filter: blur(25px);
+    }
+  }
+  
+  @keyframes premiumGlow {
+    0%, 100% {
+      box-shadow: 0 0 20px hsl(var(--primary) / 0.1), 0 0 40px hsl(var(--accent) / 0.05);
+    }
+    50% {
+      box-shadow: 0 0 30px hsl(var(--primary) / 0.2), 0 0 60px hsl(var(--accent) / 0.1);
+    }
   }
   
   @keyframes fade-in {
@@ -458,6 +488,18 @@ All colors MUST be HSL.
   
   .animate-gentle-beat-1s {
     animation: gentle-beat-2s 1s ease-in-out infinite;
+  }
+  
+  .animate-elegant-float {
+    animation: elegant-float 8s ease-in-out infinite;
+  }
+  
+  .animate-sophisticated-pulse {
+    animation: sophisticatedPulse 4s ease-in-out infinite;
+  }
+  
+  .animate-premium-glow {
+    animation: premiumGlow 3s ease-in-out infinite;
   }
   
   .animate-fade-in {

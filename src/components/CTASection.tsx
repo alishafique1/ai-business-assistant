@@ -73,34 +73,32 @@ export const CTASection = () => {
 
   return (
     <section ref={sectionRef} id="cta-section" className="py-24 bg-gradient-primary relative overflow-hidden">
-      {/* Animated background elements */}
+      {/* Elegant animated background */}
       <div className="absolute inset-0">
-        {/* Dynamic mouse-following orbs */}
+        {/* Premium floating orbs */}
+        <div className="absolute top-20 left-20 w-80 h-80 bg-gradient-to-r from-white/15 to-white/10 rounded-full blur-3xl animate-sophisticated-pulse"></div>
+        <div className="absolute bottom-20 right-20 w-96 h-96 bg-gradient-to-l from-white/12 to-white/8 rounded-full blur-3xl animate-elegant-float"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-radial-gradient from-white/10 to-transparent rounded-full animate-premium-glow"></div>
+        {/* Interactive mouse-following elements */}
         <div 
-          className="absolute w-96 h-96 bg-gradient-to-r from-white/10 to-accent/20 rounded-full blur-3xl transition-all duration-1000 ease-out"
+          className="absolute w-72 h-72 bg-gradient-to-r from-white/8 to-white/12 rounded-full blur-3xl transition-all duration-1000 ease-out"
           style={{
-            left: `${mousePosition.x * 0.8}%`,
-            top: `${mousePosition.y * 0.8}%`,
-            transform: 'translate(-50%, -50%)',
-          }}
-        />
-        <div 
-          className="absolute w-64 h-64 bg-gradient-to-r from-accent/15 to-white/10 rounded-full blur-2xl transition-all duration-700 ease-out"
-          style={{
-            left: `${100 - mousePosition.x * 0.6}%`,
-            top: `${100 - mousePosition.y * 0.6}%`,
+            left: `${mousePosition.x * 0.5}%`,
+            top: `${mousePosition.y * 0.5}%`,
             transform: 'translate(-50%, -50%)',
           }}
         />
         
-        {/* Floating particles with slower animation */}
-        {[...Array(15)].map((_, i) => (
+        {/* Elegant floating particles */}
+        {[...Array(8)].map((_, i) => (
           <div
             key={i}
-            className="absolute w-2 h-2 bg-white/20 rounded-full"
+            className="absolute w-1 h-1 bg-white/30 rounded-full animate-elegant-float"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
+              animationDelay: `${i * 0.8}s`,
+              animationDuration: `${6 + i * 0.5}s`
             }}
           />
         ))}

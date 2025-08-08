@@ -59,26 +59,20 @@ export const BenefitsSection = () => {
   ];
 
   return (
-    <section id="benefits" className="py-24 bg-background relative overflow-hidden">
-      {/* Animated background */}
+    <section id="benefits" className="py-24 bg-gradient-to-br from-background via-primary/5 to-accent/10 relative overflow-hidden">
+
+      {/* Elegant floating elements */}
       <div className="absolute inset-0 pointer-events-none">
-        {[...Array(12)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute animate-liquid-move opacity-10"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: `${6 + Math.random() * 10}px`,
-              height: `${6 + Math.random() * 10}px`,
-              background: 'hsl(var(--accent))',
-              borderRadius: '50%',
-              animationDelay: `${Math.random() * 10}s`,
-              animationDuration: `${15 + Math.random() * 10}s`,
-            }}
-          />
-        ))}
+        <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-primary/10 to-accent/10 rounded-full blur-3xl animate-pulse-slow"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-l from-accent/8 to-primary/8 rounded-full blur-3xl animate-pulse-very-slow"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-radial from-primary/5 to-transparent rounded-full animate-gentle-breathe"></div>
       </div>
+      
+      {/* Subtle dot pattern overlay */}
+      <div className="absolute inset-0 opacity-[0.02]" style={{
+        backgroundImage: 'radial-gradient(circle at 1px 1px, hsl(var(--primary)) 1px, transparent 0)',
+        backgroundSize: '40px 40px'
+      }}></div>
 
       <div className="container mx-auto px-6 relative z-10">
         <div 

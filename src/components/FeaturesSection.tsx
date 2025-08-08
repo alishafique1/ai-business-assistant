@@ -91,25 +91,22 @@ export const FeaturesSection = () => {
   ];
 
   return (
-    <section id="features" className="py-24 bg-gradient-feature relative overflow-hidden">
-      {/* Background animated elements */}
+    <section id="features" className="py-24 bg-gradient-to-br from-gradient-feature via-primary/8 to-accent/12 relative overflow-hidden">
+
+      {/* Beautiful floating orbs */}
       <div className="absolute inset-0 pointer-events-none">
-        {[...Array(15)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute animate-morphic-float opacity-20"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              width: `${8 + Math.random() * 16}px`,
-              height: `${8 + Math.random() * 16}px`,
-              background: i % 2 === 0 ? 'hsl(var(--primary))' : 'hsl(var(--accent))',
-              animationDelay: `${Math.random() * 8}s`,
-              animationDuration: `${12 + Math.random() * 8}s`,
-            }}
-          />
-        ))}
+        <div className="absolute top-16 right-16 w-96 h-96 bg-gradient-to-r from-primary/15 to-accent/12 rounded-full blur-3xl animate-pulse-glow"></div>
+        <div className="absolute bottom-16 left-16 w-80 h-80 bg-gradient-to-l from-accent/10 to-primary/8 rounded-full blur-3xl animate-gentle-breathe"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-radial from-primary/8 via-accent/6 to-transparent rounded-full animate-pulse-very-slow"></div>
       </div>
+      
+      {/* Elegant hexagon pattern */}
+      <div className="absolute inset-0 opacity-[0.03]" style={{
+        backgroundImage: `
+          radial-gradient(circle at 50% 50%, hsl(var(--primary) / 0.4) 2px, transparent 3px)
+        `,
+        backgroundSize: '50px 50px'
+      }}></div>
 
       <div className="container mx-auto px-6 relative z-10">
         <div 
