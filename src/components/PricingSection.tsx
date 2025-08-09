@@ -153,7 +153,7 @@ export default function PricingSection() {
               key={index} 
               className={`relative transition-all duration-500 overflow-visible group ${
                 plan.popular 
-                  ? 'bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/30 shadow-xl shadow-blue-500/20 scale-105 hover:scale-110' 
+                  ? 'bg-white border-2 border-blue-500 shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 scale-105 hover:scale-110 hover:border-purple-500' 
                   : index === 0 
                     ? 'bg-slate-800/60 border-emerald-500/20 hover:border-emerald-400/40 hover:shadow-lg hover:shadow-emerald-500/20 hover:scale-105' 
                     : 'bg-slate-800/40 border-slate-700/30 hover:border-blue-400/40 hover:shadow-lg hover:shadow-blue-500/20 hover:scale-105'
@@ -162,7 +162,7 @@ export default function PricingSection() {
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
                   <span className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg animate-pulse">
-                    🚀 Most Popular
+                    Most Popular
                   </span>
                 </div>
               )}
@@ -170,7 +170,7 @@ export default function PricingSection() {
               {index === 0 && (
                 <div className="absolute -top-4 right-4 z-10">
                   <span className="bg-emerald-500 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg">
-                    ✨ No Credit Card
+                    No Credit Card
                   </span>
                 </div>
               )}
@@ -178,7 +178,7 @@ export default function PricingSection() {
               {index === 2 && (
                 <div className="absolute -top-4 right-4 z-10">
                   <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg">
-                    💼 Enterprise
+                    Enterprise
                   </span>
                 </div>
               )}

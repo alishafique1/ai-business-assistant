@@ -759,7 +759,7 @@ All colors MUST be HSL.
   }
 
   .animate-slide-infinite-loop {
-    animation: slideInfiniteLoop 15s linear infinite;
+    animation: slideInfiniteLoop 18s linear infinite;
     white-space: nowrap;
     display: flex;
     align-items: center;
