@@ -141,42 +141,43 @@ export const CTASection = () => {
       
       <div className="container mx-auto px-6 relative z-10">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className={`text-4xl md:text-6xl font-bold text-white mb-6 transition-all duration-1000 relative ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+          <h2 className={`text-4xl md:text-6xl font-bold text-white mb-6 transition-all duration-1000 relative leading-tight ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             <span className="inline-block hover:scale-105 transition-transform duration-500 group relative">
-              Ready to Transform
+              Transform Your Business Into
               <Zap className="absolute -top-2 -right-2 w-6 h-6 text-yellow-300 opacity-0 group-hover:opacity-100 transition-all duration-500" />
             </span>
             <br />
-            <span className="inline-block hover:scale-105 transition-transform duration-500 delay-100 group relative">
-              Your Business?
-              <Sparkles className="absolute -top-1 -right-1 w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-all duration-500" />
+            <span className="inline-block hover:scale-105 transition-transform duration-500 delay-100 group relative bg-gradient-to-r from-white via-blue-100 to-white bg-clip-text text-transparent">
+              An AI-Powered Enterprise
+              <Sparkles className="absolute -top-1 -right-1 w-5 h-5 text-blue-200 opacity-0 group-hover:opacity-100 transition-all duration-500" />
             </span>
           </h2>
           
-          <p className={`text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto transition-all duration-1000 delay-300 relative group hover:text-white ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            Join the AI revolution and let our intelligent agents handle the heavy lifting 
-            while you focus on what matters most - growing your business.
+          <p className={`text-xl md:text-2xl text-white/90 mb-8 max-w-4xl mx-auto transition-all duration-1000 delay-300 relative group hover:text-white leading-relaxed ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+            Join the intelligence revolution that's reshaping business operations. Our unified AI ecosystem eliminates 
+            manual workflows, automates complex processes, and delivers enterprise-grade insights—allowing you to scale 
+            efficiently while maintaining complete data sovereignty.
             {/* Subtle glow effect on hover */}
             <span className="absolute inset-0 bg-gradient-to-r from-white/5 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-lg -z-10 blur-xl"></span>
           </p>
           
-          {/* Features list */}
+          {/* Enhanced features list */}
           <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 transition-all duration-1000 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             <div className="flex items-center justify-center gap-3 text-white hover:scale-110 transition-all duration-500 group relative">
-              <CheckCircle className="w-6 h-6 text-white group-hover:text-green-300 transition-all duration-300" />
-              <span className="font-medium group-hover:drop-shadow-md relative z-10">Free 14-day trial</span>
+              <CheckCircle className="w-6 h-6 text-emerald-300 group-hover:text-emerald-200 transition-all duration-300" />
+              <span className="font-semibold group-hover:drop-shadow-md relative z-10">Risk-Free 14-Day Trial</span>
               {/* Hover background */}
               <div className="absolute inset-0 bg-white/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 -m-2 blur-sm"></div>
             </div>
             <div className="flex items-center justify-center gap-3 text-white hover:scale-110 transition-all duration-500 group relative">
-              <CheckCircle className="w-6 h-6 text-white group-hover:text-green-300 transition-all duration-300" />
-              <span className="font-medium group-hover:drop-shadow-md relative z-10">No credit card required</span>
+              <CheckCircle className="w-6 h-6 text-emerald-300 group-hover:text-emerald-200 transition-all duration-300" />
+              <span className="font-semibold group-hover:drop-shadow-md relative z-10">Instant Access • No Card</span>
               {/* Hover background */}
               <div className="absolute inset-0 bg-white/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 -m-2 blur-sm"></div>
             </div>
             <div className="flex items-center justify-center gap-3 text-white hover:scale-110 transition-all duration-500 group relative">
-              <CheckCircle className="w-6 h-6 text-white group-hover:text-green-300 transition-all duration-300" />
-              <span className="font-medium group-hover:drop-shadow-md relative z-10">Cancel anytime</span>
+              <CheckCircle className="w-6 h-6 text-emerald-300 group-hover:text-emerald-200 transition-all duration-300" />
+              <span className="font-semibold group-hover:drop-shadow-md relative z-10">Cancel Anytime • Full Control</span>
               {/* Hover background */}
               <div className="absolute inset-0 bg-white/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 -m-2 blur-sm"></div>
             </div>
@@ -186,11 +187,11 @@ export const CTASection = () => {
           <div className={`flex flex-col sm:flex-row gap-4 justify-center items-center transition-all duration-1000 delay-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             <Button 
               size="lg" 
-              className="bg-white text-primary hover:bg-white/95 text-lg px-8 py-4 font-semibold shadow-hero hover:scale-110 hover:shadow-2xl transition-all duration-500 group relative overflow-hidden"
+              className="bg-white text-primary hover:bg-white/95 text-lg px-10 py-4 font-bold shadow-hero hover:scale-110 hover:shadow-2xl transition-all duration-500 group relative overflow-hidden"
               onClick={() => navigate(user ? "/dashboard" : "/auth?tab=signup")}
             >
               <span className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/15 to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-gradient"></span>
-              <span className="relative z-10 group-hover:drop-shadow-sm transition-all duration-300">{user ? "Go to Dashboard" : "Start Your Free Trial"}</span>
+              <span className="relative z-10 group-hover:drop-shadow-sm transition-all duration-300">{user ? "Access Your Dashboard" : "Start Your AI Transformation"}</span>
               <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-2 group-hover:scale-110 transition-all duration-500" />
               {/* Shimmer effect */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out"></div>
@@ -198,30 +199,30 @@ export const CTASection = () => {
             <Button 
               variant="outline" 
               size="lg" 
-              className="border-white/30 text-white bg-white/10 hover:bg-white/20 text-lg px-8 py-4 hover:scale-105 hover:border-white/50 transition-all duration-500 relative overflow-hidden group"
+              className="border-white/40 text-white bg-white/10 hover:bg-white/20 text-lg px-8 py-4 hover:scale-105 hover:border-white/60 transition-all duration-500 relative overflow-hidden group font-semibold"
               onClick={handleScheduleDemo}
             >
               <Calendar className="w-5 h-5 mr-2 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500" />
-              <span className="relative z-10 group-hover:drop-shadow-sm transition-all duration-300">Schedule a Demo</span>
+              <span className="relative z-10 group-hover:drop-shadow-sm transition-all duration-300">Book Expert Consultation</span>
               {/* Subtle shimmer */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out"></div>
             </Button>
           </div>
           
-          {/* Trust indicators */}
-          <div className={`mt-12 pt-8 border-t border-white/20 transition-all duration-1000 delay-900 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            <p className="text-white/70 mb-6">Trusted by forward-thinking businesses</p>
-            <div className="flex flex-wrap justify-center items-center gap-8 opacity-70">
-              <div className="bg-white/20 px-6 py-3 rounded-lg backdrop-blur-sm hover:bg-white/30 hover:scale-105 transition-all duration-500 group relative overflow-hidden hover:-translate-y-1">
-                <span className="text-white font-bold group-hover:drop-shadow-md relative z-10">Enterprise Security</span>
+          {/* Enhanced trust indicators */}
+          <div className={`mt-12 pt-8 border-t border-white/30 transition-all duration-1000 delay-900 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+            <p className="text-white/80 mb-6 text-lg font-medium">Trusted by innovative enterprises worldwide</p>
+            <div className="flex flex-wrap justify-center items-center gap-6 opacity-90">
+              <div className="bg-white/25 px-6 py-3 rounded-xl backdrop-blur-sm hover:bg-white/35 hover:scale-105 transition-all duration-500 group relative overflow-hidden hover:-translate-y-1 border border-white/10">
+                <span className="text-white font-bold group-hover:drop-shadow-md relative z-10">Bank-Level Security</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               </div>
-              <div className="bg-white/20 px-6 py-3 rounded-lg backdrop-blur-sm hover:bg-white/30 hover:scale-105 transition-all duration-500 group relative overflow-hidden hover:-translate-y-1">
-                <span className="text-white font-bold group-hover:drop-shadow-md relative z-10">GDPR Compliant</span>
+              <div className="bg-white/25 px-6 py-3 rounded-xl backdrop-blur-sm hover:bg-white/35 hover:scale-105 transition-all duration-500 group relative overflow-hidden hover:-translate-y-1 border border-white/10">
+                <span className="text-white font-bold group-hover:drop-shadow-md relative z-10">SOC 2 Compliant</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               </div>
-              <div className="bg-white/20 px-6 py-3 rounded-lg backdrop-blur-sm hover:bg-white/30 hover:scale-105 transition-all duration-500 group relative overflow-hidden hover:-translate-y-1">
-                <span className="text-white font-bold group-hover:drop-shadow-md relative z-10">24/7 Support</span>
+              <div className="bg-white/25 px-6 py-3 rounded-xl backdrop-blur-sm hover:bg-white/35 hover:scale-105 transition-all duration-500 group relative overflow-hidden hover:-translate-y-1 border border-white/10">
+                <span className="text-white font-bold group-hover:drop-shadow-md relative z-10">Enterprise Support</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               </div>
             </div>

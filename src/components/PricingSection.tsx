@@ -3,10 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Check, DollarSign, Clock, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 export default function PricingSection() {
   const [isContactingSupport, setIsContactingSupport] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Auto caller webhook URL - you can customize this
   const AUTO_CALLER_WEBHOOK_URL = import.meta.env.VITE_AUTO_CALLER_WEBHOOK || 'https://your-auto-caller-webhook.com/api/call';
@@ -52,6 +56,16 @@ export default function PricingSection() {
     }
   };
 
+  const handleFreePlanClick = () => {
+    if (user) {
+      // User is already signed in, navigate to dashboard
+      navigate("/dashboard");
+    } else {
+      // User is not signed in, redirect to signup page
+      navigate("/auth?tab=signup");
+    }
+  };
+
   const plans = [
     {
       name: "Free Forever",
@@ -70,7 +84,7 @@ export default function PricingSection() {
         "Basic analytics only",
         "No export features"
       ],
-      cta: "Start Free Today",
+      cta: user ? "Current Plan" : "Start Free Today",
       popular: false,
       highlight: "No credit card required"
     },
@@ -153,7 +167,7 @@ export default function PricingSection() {
               key={index} 
               className={`relative transition-all duration-500 overflow-visible group ${
                 plan.popular 
-                  ? 'bg-white border-2 border-blue-500 shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 scale-105 hover:scale-110 hover:border-purple-500' 
+                  ? 'bg-gradient-to-br from-white via-blue-200 to-indigo-100 border-2 border-blue-500 shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 scale-105 hover:scale-110 hover:border-purple-500' 
                   : index === 0 
                     ? 'bg-slate-800/60 border-emerald-500/20 hover:border-emerald-400/40 hover:shadow-lg hover:shadow-emerald-500/20 hover:scale-105' 
                     : 'bg-slate-800/40 border-slate-700/30 hover:border-blue-400/40 hover:shadow-lg hover:shadow-blue-500/20 hover:scale-105'
@@ -175,15 +189,12 @@ export default function PricingSection() {
                 </div>
               )}
               
-              {index === 2 && (
-                <div className="absolute -top-4 right-4 z-10">
-                  <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg">
-                    Enterprise
-                  </span>
-                </div>
-              )}
               
-              <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-lg"></div>
+              <div className={`absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
+                plan.popular 
+                  ? 'bg-gradient-to-br from-blue-300/50 via-indigo-200/30 to-purple-200/50' 
+                  : 'bg-gradient-to-br from-transparent via-white/5 to-transparent'
+              }`}></div>
               
               <CardHeader className="text-center pb-8 relative z-10">
                 <CardTitle className={`text-2xl font-bold transition-colors duration-300 ${
@@ -235,10 +246,22 @@ export default function PricingSection() {
                 
                 <Button 
                   variant={plan.popular ? "hero" : index === 0 ? "secondary" : "outline"} 
-                  className={`w-full ${index === 0 ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : ''}`}
+                  className={`w-full ${
+                    index === 0 
+                      ? user 
+                        ? 'bg-gray-500 hover:bg-gray-600 text-white cursor-default' 
+                        : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                      : ''
+                  }`}
                   size="lg"
-                  onClick={plan.name === "Enterprise" ? handleContactSales : undefined}
-                  disabled={plan.name === "Enterprise" && isContactingSupport}
+                  onClick={
+                    plan.name === "Enterprise" 
+                      ? handleContactSales 
+                      : index === 0 
+                        ? handleFreePlanClick 
+                        : undefined
+                  }
+                  disabled={(plan.name === "Enterprise" && isContactingSupport) || (index === 0 && user)}
                 >
                   {plan.name === "Enterprise" && isContactingSupport ? "Initiating Call..." : plan.cta}
                 </Button>

@@ -299,10 +299,15 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent/20 to-primary/10 p-4">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center mb-8">
-          <Brain className="h-8 w-8 text-primary mr-2" />
-          <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            AI Business Hub
-          </h1>
+          <Link 
+            to="/" 
+            className="flex items-center hover:scale-105 transition-transform duration-300 group"
+          >
+            <Brain className="h-8 w-8 text-primary mr-2 group-hover:rotate-12 transition-transform duration-300" />
+            <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent group-hover:drop-shadow-md transition-all duration-300">
+              AI Business Hub
+            </h1>
+          </Link>
         </div>
 
         <Card className="border-border/50 shadow-elegant">
