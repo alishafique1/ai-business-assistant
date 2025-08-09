@@ -82,12 +82,13 @@ export default function RoadmapSection() {
   ];
 
   return (
-    <section className="py-24 bg-gradient-to-br from-muted/30 via-background to-accent/8 relative overflow-hidden">
-      {/* Tech-inspired background */}
+    <section className="py-24 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+      {/* Premium tech background */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-10 left-1/4 w-64 h-64 bg-gradient-to-r from-emerald-500/10 to-blue-500/10 rounded-full blur-3xl animate-slow-float"></div>
-        <div className="absolute bottom-10 right-1/4 w-80 h-80 bg-gradient-to-l from-blue-500/8 to-emerald-500/8 rounded-full blur-3xl animate-pulse-very-slow"></div>
-        <div className="absolute top-1/3 right-10 w-48 h-48 bg-gradient-to-br from-accent/12 to-primary/8 rounded-full blur-2xl animate-gentle-breathe"></div>
+        <div className="absolute top-20 left-1/4 w-96 h-96 bg-gradient-to-r from-emerald-500/8 to-blue-500/8 rounded-full blur-3xl animate-slow-float"></div>
+        <div className="absolute bottom-20 right-1/4 w-80 h-80 bg-gradient-to-l from-blue-500/6 to-purple-500/6 rounded-full blur-3xl animate-pulse-very-slow"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-br from-purple-500/4 to-pink-500/4 rounded-full blur-2xl animate-gentle-breathe"></div>
+        <div className="absolute bottom-1/3 left-1/6 w-48 h-48 bg-gradient-to-r from-cyan-500/6 to-blue-500/6 rounded-full blur-xl animate-pulse-slow"></div>
       </div>
       
       {/* Subtle circuit pattern */}
@@ -102,39 +103,41 @@ export default function RoadmapSection() {
 
       <div className="container mx-auto px-6 relative z-10">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
-            What's Coming Next:
-            <span className="bg-gradient-primary bg-clip-text text-transparent"> Your AI Keeps Getting Smarter</span>
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
+            <span className="text-white">Innovation Pipeline: </span>
+            <span className="bg-gradient-to-r from-emerald-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">Continuous AI Evolution</span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            This is just the beginning. We're shipping new AI capabilities every week based on user feedback and business needs.
+          <p className="text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed">
+            Experience the future of business automation with our rapidly expanding AI ecosystem. 
+            New intelligent capabilities deployed weekly, driven by cutting-edge research and enterprise feedback.
           </p>
         </div>
 
         {/* Current Features */}
         <div className="mb-16">
-          <div className="flex items-center gap-3 mb-8">
-            <h3 className="text-2xl font-bold text-foreground">Live Right Now</h3>
-            <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 border-emerald-200 animate-pulse">
-              Ready to Use
+          <div className="flex items-center justify-center gap-4 mb-12">
+            <h3 className="text-3xl font-bold text-white">Active Intelligence</h3>
+            <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 animate-pulse px-4 py-2 text-sm font-semibold">
+              ✨ Production Ready
             </Badge>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {currentFeatures.map((feature, index) => (
-              <Card key={index} className="border-emerald-200 bg-emerald-50/50 shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all duration-300 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-transparent to-emerald-500/5 animate-pulse"></div>
-                <CardHeader className="pb-4 relative z-10">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.5)]">
-                      <feature.icon className="w-5 h-5 text-white" />
+              <Card key={index} className="bg-slate-800/60 backdrop-blur-sm border-emerald-500/20 hover:border-emerald-400/40 transition-all duration-500 relative overflow-hidden group hover:scale-105 hover:-translate-y-2">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
+                <CardHeader className="pb-6 relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform duration-300">
+                      <feature.icon className="w-7 h-7 text-white" />
                     </div>
-                    <Badge className="bg-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.4)] animate-pulse">Live</Badge>
+                    <Badge className="bg-emerald-500 text-white shadow-lg px-3 py-1 font-semibold">LIVE</Badge>
                   </div>
-                  <CardTitle className="text-lg">{feature.title}</CardTitle>
+                  <CardTitle className="text-xl font-bold text-white group-hover:text-emerald-100 transition-colors duration-300">{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent className="relative z-10">
-                  <CardDescription>{feature.description}</CardDescription>
+                  <CardDescription className="text-gray-300 leading-relaxed">{feature.description}</CardDescription>
                 </CardContent>
               </Card>
             ))}
@@ -145,31 +148,32 @@ export default function RoadmapSection() {
 
         {/* Upcoming Features */}
         <div>
-          <div className="flex items-center gap-3 mb-8">
-            <h3 className="text-2xl font-bold text-foreground">Coming Soon</h3>
-            <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-blue-200 animate-pulse">
-              In Development
+          <div className="flex items-center justify-center gap-4 mb-12">
+            <h3 className="text-3xl font-bold text-white">Future Intelligence</h3>
+            <Badge variant="secondary" className="bg-blue-500/20 text-blue-300 border-blue-500/30 animate-pulse px-4 py-2 text-sm font-semibold">
+              🚀 In Development
             </Badge>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {upcomingFeatures.map((feature, index) => (
-              <Card key={index} className="border-blue-200 bg-blue-50/30 shadow-[0_0_20px_rgba(59,130,246,0.2)] hover:shadow-[0_0_30px_rgba(59,130,246,0.3)] transition-all duration-300 relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-blue-500/5 animate-pulse"></div>
-                <CardHeader className="pb-4 relative z-10">
-                  <div className="flex items-center justify-between">
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.4)]">
-                      <feature.icon className="w-5 h-5 text-white" />
+              <Card key={index} className="bg-slate-800/40 backdrop-blur-sm border-blue-500/20 hover:border-blue-400/40 transition-all duration-500 relative overflow-hidden group hover:scale-105 hover:-translate-y-2">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
+                <CardHeader className="pb-6 relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform duration-300">
+                      <feature.icon className="w-7 h-7 text-white" />
                     </div>
-                    <Badge variant="outline" className="border-blue-300 text-blue-700">{feature.category}</Badge>
+                    <Badge variant="outline" className="border-blue-400/30 text-blue-300 bg-blue-500/10 px-3 py-1 font-semibold">{feature.category}</Badge>
                   </div>
-                  <CardTitle className="text-lg">{feature.title}</CardTitle>
+                  <CardTitle className="text-xl font-bold text-white group-hover:text-blue-100 transition-colors duration-300 mb-3">{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent className="relative z-10">
-                  <CardDescription className="mb-3">{feature.description}</CardDescription>
-                  <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-blue-600" />
-                    <span className="text-sm text-blue-600 font-medium">{feature.eta}</span>
+                  <CardDescription className="text-gray-300 leading-relaxed mb-4">{feature.description}</CardDescription>
+                  <div className="flex items-center gap-2 bg-blue-500/10 rounded-lg p-3 border border-blue-500/20">
+                    <Zap className="w-4 h-4 text-blue-400" />
+                    <span className="text-sm text-blue-300 font-semibold">{feature.eta}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -177,27 +181,65 @@ export default function RoadmapSection() {
           </div>
         </div>
 
-        {/* Value Proposition */}
-        <div className="mt-16 text-center bg-muted/30 rounded-2xl p-8">
-          <h3 className="text-2xl font-bold text-foreground mb-4">
-            Early Adopters Get Everything Free
-          </h3>
-          <p className="text-lg text-muted-foreground mb-6 max-w-2xl mx-auto">
-            Every feature on this roadmap is included in your subscription at no extra cost. 
-            While others charge separately for each AI tool, you get the complete suite.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto text-sm">
-            <div className="bg-background rounded-lg p-4">
-              <div className="font-semibold text-foreground mb-1">Traditional Approach</div>
-              <div className="text-muted-foreground">Pay $20-50/month for each AI tool</div>
+        {/* Enhanced Value Proposition */}
+        <div className="mt-20 text-center relative">
+          <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-3xl p-12 border border-slate-700/30 shadow-2xl">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent rounded-3xl"></div>
+            
+            <h3 className="text-3xl font-bold text-white mb-6 relative z-10">
+              <span className="bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent">Enterprise Evolution</span> Without Enterprise Costs
+            </h3>
+            <p className="text-xl text-gray-300 mb-10 max-w-4xl mx-auto leading-relaxed relative z-10">
+              Access the complete AI automation ecosystem with a single subscription. While competitors charge separately for each capability, 
+              you receive unlimited intelligence tools with continuous upgrades.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto relative z-10">
+              <div className="bg-slate-900/40 rounded-2xl p-6 border border-red-500/20 backdrop-blur-sm">
+                <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center mb-4 mx-auto">
+                  <span className="text-red-400 text-xl">❌</span>
+                </div>
+                <div className="font-bold text-red-400 mb-2 text-lg">Traditional Approach</div>
+                <div className="text-gray-400 text-sm leading-relaxed">
+                  $30-80/month per AI tool<br/>
+                  Limited integrations<br/>
+                  Fragmented workflows
+                </div>
+                <div className="text-red-300 font-semibold mt-3">$500+/month total cost</div>
+              </div>
+              
+              <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-2xl p-6 border border-blue-400/30 backdrop-blur-sm relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-2xl"></div>
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-4 mx-auto shadow-lg relative z-10">
+                  <span className="text-white text-xl">🚀</span>
+                </div>
+                <div className="font-bold text-blue-400 mb-2 text-lg relative z-10">Our Unified Platform</div>
+                <div className="text-gray-300 text-sm leading-relaxed relative z-10">
+                  Complete AI ecosystem<br/>
+                  Seamless integration<br/>
+                  Continuous updates
+                </div>
+                <div className="text-blue-300 font-semibold mt-3 relative z-10">One intelligent subscription</div>
+              </div>
+              
+              <div className="bg-slate-900/40 rounded-2xl p-6 border border-emerald-500/20 backdrop-blur-sm">
+                <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-4 mx-auto">
+                  <span className="text-emerald-400 text-xl">💰</span>
+                </div>
+                <div className="font-bold text-emerald-400 mb-2 text-lg">Your Strategic Advantage</div>
+                <div className="text-gray-400 text-sm leading-relaxed">
+                  85% cost optimization<br/>
+                  Unified intelligence<br/>
+                  Future-proof scaling
+                </div>
+                <div className="text-emerald-300 font-semibold mt-3">$400+ monthly savings</div>
+              </div>
             </div>
-            <div className="bg-primary/10 rounded-lg p-4 border border-primary/20">
-              <div className="font-semibold text-primary mb-1">Our Platform</div>
-              <div className="text-foreground">One price, unlimited AI capabilities</div>
-            </div>
-            <div className="bg-background rounded-lg p-4">
-              <div className="font-semibold text-foreground mb-1">Your Savings</div>
-              <div className="text-muted-foreground">$200+ monthly vs separate tools</div>
+            
+            <div className="mt-10 relative z-10">
+              <p className="text-blue-300 font-semibold text-lg">
+                🎯 Early adopters lock in lifetime pricing with access to all future innovations
+              </p>
             </div>
           </div>
         </div>

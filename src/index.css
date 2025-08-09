@@ -723,6 +723,48 @@ All colors MUST be HSL.
     animation: circleOutline 4s linear infinite;
   }
 
+  @keyframes slideInfinite {
+    from {
+      transform: translateX(10%);
+    }
+    to {
+      transform: translateX(calc(-60% - 40px));
+    }
+  }
+
+  .animate-slide-infinite {
+    animation: slideInfinite 30s linear infinite;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+  }
+
+  @keyframes slideInfiniteLoop {
+    0% {
+      opacity: 0;
+      transform: translateX(100vw);
+    }
+    2% {
+      opacity: 1;
+      transform: translateX(90vw);
+    }
+    98% {
+      opacity: 1;
+      transform: translateX(-90vw);
+    }
+    100% {
+      opacity: 0;
+      transform: translateX(-100vw);
+    }
+  }
+
+  .animate-slide-infinite-loop {
+    animation: slideInfiniteLoop 15s linear infinite;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+  }
+
   /* Reduced motion preferences */
   @media (prefers-reduced-motion: reduce) {
     .animate-morphic-float,

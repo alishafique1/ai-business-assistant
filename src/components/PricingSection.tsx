@@ -117,12 +117,13 @@ export default function PricingSection() {
   ];
 
   return (
-    <section id="pricing" className="py-24 bg-gradient-to-br from-background via-secondary/20 to-primary/10 relative overflow-hidden">
-      {/* Sophisticated background elements */}
+    <section id="pricing" className="py-24 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+      {/* Premium background elements */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/5 via-transparent to-accent/5"></div>
-        <div className="absolute top-40 right-20 w-80 h-80 bg-gradient-to-r from-accent/12 to-primary/8 rounded-full blur-3xl animate-gentle-beat-2s"></div>
-        <div className="absolute bottom-40 left-20 w-60 h-60 bg-gradient-to-l from-primary/10 to-accent/6 rounded-full blur-2xl animate-pulse-slow"></div>
+        <div className="absolute top-20 left-1/4 w-96 h-96 bg-gradient-to-r from-emerald-500/6 to-blue-500/6 rounded-full blur-3xl animate-slow-float"></div>
+        <div className="absolute bottom-20 right-1/4 w-80 h-80 bg-gradient-to-l from-blue-500/4 to-purple-500/4 rounded-full blur-3xl animate-pulse-very-slow"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-br from-purple-500/3 to-pink-500/3 rounded-full blur-2xl animate-gentle-breathe"></div>
+        <div className="absolute bottom-1/3 left-1/6 w-48 h-48 bg-gradient-to-r from-cyan-500/4 to-blue-500/4 rounded-full blur-xl animate-pulse-slow"></div>
       </div>
       
       {/* Elegant grid pattern */}
@@ -136,12 +137,13 @@ export default function PricingSection() {
 
       <div className="container mx-auto px-6 relative z-10">
         <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
-            Pre-Launch Pricing:
-            <span className="bg-gradient-primary bg-clip-text text-transparent"> Lock In Lifetime Rates</span>
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
+            <span className="text-white">Exclusive Launch Pricing: </span>
+            <span className="bg-gradient-to-r from-emerald-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">Lifetime Value Lock</span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Early adopters get all current AND future AI features at today's prices. No price increases, ever.
+          <p className="text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed">
+            Secure permanent access to our complete AI ecosystem at today's rates. Early adopters receive all future innovations, 
+            advanced capabilities, and enterprise features without price increases—guaranteed for life.
           </p>
         </div>
 
@@ -149,52 +151,70 @@ export default function PricingSection() {
           {plans.map((plan, index) => (
             <Card 
               key={index} 
-              className={`relative border-border/50 transition-all duration-300 overflow-visible ${
+              className={`relative transition-all duration-500 overflow-visible group ${
                 plan.popular 
-                  ? 'ring-2 ring-primary shadow-hero scale-105 border-primary/50' 
+                  ? 'bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/30 shadow-xl shadow-blue-500/20 scale-105 hover:scale-110' 
                   : index === 0 
-                    ? 'border-muted-foreground/20 hover:border-primary/30 hover:shadow-soft' 
-                    : 'hover:border-primary/50 hover:shadow-feature'
-              }`}
+                    ? 'bg-slate-800/60 border-emerald-500/20 hover:border-emerald-400/40 hover:shadow-lg hover:shadow-emerald-500/20 hover:scale-105' 
+                    : 'bg-slate-800/40 border-slate-700/30 hover:border-blue-400/40 hover:shadow-lg hover:shadow-blue-500/20 hover:scale-105'
+              } backdrop-blur-sm`}
             >
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-                  <span className="bg-gradient-primary text-white px-6 py-2 rounded-full text-sm font-medium shadow-lg">
-                    Popular
+                  <span className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg animate-pulse">
+                    🚀 Most Popular
                   </span>
                 </div>
               )}
               
               {index === 0 && (
                 <div className="absolute -top-4 right-4 z-10">
-                  <span className="bg-emerald-500 text-white px-4 py-1.5 rounded-full text-xs font-medium shadow-lg">
-                    No Credit Card
+                  <span className="bg-emerald-500 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg">
+                    ✨ No Credit Card
                   </span>
                 </div>
               )}
               
-              <CardHeader className="text-center pb-8">
-                <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold text-foreground">{plan.price}</span>
-                  <span className="text-muted-foreground">{plan.period}</span>
+              {index === 2 && (
+                <div className="absolute -top-4 right-4 z-10">
+                  <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg">
+                    💼 Enterprise
+                  </span>
                 </div>
-                <CardDescription className="mt-2 min-h-[3rem] flex items-center">
+              )}
+              
+              <div className="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-lg"></div>
+              
+              <CardHeader className="text-center pb-8 relative z-10">
+                <CardTitle className={`text-2xl font-bold transition-colors duration-300 ${
+                  plan.popular ? 'text-black group-hover:text-gray-800' : 'text-white group-hover:text-blue-100'
+                }`}>{plan.name}</CardTitle>
+                <div className="mt-4">
+                  <span className={`text-4xl font-bold ${plan.popular ? 'text-black' : 'text-white'}`}>{plan.price}</span>
+                  <span className={`${plan.popular ? 'text-gray-600' : 'text-gray-400'}`}>{plan.period}</span>
+                </div>
+                <CardDescription className={`mt-2 min-h-[3rem] flex items-center leading-relaxed ${
+                  plan.popular ? 'text-gray-700' : 'text-gray-300'
+                }`}>
                   {plan.description}
                 </CardDescription>
                 {plan.savings && (
-                  <div className="mt-3 p-2 bg-emerald-50 border border-emerald-200 rounded-lg">
-                    <p className="text-sm text-emerald-700 font-medium">{plan.savings}</p>
+                  <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg backdrop-blur-sm">
+                    <p className={`text-sm font-semibold ${
+                      plan.popular ? 'text-emerald-700' : 'text-emerald-300'
+                    }`}>{plan.savings}</p>
                   </div>
                 )}
               </CardHeader>
 
-              <CardContent className="space-y-6">
-                <ul className="space-y-3">
+              <CardContent className="space-y-6 relative z-10">
+                <ul className="space-y-4">
                   {plan.features.map((feature, featureIndex) => (
-                    <li key={featureIndex} className="flex items-center">
-                      <Check className="h-5 w-5 text-primary mr-3 flex-shrink-0" />
-                      <span className="text-foreground">{feature}</span>
+                    <li key={featureIndex} className="flex items-start">
+                      <Check className="h-5 w-5 text-emerald-400 mr-3 flex-shrink-0 mt-0.5" />
+                      <span className={`leading-relaxed ${
+                        plan.popular ? 'text-gray-800' : 'text-gray-300'
+                      }`}>{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -233,53 +253,99 @@ export default function PricingSection() {
           ))}
         </div>
 
-        <div className="mt-16 text-center">
-          <div className="bg-muted/50 rounded-2xl p-8 max-w-4xl mx-auto mb-8">
-            <h3 className="text-2xl font-bold text-foreground mb-4">Pre-Launch Benefits: More Features Coming Weekly</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-              <div className="space-y-3">
-                <div className="flex items-center">
-                  <Check className="h-5 w-5 text-emerald-500 mr-2" />
-                  <span className="text-foreground">Your data never leaves our secure servers</span>
+        <div className="mt-20 text-center">
+          <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-3xl p-10 max-w-6xl mx-auto mb-12 border border-slate-700/30 shadow-2xl relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent rounded-3xl"></div>
+            
+            <h3 className="text-3xl font-bold text-white mb-8 relative z-10">
+              <span className="bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent">Exclusive Early Adopter</span> Advantages
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left relative z-10">
+              <div className="space-y-5">
+                <div className="flex items-start">
+                  <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 mr-4">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                  <div>
+                    <span className="text-white font-semibold">Enterprise-Grade Security</span>
+                    <p className="text-gray-300 text-sm mt-1">Your data never leaves our secure servers with bank-level encryption</p>
+                  </div>
                 </div>
-                <div className="flex items-center">
-                  <Check className="h-5 w-5 text-emerald-500 mr-2" />
-                  <span className="text-foreground">All future AI features included free</span>
+                
+                <div className="flex items-start">
+                  <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 mr-4">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                  <div>
+                    <span className="text-white font-semibold">Unlimited Future Innovations</span>
+                    <p className="text-gray-300 text-sm mt-1">All AI features, models, and capabilities included at no extra cost</p>
+                  </div>
                 </div>
-                <div className="flex items-center">
-                  <Check className="h-5 w-5 text-emerald-500 mr-2" />
-                  <span className="text-foreground">Lifetime pricing protection</span>
+                
+                <div className="flex items-start">
+                  <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 mr-4">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                  <div>
+                    <span className="text-white font-semibold">Lifetime Price Protection</span>
+                    <p className="text-gray-300 text-sm mt-1">Lock in today's rates permanently, regardless of market changes</p>
+                  </div>
                 </div>
               </div>
-              <div className="space-y-3">
-                <div className="flex items-center">
-                  <Check className="h-5 w-5 text-emerald-500 mr-2" />
-                  <span className="text-foreground">Cancel subscriptions to 5+ AI tools</span>
+              
+              <div className="space-y-5">
+                <div className="flex items-start">
+                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 mr-4">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                  <div>
+                    <span className="text-white font-semibold">Replace Multiple Subscriptions</span>
+                    <p className="text-gray-300 text-sm mt-1">Cancel 5+ separate AI tools and consolidate into one platform</p>
+                  </div>
                 </div>
-                <div className="flex items-center">
-                  <Check className="h-5 w-5 text-emerald-500 mr-2" />
-                  <span className="text-foreground">Priority support & feature requests</span>
+                
+                <div className="flex items-start">
+                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 mr-4">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                  <div>
+                    <span className="text-white font-semibold">VIP Support & Priority</span>
+                    <p className="text-gray-300 text-sm mt-1">Direct feature requests, priority support, and exclusive access</p>
+                  </div>
                 </div>
-                <div className="flex items-center">
-                  <Check className="h-5 w-5 text-emerald-500 mr-2" />
-                  <span className="text-foreground">Early access to beta features</span>
+                
+                <div className="flex items-start">
+                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 mr-4">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                  <div>
+                    <span className="text-white font-semibold">Beta Access & Early Features</span>
+                    <p className="text-gray-300 text-sm mt-1">First access to cutting-edge AI capabilities before public release</p>
+                  </div>
                 </div>
               </div>
+            </div>
+            
+            <div className="mt-8 p-4 bg-gradient-to-r from-emerald-500/10 to-blue-500/10 rounded-2xl border border-emerald-500/20 relative z-10">
+              <p className="text-emerald-300 font-bold text-lg">
+                🎯 Limited Time: Lock in your lifetime rate before our public launch
+              </p>
             </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto">
             <div className="flex items-center justify-center space-x-2">
               <DollarSign className="h-5 w-5 text-primary" />
-              <span className="text-foreground">14-day money-back guarantee</span>
+              <span className="text-white">14-day money-back guarantee</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
               <Clock className="h-5 w-5 text-primary" />
-              <span className="text-foreground">Cancel anytime, keep your data</span>
+              <span className="text-white">Cancel anytime, keep your data</span>
             </div>
             <div className="flex items-center justify-center space-x-2">
               <TrendingUp className="h-5 w-5 text-primary" />
-              <span className="text-foreground">Migrate from any accounting tool</span>
+              <span className="text-white">Migrate from any accounting tool</span>
             </div>
           </div>
         </div>

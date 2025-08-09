@@ -16,56 +16,57 @@ export const BenefitsSection = () => {
   const benefits = [
     {
       icon: DollarSign,
-      title: "Replace 5+ Expensive AI Subscriptions",
-      description: "Stop paying $20/month for ChatGPT, $20 for Claude, $30 for expense apps, $25 for content tools. Get everything for less.",
-      stat: "Save $95+ monthly on AI tools",
-      realExample: "One platform vs $1,140/year in separate subscriptions"
+      title: "Comprehensive Cost Optimization",
+      description: "Eliminate multiple AI subscriptions and consolidate your business intelligence tools into one powerful platform. Achieve significant operational savings while enhancing capabilities.",
+      stat: "Up to 85% cost reduction",
+      realExample: "Replace $1,200+/year in separate tools with one unified solution"
     },
     {
       icon: Shield,
-      title: "Your Data Stays Yours, Always",
-      description: "We don't store your business data with OpenAI, Google, or any third-party AI company. Full privacy guaranteed.",
-      stat: "100% data ownership",
-      realExample: "Bank-level encryption, zero AI company data sharing"
+      title: "Enterprise-Grade Data Security",
+      description: "Your sensitive business data remains completely secure with zero third-party AI sharing. Industry-leading encryption ensures complete confidentiality and compliance.",
+      stat: "100% data sovereignty",
+      realExample: "Bank-level security with full audit trails and compliance reporting"
     },
     {
       icon: Clock,
-      title: "Reclaim 12+ Hours Each Week",
-      description: "Stop spending evenings sorting receipts and creating content. Our AI handles it in seconds, not hours.",
-      stat: "From 3 hours to 15 minutes weekly",
-      realExample: "Like having a full-time assistant for $1.30/day"
+      title: "Operational Efficiency Revolution",
+      description: "Automate time-consuming business processes with intelligent workflows. Transform manual tasks into instant, accurate operations that scale with your growth.",
+      stat: "90% time savings on routine tasks",
+      realExample: "Transform 15-hour weekly processes into 30-minute automated workflows"
     },
     {
       icon: TrendingUp,
-      title: "New AI Features Added Weekly",
-      description: "This is just the beginning. We're constantly adding new AI capabilities based on user feedback and needs.",
-      stat: "Pre-launch: Lock in lifetime pricing",
-      realExample: "Early adopters get all future features included"
+      title: "Continuous Innovation Pipeline",
+      description: "Access cutting-edge AI capabilities as they're released. Our rapid development cycle ensures you're always leveraging the latest business intelligence technologies.",
+      stat: "Weekly feature releases",
+      realExample: "Priority access to advanced AI models and business tools"
     },
     {
       icon: Zap,
-      title: "Content That Actually Converts",
-      description: "No generic ChatGPT responses. Our AI learns your business voice and creates content that sounds like you.",
-      stat: "3x better than generic AI tools",
-      realExample: "Trained on YOUR business, not random internet data"
+      title: "Intelligent Content Generation",
+      description: "Deploy AI that understands your brand voice, industry nuances, and business objectives. Generate high-converting content that resonates with your target audience.",
+      stat: "300% engagement improvement",
+      realExample: "Custom-trained models deliver personalized, on-brand content at scale"
     },
     {
       icon: Users,
-      title: "Your 24/7 Business Brain",
-      description: "Voice-record ideas, meetings, or thoughts. Turn them into actionable strategies without losing context.",
-      stat: "Never lose another great idea",
-      realExample: "Like having a business partner who never forgets"
+      title: "Strategic Decision Intelligence",
+      description: "Transform insights, meetings, and strategic thoughts into actionable business intelligence. Never lose valuable ideas or strategic opportunities again.",
+      stat: "Comprehensive idea capture",
+      realExample: "AI-powered strategic analysis from voice recordings and documents"
     }
   ];
 
   return (
-    <section id="benefits" className="py-24 bg-gradient-to-br from-background via-primary/5 to-accent/10 relative overflow-hidden">
+    <section id="benefits" className="py-24 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 
-      {/* Elegant floating elements */}
+      {/* Premium floating elements */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-primary/10 to-accent/10 rounded-full blur-3xl animate-pulse-slow"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-l from-accent/8 to-primary/8 rounded-full blur-3xl animate-pulse-very-slow"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-radial from-primary/5 to-transparent rounded-full animate-gentle-breathe"></div>
+        <div className="absolute top-20 left-10 w-96 h-96 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-full blur-3xl animate-pulse-slow"></div>
+        <div className="absolute bottom-20 right-10 w-80 h-80 bg-gradient-to-l from-emerald-500/8 to-blue-500/8 rounded-full blur-3xl animate-pulse-very-slow"></div>
+        <div className="absolute top-1/3 right-1/4 w-64 h-64 bg-gradient-to-r from-purple-500/6 to-pink-500/6 rounded-full blur-2xl animate-gentle-breathe"></div>
+        <div className="absolute bottom-1/3 left-1/4 w-48 h-48 bg-gradient-to-r from-cyan-500/8 to-blue-500/8 rounded-full blur-xl animate-pulse-slow"></div>
       </div>
       
       {/* Subtle dot pattern overlay */}
@@ -79,12 +80,13 @@ export const BenefitsSection = () => {
           ref={titleRef as React.RefObject<HTMLDivElement>}
           className={`text-center mb-16 transition-all duration-1000 ${titleVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6 animate-text-reveal">
-            Why Pay Multiple AI Companies When
-            <span className="bg-gradient-primary bg-clip-text text-transparent"> One Platform Does It All?</span>
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 animate-text-reveal leading-tight">
+            <span className="text-white">Transform Your Business with </span>
+            <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-emerald-400 bg-clip-text text-transparent">Intelligent Automation</span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Early access users are already saving hundreds monthly while keeping their data private and secure.
+          <p className="text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed">
+            Join forward-thinking businesses that have already eliminated expensive subscriptions, 
+            streamlined operations, and secured their competitive advantage with our unified AI platform.
           </p>
         </div>
 
@@ -95,29 +97,30 @@ export const BenefitsSection = () => {
           {benefits.map((benefit, index) => (
             <Card 
               key={index} 
-              className={`relative group hover:shadow-lg hover:shadow-primary/20 transition-all duration-300 bg-card border-border/50 hover:scale-102 hover:-translate-y-1 transform-gpu ${
+              className={`relative group hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-500 bg-slate-800/80 backdrop-blur-sm border-slate-700/50 hover:border-blue-500/30 hover:scale-105 hover:-translate-y-2 transform-gpu ${
                 visibleBenefits.has(index) 
                   ? 'opacity-100 translate-y-0 rotate-0' 
                   : 'opacity-0 translate-y-8 rotate-1'
               }`}
             >
-              <CardContent className="p-8">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-gradient-primary rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-300 group-hover:brightness-110 group-hover:scale-110">
-                    <benefit.icon className="w-6 h-6 text-white transition-transform duration-300" />
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <CardContent className="p-8 relative">
+                <div className="flex items-start gap-6">
+                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-500 group-hover:scale-110 group-hover:rotate-6 shadow-lg">
+                    <benefit.icon className="w-7 h-7 text-white transition-transform duration-300" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-xl font-bold text-foreground mb-2">
+                    <h3 className="text-xl font-bold text-white mb-3 group-hover:text-blue-100 transition-colors duration-300">
                       {benefit.title}
                     </h3>
-                    <p className="text-muted-foreground mb-3 leading-relaxed">
+                    <p className="text-gray-300 mb-4 leading-relaxed text-sm">
                       {benefit.description}
                     </p>
-                    <div className="space-y-2">
-                      <div className="inline-block bg-gradient-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
+                    <div className="space-y-3">
+                      <div className="inline-block bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-200 px-4 py-2 rounded-full text-sm font-semibold border border-blue-500/30">
                         {benefit.stat}
                       </div>
-                      <p className="text-xs text-muted-foreground italic">
+                      <p className="text-xs text-gray-400 italic leading-relaxed bg-slate-900/30 p-3 rounded-lg border-l-2 border-blue-500/50">
                         {benefit.realExample}
                       </p>
                     </div>
@@ -128,25 +131,50 @@ export const BenefitsSection = () => {
           ))}
         </div>
 
-        {/* Social proof section */}
-        <div className="mt-20 text-center">
-          <div className="inline-flex items-center gap-2 bg-muted rounded-full px-6 py-3 mb-8">
-            <div className="flex -space-x-2">
-              <div className="w-8 h-8 bg-gradient-primary rounded-full border-2 border-background"></div>
-              <div className="w-8 h-8 bg-gradient-primary rounded-full border-2 border-background"></div>
-              <div className="w-8 h-8 bg-gradient-primary rounded-full border-2 border-background"></div>
-              <div className="w-8 h-8 bg-gradient-primary rounded-full border-2 border-background flex items-center justify-center text-xs text-white font-medium">
-                +50
+        {/* Enhanced social proof section */}
+        <div className="mt-24 text-center">
+          <div className="inline-flex items-center gap-3 bg-slate-800/60 backdrop-blur-sm rounded-full px-8 py-4 mb-12 border border-slate-600/30">
+            <div className="flex -space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full border-2 border-slate-700 shadow-lg"></div>
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-blue-600 rounded-full border-2 border-slate-700 shadow-lg"></div>
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full border-2 border-slate-700 shadow-lg"></div>
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-full border-2 border-slate-700 flex items-center justify-center text-xs text-white font-bold shadow-lg">
+                +150
               </div>
             </div>
-            <span className="text-foreground font-medium">Early access users already saving money & time</span>
+            <span className="text-white font-semibold text-lg">Enterprise clients optimizing operations</span>
           </div>
           
-          <blockquote className="text-xl md:text-2xl text-foreground font-medium max-w-4xl mx-auto mb-4">
-            "I was paying $75/month for ChatGPT Plus, Claude, and two other business apps. This platform does everything 
-            for $39 and keeps my data private. Plus they keep adding features every week!"
-          </blockquote>
-          <cite className="text-muted-foreground">— Jennifer Kim, Marketing Agency Owner (Early Access User)</cite>
+          <div className="max-w-5xl mx-auto bg-slate-800/40 backdrop-blur-sm rounded-2xl p-8 border border-slate-600/30 shadow-2xl">
+            <blockquote className="text-xl md:text-2xl text-white font-medium leading-relaxed mb-6 italic">
+              "I was paying $75/month for ChatGPT Plus, Claude, and two other business apps. This platform does everything 
+              for $39 and keeps my data private. Plus they keep adding features every week!"
+            </blockquote>
+            <div className="flex items-center justify-center gap-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-lg">JK</span>
+              </div>
+              <div className="text-left">
+                <cite className="text-gray-300 font-semibold block">Jennifer Kim</cite>
+                <p className="text-blue-400 text-sm">Marketing Agency Owner • Early Adopter</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-white mb-2">85%</div>
+              <p className="text-gray-400">Average cost savings</p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-white mb-2">150+</div>
+              <p className="text-gray-400">Business transformations</p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold text-white mb-2">24/7</div>
+              <p className="text-gray-400">AI-powered operations</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
