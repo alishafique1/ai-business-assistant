@@ -34,11 +34,12 @@ export const VantaNet: React.FC<VantaNetProps> = ({
             minWidth: 200.00,
             scale: 1.00,
             scaleMobile: 1.00,
-            color: 0x2500f2,
-            backgroundColor: 0xffffff,
+            color: 0xff0000,
+            backgroundColor: 0x0a0a0a,
             points: 20.00,
-            maxDistance: 10.00,
-            spacing: 10.00
+            maxDistance: 15.00,
+            spacing: 13.00,
+            showDots: false
           });
 
           setVantaEffect(effect);

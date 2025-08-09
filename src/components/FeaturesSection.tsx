@@ -72,16 +72,19 @@ export const FeaturesSection = () => {
     {
       name: "Google Cloud AI",
       icon: Cloud,
+      logo: "https://i.pinimg.com/736x/82/3b/bd/823bbda0a0841434cc20752804e34127.jpg",
       description: "Advanced AI and ML services"
     },
     {
       name: "Firebase",
       icon: Database,
+      logo: "https://firebase.google.com/static/images/brand-guidelines/logo-logomark.png",
       description: "Real-time database and hosting"
     },
     {
       name: "Vertex AI",
       icon: Cpu,
+      logo: "https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/vertexai.png",
       description: "Unified ML platform"
     },
     {
@@ -105,8 +108,10 @@ export const FeaturesSection = () => {
           ref={titleRef as React.RefObject<HTMLDivElement>}
           className={`text-center mb-16 transition-all duration-1000 ${titleVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6 animate-text-reveal">
-            Three Powerful AI Agents,
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 animate-text-reveal">
+            <span className="text-white">Three </span>
+            <span className="bg-gradient-to-r from-red-500 via-pink-500 to-orange-500 bg-clip-text text-transparent">Powerful</span>
+            <span className="text-white"> AI Agents,</span>
             <span className="bg-gradient-primary bg-clip-text text-transparent"> One Platform</span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
@@ -173,7 +178,7 @@ export const FeaturesSection = () => {
 
         {/* Technology Stack */}
         <div className="text-center">
-          <h3 className="text-2xl font-bold text-foreground mb-8 animate-text-reveal">
+          <h3 className="text-2xl font-bold text-white mb-8 animate-text-reveal">
             Powered by Enterprise-Grade Technology
           </h3>
           <div 
@@ -183,14 +188,30 @@ export const FeaturesSection = () => {
             {technologies.map((tech, index) => (
               <div 
                 key={index} 
-                className={`flex items-center gap-3 bg-card/60 backdrop-blur-sm rounded-lg px-4 py-3 shadow-soft hover:shadow-feature transition-all duration-500 transform-gpu hover:scale-110 hover:animate-magnetic-hover group ${
+                className={`flex items-center gap-3 bg-white rounded-lg px-4 py-3 shadow-soft hover:shadow-feature transition-all duration-500 transform-gpu hover:scale-110 hover:animate-magnetic-hover group ${
                   visibleTech.has(index) 
                     ? 'opacity-100 translate-y-0 rotate-0' 
                     : 'opacity-0 translate-y-8 rotate-2'
                 }`}
               >
-                <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center transition-all duration-300">
-                  <tech.icon className="w-4 h-4 text-white" />
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                  tech.logo 
+                    ? tech.name === "Vertex AI" 
+                      ? 'bg-black' 
+                      : 'bg-white'
+                    : 'bg-gradient-primary'
+                }`}>
+                  {tech.logo ? (
+                    <img 
+                      src={tech.logo} 
+                      alt={tech.name} 
+                      className={`object-contain rounded ${
+                        tech.name === "Firebase" ? "w-4.5 h-4.5" : tech.name === "Google Cloud AI" ? "w-8 h-8" : tech.name === "Vertex AI" ? "w-6 h-6" : "w-6.5 h-6.5"
+                      }`}
+                    />
+                  ) : (
+                    <tech.icon className="w-4 h-4 text-white" />
+                  )}
                 </div>
                 <div className="text-left">
                   <span className="text-foreground font-medium block">{tech.name}</span>

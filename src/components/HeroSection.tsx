@@ -12,6 +12,7 @@ export const HeroSection = () => {
   const navigate = useNavigate();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isLoaded, setIsLoaded] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
 
   useEffect(() => {
     setIsLoaded(true);
@@ -93,11 +94,29 @@ export const HeroSection = () => {
               variant="outline" 
               size="lg" 
               className="text-lg px-8 py-4 hover:scale-105 transition-all duration-300 hover:bg-primary/5 hover:border-primary/30"
-              onClick={() => window.open('https://www.youtube.com/watch?v=t1DUYoLwYmU', '_blank')}
+              onClick={() => setShowVideo(!showVideo)}
             >
-              Watch Demo
+              {showVideo ? 'Hide Demo' : 'Watch Demo'}
             </Button>
           </div>
+          
+          {/* YouTube Video Embed */}
+          {showVideo && (
+            <div className="mt-8 mb-8">
+              <div className="max-w-4xl mx-auto">
+                <div className="relative w-full" style={{ paddingBottom: '56.25%' /* 16:9 aspect ratio */ }}>
+                  <iframe
+                    className="absolute top-0 left-0 w-full h-full rounded-lg shadow-2xl"
+                    src="https://www.youtube.com/embed/t1DUYoLwYmU?autoplay=1&rel=0"
+                    title="Demo Video"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              </div>
+            </div>
+          )}
           
           {/* Features preview */}
           <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto transition-all duration-700 delay-1200 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
