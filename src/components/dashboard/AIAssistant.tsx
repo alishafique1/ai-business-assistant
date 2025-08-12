@@ -857,7 +857,9 @@ ${expenseCount > 10 ? '• Great job tracking your expenses regularly!' : '• T
                     )}
                   </div>
                   <div className="flex gap-2">
+                    <Label htmlFor="ai-message-input" className="sr-only">Message Input</Label>
                     <Textarea 
+                      id="ai-message-input"
                       placeholder="Type your message or question..."
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}

@@ -2276,7 +2276,9 @@ export function ExpenseTracker() {
                       </Select>
                       {formData.category === 'other' && (
                         <div className="mt-2">
+                          <Label htmlFor="modal-custom-category" className="sr-only">Custom Category Name</Label>
                           <Input
+                            id="modal-custom-category"
                             placeholder="Enter custom category name"
                             value={formData.customCategory}
                             onChange={(e) => setFormData({...formData, customCategory: e.target.value})}
@@ -2505,7 +2507,9 @@ export function ExpenseTracker() {
                   </Select>
                   {formData.category === 'other' && (
                     <div className="mt-2">
+                      <Label htmlFor="custom-category" className="sr-only">Custom Category Name</Label>
                       <Input
+                        id="custom-category"
                         placeholder="Enter custom category name"
                         value={formData.customCategory}
                         onChange={(e) => setFormData({...formData, customCategory: e.target.value})}
@@ -2751,7 +2755,9 @@ export function ExpenseTracker() {
                 </Select>
                 {formData.category === 'other' && (
                   <div className="mt-2">
+                    <Label htmlFor="edit-custom-category" className="sr-only">Custom Category Name</Label>
                     <Input
+                      id="edit-custom-category"
                       placeholder="Enter custom category name"
                       value={formData.customCategory}
                       onChange={(e) => setFormData({...formData, customCategory: e.target.value})}
