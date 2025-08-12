@@ -1445,6 +1445,7 @@ export function ExpenseTracker() {
       try {
         result = JSON.parse(responseText);
         console.log('✅ Parsed JSON response:', result);
+        console.log('🔍 DETAILED API RESPONSE STRUCTURE:', JSON.stringify(result, null, 2));
       } catch (jsonError) {
         console.error('🚨 Failed to parse JSON:', jsonError);
         console.error('🚨 Raw response was:', responseText);
@@ -1472,10 +1473,130 @@ export function ExpenseTracker() {
           playBase64Audio(result.audio_base64);
         }
         
-        // Refresh expenses list since a new expense was added
-        console.log('🔄 Refreshing expenses list after voice processing');
-        await fetchExpenses();
-        await fetchCategorySummary();
+        // Also save the expense to Supabase for immediate local visibility
+        if (result.details && result.details.amount && result.details.description) {
+          console.log('💾 Saving voice expense to Supabase for local visibility');
+          
+          // Use ONLY the ML API's predicted category
+          console.log('🔍 Voice expense details:', result.details);
+          
+          // First check if category is already in the response
+          let mlCategory = result.predicted_label || result.category || result.details?.predicted_label || result.details?.category;
+          
+          if (!mlCategory) {
+            console.log('🔄 Category not in voice response, calling categorization API directly...');
+            
+            // Extract the text to categorize
+            const textToCategorize = result.details?.description || result.user_speech_text || '';
+            console.log('📝 Text to categorize:', textToCategorize);
+            
+            if (textToCategorize) {
+              try {
+                console.log('🌐 Calling categorization API with text:', textToCategorize);
+                
+                // Call the same categorization API that the backend uses
+                const categorizationResponse = await fetch('https://safi3915-dawwod.hf.space/query', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    inputs: textToCategorize
+                  })
+                });
+                
+                console.log('🌐 Categorization API status:', categorizationResponse.status);
+                console.log('🌐 Categorization API headers:', [...categorizationResponse.headers.entries()]);
+                
+                if (categorizationResponse.ok) {
+                  const responseText = await categorizationResponse.text();
+                  console.log('🌐 Raw categorization response:', responseText);
+                  
+                  const categorizationResult = JSON.parse(responseText);
+                  console.log('🎯 Parsed categorization result:', categorizationResult);
+                  console.log('🎯 Result keys:', Object.keys(categorizationResult));
+                  console.log('🎯 predicted_label:', categorizationResult.predicted_label);
+                  console.log('🎯 Array check:', categorizationResult[0]);
+                  
+                  // Check all possible response formats
+                  mlCategory = categorizationResult.predicted_label || 
+                              categorizationResult.label || 
+                              categorizationResult[0]?.label ||
+                              categorizationResult[0]?.predicted_label;
+                              
+                  console.log('✅ EXTRACTED ML CATEGORY:', mlCategory);
+                } else {
+                  const errorText = await categorizationResponse.text();
+                  console.error('❌ Categorization API failed:', categorizationResponse.status, errorText);
+                }
+              } catch (categorizationError) {
+                console.error('❌ Error calling categorization API:', categorizationError);
+                console.error('❌ Error details:', categorizationError.message);
+              }
+            }
+            
+            // Final fallback only if API call failed
+            if (!mlCategory) {
+              mlCategory = 'General';
+              console.log('⚠️ Using General as final fallback');
+            }
+          } else {
+            console.log('✅ Found category in voice response:', mlCategory);
+          }
+          
+          console.log('🎯 FINAL ML CATEGORY TO SAVE:', mlCategory);
+          
+          // Map the ML category to user categories before saving
+          const mappedCategoryResult = await mapCategoryFromML(mlCategory);
+          const categoryToStore = mappedCategoryResult.categoryName;
+          
+          console.log('🗂️ Mapped category result:', {
+            originalML: mlCategory,
+            mappedKey: mappedCategoryResult.categoryKey,
+            mappedName: mappedCategoryResult.categoryName,
+            isNewCategory: mappedCategoryResult.isNewCategory
+          });
+          
+          try {
+            console.log('📝 Attempting to save expense to Supabase...');
+            const { data: savedExpense, error: saveError } = await supabase
+              .from('business_expenses')
+              .insert({
+                description: `Voice Entry: ${result.details.description}`,
+                amount: parseFloat(result.details.amount),
+                category: categoryToStore,
+                expense_date: new Date().toISOString().split('T')[0], // Today's date
+                user_id: user?.id
+              })
+              .select();
+              
+            if (saveError) {
+              console.error('❌ Failed to save voice expense to Supabase:', saveError);
+              throw new Error(`Supabase save error: ${saveError.message}`);
+            } else {
+              console.log('✅ Voice expense saved to Supabase:', savedExpense);
+            }
+          } catch (supabaseError) {
+            console.error('❌ Error saving to Supabase:', supabaseError);
+            // Don't throw error here - we still want to refresh the list in case the ML API saved it
+          }
+        } else {
+          console.error('❌ Missing required expense details:', { 
+            hasDetails: !!result.details,
+            hasAmount: !!(result.details && result.details.amount),
+            hasDescription: !!(result.details && result.details.description)
+          });
+        }
+        
+        // Always refresh expenses list after voice processing
+        console.log('🔄 Refreshing expenses list after voice processing...');
+        try {
+          await fetchExpenses();
+          await fetchCategorySummary();
+          console.log('✅ Expenses list refreshed successfully');
+        } catch (refreshError) {
+          console.error('❌ Error refreshing expenses:', refreshError);
+        }
       } else {
         console.error('🚨 Unexpected response format:', result);
         console.error('🚨 Available keys:', Object.keys(result));
@@ -2253,7 +2374,7 @@ export function ExpenseTracker() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="modal-category">Category</Label>
+                      <Label>Category</Label>
                       <Select 
                         value={formData.category} 
                         onValueChange={(value) => {
@@ -2435,14 +2556,6 @@ export function ExpenseTracker() {
                     Click "Record Expense" and speak about your business expenses or marketing ideas. 
                     The AI will provide detailed suggestions and play an audio confirmation.
                   </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={testVoiceAPI}
-                    className="text-xs"
-                  >
-                    🔧 Test API Connection
-                  </Button>
                 </div>
               )}
             </CardContent>
@@ -2483,7 +2596,7 @@ export function ExpenseTracker() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="category">Category</Label>
+                  <Label>Category</Label>
                   <Select 
                     value={formData.category} 
                     onValueChange={(value) => {
@@ -2732,7 +2845,7 @@ export function ExpenseTracker() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-category">Category</Label>
+                <Label>Category</Label>
                 <Select 
                   value={formData.category} 
                   onValueChange={(value) => {
