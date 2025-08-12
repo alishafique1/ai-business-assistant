@@ -286,21 +286,42 @@ export function AIAssistant() {
         ? `BUSINESS CONTEXT: ${knowledgeContext}\n\n---\n\nUSER REQUEST: ${userMessage.content}\n\nPlease use the business context above to provide personalized, relevant responses.`
         : userMessage.content;
       
-      const response = await fetch('https://socialdots-ai-expense-backend.hf.space/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: enhancedPrompt,
-          content_type: contentType
-        })
-      });
+      console.log('🔍 Sending request to:', 'https://socialdots-ai-expense-backend.hf.space/generate');
+      console.log('🔍 Request payload:', { prompt: enhancedPrompt, content_type: contentType });
+      
+      let response;
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        
+        response = await fetch('https://socialdots-ai-expense-backend.hf.space/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({
+            prompt: enhancedPrompt,
+            user_id: user?.id
+          }),
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+      } catch (networkError) {
+        console.error('🔍 Network error:', networkError);
+        if (networkError.name === 'AbortError') {
+          throw new Error('Request timeout: The AI service is taking too long to respond. Please try again.');
+        }
+        throw new Error(`Network error: ${networkError.message}`);
+      }
 
-      console.log('ML API response status:', response.status);
+      console.log('🔍 ML API response status:', response.status);
+      console.log('🔍 ML API response headers:', [...response.headers.entries()]);
       
       if (!response.ok) {
         const errorText = await response.text();
+        console.log('🔍 ML API error response:', errorText);
         console.error('ML API error:', errorText);
         throw new Error(`Failed to generate response: ${response.status} ${response.statusText}`);
       }
@@ -564,7 +585,7 @@ ${expenseCount > 10 ? '• Great job tracking your expenses regularly!' : '• T
         },
         body: JSON.stringify({
           prompt: enhancedPrompt,
-          content_type: contentType
+          user_id: user?.id
         })
       });
 

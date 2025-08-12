@@ -1412,13 +1412,16 @@ export function ExpenseTracker() {
         }
       });
       
-      console.log('API Response status:', response.status);
-      console.log('API Response headers:', Object.fromEntries(response.headers.entries()));
+      console.log('🔍 API Response status:', response.status);
+      console.log('🔍 API Response headers:', Object.fromEntries(response.headers.entries()));
+      console.log('🔍 Response ok status:', response.ok);
+      console.log('🔍 Response type:', response.type);
+      console.log('🔍 Response redirected:', response.redirected);
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Full API Error Response:', errorText);
-        console.error('Response status text:', response.statusText);
+        console.error('🚨 Full API Error Response:', errorText);
+        console.error('🚨 Response status text:', response.statusText);
         
         // Try to provide more specific error information
         let errorMessage = `API Error (${response.status}): `;
@@ -1435,30 +1438,69 @@ export function ExpenseTracker() {
         throw new Error(`${errorMessage}\n\nFull response: ${errorText}`);
       }
       
-      const result = await response.json();
-      console.log('Voice API response:', result);
+      const responseText = await response.text();
+      console.log('🔍 Raw response text:', responseText);
       
-      // Handle the response
-      if (result.full_text_response) {
-        setVoiceResponse(result.full_text_response);
+      let result;
+      try {
+        result = JSON.parse(responseText);
+        console.log('✅ Parsed JSON response:', result);
+      } catch (jsonError) {
+        console.error('🚨 Failed to parse JSON:', jsonError);
+        console.error('🚨 Raw response was:', responseText);
+        throw new Error(`Invalid JSON response: ${responseText}`);
+      }
+      
+      // Handle the response - check multiple possible response formats
+      const textResponse = result.full_text_response || result.response || result.text || result.transcription || result.user_speech_text;
+      const successMessage = result.message || "Voice processed successfully";
+      console.log('🔍 Extracted text response:', textResponse);
+      console.log('🔍 Success message:', successMessage);
+      
+      if (textResponse) {
+        console.log('✅ SUCCESS: Setting voice response and showing success toast');
+        // Show both the transcribed speech and the success message
+        setVoiceResponse(`${successMessage}\n\nTranscribed: "${textResponse}"`);
         toast({
           title: "Voice Processed",
-          description: "Got your expense suggestion! Check the response below."
+          description: successMessage
         });
         
         // Play the audio confirmation if available
         if (result.audio_base64) {
+          console.log('🔊 Playing audio confirmation');
           playBase64Audio(result.audio_base64);
         }
+        
+        // Refresh expenses list since a new expense was added
+        console.log('🔄 Refreshing expenses list after voice processing');
+        await fetchExpenses();
+        await fetchCategorySummary();
       } else {
-        throw new Error('No response received from voice processing');
+        console.error('🚨 Unexpected response format:', result);
+        console.error('🚨 Available keys:', Object.keys(result));
+        throw new Error(`No recognized response format. Received: ${JSON.stringify(result)}`);
       }
       
     } catch (error) {
-      console.error('Error processing voice recording:', error);
+      console.log('🚨 CATCH BLOCK ENTERED - An error occurred!');
+      console.error('🚨 Error processing voice recording:', error);
+      console.error('🚨 Error type:', error.constructor.name);
+      console.error('🚨 Error message:', error.message);
+      console.error('🚨 Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+      
+      let errorMessage = "Failed to process voice recording. Please try again.";
+      if (error.message.includes('NetworkError') || error.message.includes('CORS')) {
+        errorMessage = "Network error - please check your connection and try again.";
+      } else if (error.message.includes('Invalid JSON')) {
+        errorMessage = "Server returned invalid response. Please try again.";
+      } else if (error.message.includes('API Error')) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Processing Error",
-        description: "Failed to process voice recording. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
