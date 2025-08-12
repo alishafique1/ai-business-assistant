@@ -504,7 +504,7 @@ Help with business operations and categorize expenses into: ${defaultCategories}
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="industry">Industry <span className="text-red-500">*</span></Label>
+                  <Label>Industry <span className="text-red-500">*</span></Label>
                   <Select value={formData.industry} onValueChange={(value) => {
                     updateFormData("industry", value);
                     if (value !== "other") {
@@ -540,7 +540,7 @@ Help with business operations and categorize expenses into: ${defaultCategories}
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="businessSize">Business Size <span className="text-red-500">*</span></Label>
+                  <Label>Business Size <span className="text-red-500">*</span></Label>
                   <Select value={formData.businessSize} onValueChange={(value) => updateFormData("businessSize", value)}>
                     <SelectTrigger className={!formData.businessSize ? "border-red-300 focus:border-red-500" : ""}>
                       <SelectValue placeholder="Select business size" />
@@ -559,7 +559,7 @@ Help with business operations and categorize expenses into: ${defaultCategories}
             {currentStep === 2 && (
               <div className="space-y-6">
                 <div>
-                  <Label>Choose Your Integration Platform</Label>
+                  <div className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Choose Your Integration Platform</div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
                     <Card 
                       className={`cursor-pointer transition-colors ${formData.integration === 'telegram' ? 'border-primary bg-primary/10' : ''}`}
@@ -724,7 +724,7 @@ Help with business operations and categorize expenses into: ${defaultCategories}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="responseStyle">Response Style <span className="text-red-500">*</span></Label>
+                  <Label>Response Style <span className="text-red-500">*</span></Label>
                   <Select value={formData.responseStyle} onValueChange={(value) => updateFormData("responseStyle", value)}>
                     <SelectTrigger className={!formData.responseStyle ? "border-red-300 focus:border-red-500" : ""}>
                       <SelectValue placeholder="How should your AI respond?" />
@@ -791,7 +791,7 @@ Help with business operations and categorize expenses into: ${defaultCategories}
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="targetAudience">Target Audience <span className="text-red-500">*</span></Label>
+                  <Label>Target Audience <span className="text-red-500">*</span></Label>
                   <Select value={formData.targetAudience} onValueChange={(value) => updateFormData("targetAudience", value)}>
                     <SelectTrigger className={!formData.targetAudience?.trim() ? "border-red-300 focus:border-red-500" : ""}>
                       <SelectValue placeholder="Select your primary target audience" />

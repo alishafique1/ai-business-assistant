@@ -978,7 +978,7 @@ ${expenseCount > 10 ? '• Great job tracking your expenses regularly!' : '• T
               </div>
 
               <div className="space-y-2">
-                <Label>Voice Language</Label>
+                <div className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Voice Language</div>
                 <Button variant="outline" className="w-full justify-start">
                   English (US)
                 </Button>

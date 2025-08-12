@@ -59,7 +59,3 @@ verify_jwt = false
 [functions.check-receipt-limit]
 verify_jwt = true
 
-[edge-runtime]
-enabled = true
-port = 54327
-inspector_port = 8083
