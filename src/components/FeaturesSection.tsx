@@ -114,7 +114,7 @@ export const FeaturesSection = () => {
             <span className="text-white"> AI Agents,</span>
             <span className="bg-gradient-primary bg-clip-text text-transparent"> One Platform</span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
             Our comprehensive suite of AI agents work together to transform how you manage your business, 
             from financial tracking to content creation and strategic planning.
           </p>

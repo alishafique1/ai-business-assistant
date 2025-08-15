@@ -137,21 +137,31 @@ export const BenefitsSection = () => {
             <div className="flex -space-x-3">
               <img 
                 src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face&auto=format" 
-                alt="User 1" 
+                alt="Business Owner - John" 
                 className="w-10 h-10 rounded-full border-2 border-slate-700 shadow-lg object-cover"
               />
               <img 
-                src="https://images.unsplash.com/photo-1494790108755-2616b612b776?w=40&h=40&fit=crop&crop=face&auto=format" 
-                alt="User 2" 
+                src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=40&h=40&fit=crop&crop=face&auto=format" 
+                alt="CFO - Maria" 
                 className="w-10 h-10 rounded-full border-2 border-slate-700 shadow-lg object-cover"
               />
               <img 
                 src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face&auto=format" 
-                alt="User 3" 
+                alt="Founder - Alex" 
+                className="w-10 h-10 rounded-full border-2 border-slate-700 shadow-lg object-cover"
+              />
+              <img 
+                src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=40&h=40&fit=crop&crop=face&auto=format" 
+                alt="Director - Michael" 
+                className="w-10 h-10 rounded-full border-2 border-slate-700 shadow-lg object-cover"
+              />
+              <img 
+                src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=40&h=40&fit=crop&crop=face&auto=format" 
+                alt="Manager - Lisa" 
                 className="w-10 h-10 rounded-full border-2 border-slate-700 shadow-lg object-cover"
               />
               <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-full border-2 border-slate-700 flex items-center justify-center text-xs text-white font-bold shadow-lg">
-                +150
+                +145
               </div>
             </div>
             <span className="text-white font-semibold text-lg">Enterprise clients optimizing operations</span>

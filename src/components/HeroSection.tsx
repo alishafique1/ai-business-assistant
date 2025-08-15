@@ -56,7 +56,7 @@ export const HeroSection = () => {
           </h1>
           
           {/* Subheading */}
-          <p className={`text-xl md:text-2xl text-muted-foreground mb-6 max-w-4xl mx-auto leading-relaxed transition-all duration-700 delay-600 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <p className={`text-xl md:text-2xl text-gray-300 mb-6 max-w-4xl mx-auto leading-relaxed transition-all duration-700 delay-600 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             Skip the app downloads. Get AI-powered expense tracking, content creation, and business insights directly in Telegram or WhatsApp Business. 
             <span className="block mt-2 text-lg text-primary font-medium">We handle setup • You keep your data private • One platform replaces 5+ tools</span>
           </p>
