@@ -14,7 +14,7 @@ export const CTASection = () => {
   const sectionRef = useRef<HTMLElement>(null);
 
   // Google Calendar configuration - you can customize this
-  const BOSS_CALENDAR_URL = import.meta.env.VITE_BOSS_CALENDAR_URL || 'https://calendly.com/your-boss-calendar';
+  const BOSS_CALENDAR_URL = 'https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ0XVUI4MN2ep4PxV_FNEo2RwyEsE_qQTTyakkMLwGfvzrBJEEBQeEfQTxAGWtZZWHQ7DNrOAEJd';
 
   const handleScheduleDemo = () => {
     // Open the calendar in a new tab
