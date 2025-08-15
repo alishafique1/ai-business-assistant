@@ -2556,6 +2556,13 @@ export function ExpenseTracker() {
                     Click "Record Expense" and speak about your business expenses or marketing ideas. 
                     The AI will provide detailed suggestions and play an audio confirmation.
                   </p>
+                  
+                  <div className="p-3 bg-muted/50 rounded-lg">
+                    <h4 className="font-medium mb-2 text-sm">Voice Commands Examples:</h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• "Add $25 lunch expense at Joe's Cafe"</li>
+                    </ul>
+                  </div>
                 </div>
               )}
             </CardContent>
