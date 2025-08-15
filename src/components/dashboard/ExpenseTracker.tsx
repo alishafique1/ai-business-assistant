@@ -64,7 +64,7 @@ export function ExpenseTracker() {
     description: '',
     category: '',
     customCategory: '',
-    date: new Date().toISOString().split('T')[0] // Safe fallback
+    date: getCurrentDate() // Today's date in user's timezone
   });
 
   // Debug logging for form data changes
@@ -1565,7 +1565,7 @@ export function ExpenseTracker() {
                 description: `Voice Entry: ${result.details.description}`,
                 amount: parseFloat(result.details.amount),
                 category: categoryToStore,
-                expense_date: new Date().toISOString().split('T')[0], // Today's date
+                expense_date: getCurrentDate(), // Today's date in user's timezone
                 user_id: user?.id
               })
               .select();
