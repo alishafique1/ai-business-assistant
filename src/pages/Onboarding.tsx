@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useOnboarding } from "@/hooks/useOnboarding";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [hasShownConfirmationToast, setHasShownConfirmationToast] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [formData, setFormData] = useState({
     businessName: "",
     industry: "",
@@ -73,6 +75,7 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isCompleted: isOnboardingCompleted, loading: onboardingLoading, checkOnboardingStatus } = useOnboarding();
 
   // Handle email confirmation redirect and auto-populate business name
   useEffect(() => {
@@ -136,6 +139,19 @@ export default function Onboarding() {
 
     handleAuthRedirect();
   }, [toast, navigate, hasShownConfirmationToast]);
+
+  // Redirect to dashboard if onboarding is already completed
+  useEffect(() => {
+    if (!onboardingLoading && isOnboardingCompleted && !isRedirecting) {
+      console.log('Onboarding already completed, redirecting to dashboard');
+      setIsRedirecting(true);
+      // Add a small delay to prevent rapid flickering
+      const timer = setTimeout(() => {
+        navigate('/dashboard', { replace: true });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isOnboardingCompleted, onboardingLoading, navigate, isRedirecting]);
 
   // Auto-populate business name and industry from user metadata
   useEffect(() => {
@@ -276,10 +292,17 @@ export default function Onboarding() {
 
     try {
       setIsLoading(true);
+      console.log('🚀 Starting onboarding data save for user:', user.id);
 
       // Create or update profile with business information
       const industryValue = formData.industry === "other" ? formData.customIndustry : formData.industry;
       
+      console.log('💼 Saving profile data:', {
+        user_id: user.id,
+        business_name: formData.businessName,
+        industry: industryValue,
+      });
+
       const { error: profileError } = await supabase
         .from('profiles')
         .upsert({
@@ -290,8 +313,11 @@ export default function Onboarding() {
         .eq('user_id', user.id);
 
       if (profileError) {
-        throw profileError;
+        console.error('❌ Profile save error:', profileError);
+        throw new Error(`Profile save failed: ${profileError.message}`);
       }
+
+      console.log('✅ Profile saved successfully');
 
       // Create or update AI settings with default categories
       const defaultCategories = 'Meals, Entertainment, Travel, Office Supplies, Marketing, Software, Other';
@@ -299,22 +325,60 @@ export default function Onboarding() {
 Your response style is ${formData.responseStyle}. 
 Help with business operations and categorize expenses into: ${defaultCategories}.`;
 
-      const { error: aiError } = await supabase
-        .from('ai_settings')
-        .upsert({
-          user_id: user.id,
-          system_prompt: systemPrompt,
-          response_style: formData.responseStyle,
-          ai_name: formData.aiName,
-        })
-        .eq('user_id', user.id);
+      console.log('🤖 Saving AI settings:', {
+        user_id: user.id,
+        system_prompt: systemPrompt,
+        response_style: formData.responseStyle,
+        ai_name: formData.aiName,
+      });
 
-      if (aiError) {
-        throw aiError;
+      // Try to save with all fields first, then gracefully degrade
+      let aiSettingsToSave: any = {
+        user_id: user.id,
+        system_prompt: systemPrompt,
+      };
+
+      // Try with extended fields first
+      try {
+        console.log('🔍 Attempting to save AI settings with extended fields...');
+        const { error: extendedAiError } = await supabase
+          .from('ai_settings')
+          .upsert({
+            ...aiSettingsToSave,
+            response_style: formData.responseStyle,
+            ai_name: formData.aiName,
+          })
+          .eq('user_id', user.id);
+
+        if (extendedAiError) {
+          console.warn('⚠️ Extended AI settings save failed, trying basic fields:', extendedAiError.message);
+          
+          // Try with just basic fields
+          const { error: basicAiError } = await supabase
+            .from('ai_settings')
+            .upsert(aiSettingsToSave)
+            .eq('user_id', user.id);
+
+          if (basicAiError) {
+            console.error('❌ Basic AI settings save error:', basicAiError);
+            throw new Error(`AI settings save failed: ${basicAiError.message}`);
+          }
+          
+          console.log('✅ AI settings saved with basic fields only');
+        } else {
+          console.log('✅ AI settings saved with extended fields');
+        }
+      } catch (fatalError) {
+        console.error('❌ Fatal AI settings error:', fatalError);
+        throw new Error(`AI settings save failed: ${fatalError instanceof Error ? fatalError.message : 'Unknown error'}`);
       }
+
+      console.log('✅ AI settings saved successfully');
 
       // Create integration if selected (but not if skipped)
       if (formData.integration && formData.integration !== 'skip') {
+        console.log('🔌 Saving integration:', formData.integration);
+        
         const integrationData: any = {
           user_id: user.id,
           type: formData.integration.toLowerCase(),
@@ -324,27 +388,34 @@ Help with business operations and categorize expenses into: ${defaultCategories}
 
         // Add configuration data based on integration type
         if (formData.integration === 'whatsapp') {
-          integrationData.config = {
+          integrationData.configuration = {
             verify_token: formData.whatsappVerifyToken,
             access_token: formData.whatsappAccessToken,
             phone_number_id: formData.whatsappPhoneNumberId,
           };
         } else if (formData.integration === 'telegram') {
-          integrationData.config = {
+          integrationData.configuration = {
             bot_token: formData.telegramBotToken,
             webhook_secret: formData.telegramWebhookSecret,
           };
         }
+
+        console.log('🔌 Integration data to save:', integrationData);
 
         const { error: integrationError } = await supabase
           .from('integrations')
           .insert(integrationData);
 
         if (integrationError) {
-          console.error('Integration error:', integrationError);
+          console.error('❌ Integration save error:', integrationError);
           // Don't fail the entire onboarding if integration fails
+          console.warn('⚠️ Integration save failed but continuing with onboarding');
+        } else {
+          console.log('✅ Integration saved successfully');
         }
       }
+
+      console.log('🎉 Onboarding completed successfully!');
 
       toast({
         title: "Onboarding Complete!",
@@ -353,10 +424,13 @@ Help with business operations and categorize expenses into: ${defaultCategories}
 
       return true;
     } catch (error) {
-      console.error('Onboarding error:', error);
+      console.error('❌ Onboarding error:', error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to complete onboarding";
+      console.error('❌ Error details:', errorMessage);
+      
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to complete onboarding",
+        description: `Failed to complete onboarding: ${errorMessage}`,
         variant: "destructive",
       });
       return false;
@@ -376,9 +450,42 @@ Help with business operations and categorize expenses into: ${defaultCategories}
       setCurrentStep(currentStep + 1);
     } else {
       // Complete onboarding by saving data
-      const success = await saveOnboardingData();
-      if (success) {
-        navigate("/dashboard");
+      console.log('🔄 Starting onboarding completion process...');
+      setIsRedirecting(true);
+      
+      // Add a timeout as backup
+      const timeoutId = setTimeout(() => {
+        console.warn('⚠️ Onboarding completion timeout, forcing navigation...');
+        window.location.href = '/dashboard';
+      }, 5000);
+      
+      try {
+        const success = await saveOnboardingData();
+        if (success) {
+          console.log('✅ Onboarding data saved successfully, refreshing status and navigating...');
+          
+          // Refresh onboarding status to ensure it's marked as complete
+          try {
+            await checkOnboardingStatus();
+            console.log('✅ Onboarding status refreshed, navigating to dashboard...');
+          } catch (error) {
+            console.warn('⚠️ Status refresh failed, navigating anyway:', error);
+          }
+          
+          // Clear timeout since we're navigating normally
+          clearTimeout(timeoutId);
+          
+          // Force navigation using window.location to bypass any routing issues
+          window.location.href = '/dashboard';
+        } else {
+          console.error('❌ Onboarding data save failed, staying on onboarding page');
+          clearTimeout(timeoutId);
+          setIsRedirecting(false);
+        }
+      } catch (error) {
+        console.error('❌ Onboarding completion error:', error);
+        clearTimeout(timeoutId);
+        setIsRedirecting(false);
       }
     }
   };
@@ -440,6 +547,20 @@ Help with business operations and categorize expenses into: ${defaultCategories}
   };
 
   const progress = (currentStep / steps.length) * 100;
+
+  // Show loading while determining onboarding status or redirecting
+  if (onboardingLoading || isRedirecting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">
+            {isRedirecting ? 'Completing setup...' : 'Checking onboarding status...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">

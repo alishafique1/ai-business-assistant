@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { useOnboarding } from "@/hooks/useOnboarding";
 import { Brain, Building2, Github, Mail } from "lucide-react";
 
 export default function Auth() {
@@ -17,27 +18,229 @@ export default function Auth() {
   const [businessName, setBusinessName] = useState("");
   const [showResendSection, setShowResendSection] = useState(false);
   const [resendEmail, setResendEmail] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [emailConfirmed, setEmailConfirmed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { isCompleted: isOnboardingCompleted, loading: onboardingLoading, checkOnboardingStatus } = useOnboarding();
   
   // Get the intended destination from location state
   const from = location.state?.from || "/dashboard";
   
   // Check URL search params for default tab
   const searchParams = new URLSearchParams(location.search);
-  const defaultTab = searchParams.get('tab') === 'signup' ? 'signup' : 'signin';
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') === 'signup' ? 'signup' : 'signin');
 
   useEffect(() => {
-    // Check if user is already logged in
-    const checkAuth = async () => {
+    // Handle email confirmation
+    const handleEmailConfirmation = async () => {
+      // Use comprehensive parameter extraction
+      const fullUrl = window.location.href;
+      const nativeSearch = window.location.search;
+      const nativeHash = window.location.hash;
+      
+      console.log('🔍 Auth page - Full URL:', fullUrl);
+      console.log('🔍 Auth page - Native search:', nativeSearch);
+      console.log('🔍 Auth page - Native hash:', nativeHash);
+      
+      const urlParams = new URLSearchParams(nativeSearch);
+      const hashParams = new URLSearchParams(nativeHash.substring(1));
+      const reactUrlParams = new URLSearchParams(location.search);
+      const reactHashParams = new URLSearchParams(location.hash.substring(1));
+      
+      console.log('🔍 Auth URL Params:', Array.from(urlParams.entries()));
+      console.log('🔍 Auth Hash Params:', Array.from(hashParams.entries()));
+      
+      // Show the actual parameter values
+      if (urlParams.size > 0) {
+        urlParams.forEach((value, key) => {
+          console.log(`🔍 Auth URL Param: ${key} = ${value}`);
+        });
+      }
+      if (hashParams.size > 0) {
+        hashParams.forEach((value, key) => {
+          console.log(`🔍 Auth Hash Param: ${key} = ${value}`);
+        });
+      }
+      
+      const accessToken = urlParams.get('access_token') || hashParams.get('access_token') || 
+                         reactUrlParams.get('access_token') || reactHashParams.get('access_token');
+      const refreshToken = urlParams.get('refresh_token') || hashParams.get('refresh_token') ||
+                         reactUrlParams.get('refresh_token') || reactHashParams.get('refresh_token');
+      const type = urlParams.get('type') || hashParams.get('type') ||
+                  reactUrlParams.get('type') || reactHashParams.get('type');
+      const tokenHash = urlParams.get('token_hash') || hashParams.get('token_hash') ||
+                       reactUrlParams.get('token_hash') || reactHashParams.get('token_hash');
+      const token = urlParams.get('token') || hashParams.get('token') ||
+                   reactUrlParams.get('token') || reactHashParams.get('token');
+      
+      // Handle email confirmation directly on this page
+      if (accessToken && refreshToken && type === 'signup') {
+        console.log('📧 Handling email confirmation on auth page');
+        try {
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          });
+          
+          if (error) throw error;
+          
+          if (data.user) {
+            // Clear URL parameters and stay on auth page
+            window.history.replaceState({}, document.title, '/auth');
+            
+            // Set confirmation state and show success message
+            setEmailConfirmed(true);
+            setActiveTab('signin'); // Switch to signin tab
+            toast({
+              title: "Email Confirmed!",
+              description: "Your email has been successfully confirmed. Please sign in to continue.",
+            });
+            
+            // Sign out the user so they need to sign in manually
+            await supabase.auth.signOut();
+            return;
+          }
+        } catch (error) {
+          console.error('Email confirmation error:', error);
+          toast({
+            title: "Confirmation Error",
+            description: "There was an issue confirming your email. Please try signing in.",
+            variant: "destructive",
+          });
+        }
+      } else if (tokenHash || token) {
+        console.log('📧 Attempting alternative token confirmation');
+        try {
+          const tokenToUse = tokenHash || token;
+          const { data, error } = await supabase.auth.verifyOtp({
+            token: tokenToUse,
+            type: 'email'
+          });
+          
+          if (error) throw error;
+          
+          if (data.user) {
+            // Clear URL parameters and stay on auth page
+            window.history.replaceState({}, document.title, '/auth');
+            
+            // Set confirmation state and show success message
+            setEmailConfirmed(true);
+            setActiveTab('signin'); // Switch to signin tab
+            toast({
+              title: "Email Confirmed!",
+              description: "Your email has been successfully confirmed. Please sign in to continue.",
+            });
+            
+            // Sign out the user so they need to sign in manually
+            await supabase.auth.signOut();
+            return;
+          }
+        } catch (error) {
+          console.error('Token verification error:', error);
+          toast({
+            title: "Confirmation Error",
+            description: "There was an issue confirming your email. Please try signing in.",
+            variant: "destructive",
+          });
+        }
+      }
+      
+      // Check if user is already logged in
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate(from, { replace: true });
+        // Check onboarding status and redirect accordingly
+        await checkOnboardingStatus();
+        // The redirect will happen in the useEffect below based on onboarding status
       }
     };
-    checkAuth();
-  }, [navigate]);
+    
+    handleEmailConfirmation();
+  }, [navigate, location.search, location.hash, from]);
+
+  // Handle redirect based on onboarding status for authenticated users
+  useEffect(() => {
+    const checkAndRedirectUser = async () => {
+      if (!onboardingLoading) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          console.log('User authenticated, onboarding completed:', isOnboardingCompleted);
+          // Clear email confirmed state when navigating away
+          setEmailConfirmed(false);
+          
+          if (isOnboardingCompleted) {
+            navigate(from, { replace: true });
+          } else {
+            navigate('/onboarding', { replace: true });
+          }
+        }
+      }
+    };
+
+    checkAndRedirectUser();
+  }, [isOnboardingCompleted, onboardingLoading, navigate, from]);
+
+  // Listen for cross-tab email confirmation
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'emailConfirmed' && event.newValue) {
+        try {
+          const confirmationData = JSON.parse(event.newValue);
+          
+          if (confirmationData.success) {
+            toast({
+              title: "Email Confirmed!",
+              description: "Your email has been confirmed. Redirecting to onboarding...",
+            });
+            
+            // Clear the localStorage item and navigate to onboarding
+            localStorage.removeItem('emailConfirmed');
+            navigate('/onboarding', { replace: true });
+          } else if (confirmationData.error) {
+            toast({
+              title: "Confirmation Error",
+              description: confirmationData.error,
+              variant: "destructive",
+            });
+            localStorage.removeItem('emailConfirmed');
+          }
+        } catch (error) {
+          console.error('Error parsing confirmation data:', error);
+        }
+      }
+    };
+
+    // Check for existing confirmation data on mount (in case the event was missed)
+    const checkExistingConfirmation = () => {
+      const existingConfirmation = localStorage.getItem('emailConfirmed');
+      if (existingConfirmation) {
+        try {
+          const confirmationData = JSON.parse(existingConfirmation);
+          // Only process if it's recent (within last 30 seconds)
+          if (Date.now() - confirmationData.timestamp < 30000) {
+            handleStorageChange({
+              key: 'emailConfirmed',
+              newValue: existingConfirmation
+            } as StorageEvent);
+          } else {
+            // Clean up old confirmation data
+            localStorage.removeItem('emailConfirmed');
+          }
+        } catch (error) {
+          console.error('Error checking existing confirmation:', error);
+          localStorage.removeItem('emailConfirmed');
+        }
+      }
+    };
+
+    checkExistingConfirmation();
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [navigate, toast]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +285,7 @@ export default function Auth() {
     setIsLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/onboarding`;
+      const redirectUrl = `${window.location.origin}/auth`;
       
       const { error } = await supabase.auth.signUp({
         email: email.trim(),
@@ -172,7 +375,10 @@ export default function Auth() {
           title: `Welcome back, ${userName}!`,
           description: "You have been successfully signed in.",
         });
-        navigate(from, { replace: true });
+        
+        // Check onboarding status and redirect accordingly
+        await checkOnboardingStatus();
+        // The redirect will happen automatically via the useEffect above
       }
     } catch (error: unknown) {
       let errorMessage = "An unexpected error occurred. Please try again.";
@@ -234,11 +440,30 @@ export default function Auth() {
     }
   };
 
+  // Add cooldown timer effect
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => {
+        setResendCooldown(resendCooldown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
   const handleResendEmail = async () => {
     if (!resendEmail) {
       toast({
         title: "Error",
         description: "No email address found to resend to",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (resendCooldown > 0) {
+      toast({
+        title: "Please Wait",
+        description: `You can resend the email in ${resendCooldown} seconds.`,
         variant: "destructive",
       });
       return;
@@ -252,7 +477,7 @@ export default function Auth() {
         type: 'signup',
         email: resendEmail,
         options: {
-          emailRedirectTo: `${window.location.origin}/onboarding`
+          emailRedirectTo: `${window.location.origin}/auth`
         }
       });
 
@@ -260,9 +485,26 @@ export default function Auth() {
 
       if (error) {
         console.error('Resend error:', error);
+        
+        // Handle rate limiting specifically
+        if (error.message.includes('after') && error.message.includes('seconds')) {
+          const seconds = error.message.match(/\d+/)?.[0];
+          const waitTime = seconds ? parseInt(seconds) : 30;
+          setResendCooldown(waitTime);
+          toast({
+            title: "Rate Limited",
+            description: `Please wait ${waitTime} seconds before trying again.`,
+            variant: "destructive",
+          });
+          return;
+        }
+        
         throw error;
       }
 
+      // Set cooldown on successful send
+      setResendCooldown(30);
+      
       toast({
         title: "Email Resent!",
         description: `A new confirmation link has been sent to ${resendEmail}. Please check your email and spam folder.`,
@@ -312,13 +554,30 @@ export default function Auth() {
 
         <Card className="border-border/50 shadow-elegant">
           <CardHeader className="space-y-1">
+            {emailConfirmed && (
+              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center justify-center text-green-700">
+                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span className="font-medium">Email Confirmed Successfully!</span>
+                </div>
+                <p className="text-green-600 text-sm mt-1 text-center">
+                  Your email has been verified. Please sign in below to access your dashboard.
+                </p>
+              </div>
+            )}
+            
             <CardTitle className="text-2xl text-center">Welcome</CardTitle>
             <CardDescription className="text-center">
-              Sign in to your account or create a new one
+              {emailConfirmed ? 
+                "Your email is confirmed! Please sign in to continue." :
+                "Sign in to your account or create a new one"
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue={defaultTab} className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -419,10 +678,12 @@ export default function Auth() {
                       variant="outline" 
                       size="sm" 
                       onClick={handleResendEmail}
-                      disabled={isLoading}
+                      disabled={isLoading || resendCooldown > 0}
                       className="w-full"
                     >
-                      {isLoading ? "Resending..." : "Resend Confirmation Email"}
+                      {isLoading ? "Resending..." : 
+                       resendCooldown > 0 ? `Wait ${resendCooldown}s` : 
+                       "Resend Confirmation Email"}
                     </Button>
                     <p className="text-xs text-muted-foreground">
                       Still having issues? Try switching to the Sign In tab and use "Forgot Password" 

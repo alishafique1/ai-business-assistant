@@ -1273,7 +1273,46 @@ export function Settings() {
         console.warn('⚠️ Error clearing localStorage:', error);
       }
 
-      // Step 2: Delete user data from all tables (client-side)
+      // Step 2: Delete knowledge base entries from external API first
+      console.log('🗑️ Deleting knowledge base entries from external API...');
+      try {
+        // Get knowledge base entries before deleting them
+        const storedEntries = localStorage.getItem('knowledgeBase_entries');
+        const knowledgeEntries = storedEntries ? JSON.parse(storedEntries) : [];
+        
+        console.log(`Found ${knowledgeEntries.length} knowledge base entries to delete from external API`);
+        
+        // Delete each knowledge base entry from the external API
+        for (const entry of knowledgeEntries) {
+          if (entry.id) {
+            try {
+              console.log(`Deleting knowledge base entry ${entry.id} from external API...`);
+              const response = await fetch(`https://socialdots-ai-expense-backend.hf.space/knowledge-base/${entry.id}`, {
+                method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/json',
+                }
+              });
+              
+              if (response.ok) {
+                console.log(`✅ Successfully deleted knowledge base entry ${entry.id} from external API`);
+              } else if (response.status === 404) {
+                console.log(`⚠️ Knowledge base entry ${entry.id} not found in external API (already deleted)`);
+              } else {
+                console.warn(`⚠️ Failed to delete knowledge base entry ${entry.id} from external API: ${response.status}`);
+              }
+            } catch (apiError) {
+              console.warn(`⚠️ Error deleting knowledge base entry ${entry.id} from external API:`, apiError);
+            }
+          }
+        }
+        
+        console.log('✅ Completed knowledge base cleanup from external API');
+      } catch (error) {
+        console.warn('⚠️ Error during knowledge base cleanup from external API:', error);
+      }
+
+      // Step 3: Delete user data from all tables (client-side)
       console.log('🗑️ Deleting user data from database tables...');
       const tablesToClean = [
         'messages',
@@ -1310,7 +1349,7 @@ export function Settings() {
         }
       }
 
-      // Step 3: Delete storage files
+      // Step 4: Delete storage files
       console.log('🗑️ Deleting user files from storage...');
       const buckets = ['receipts', 'avatars', 'documents'];
       let totalFilesDeleted = 0;
@@ -1346,7 +1385,7 @@ export function Settings() {
 
       console.log(`📊 Data cleanup complete: ${totalDeleted} records, ${totalFilesDeleted} files deleted`);
 
-      // Step 4: Try multiple methods to delete the auth user
+      // Step 5: Try multiple methods to delete the auth user
       console.log('🔐 Attempting to delete auth user using multiple methods...');
       
       let authUserDeleted = false;

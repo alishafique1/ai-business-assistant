@@ -128,7 +128,7 @@ export function DashboardSidebar({ activeView, onViewChange }: DashboardSidebarP
                           {item.title}
                         </span>
                         {activeView === item.id && (
-                          <span className="text-xs text-white/70 font-medium animate-fade-in">
+                          <span className="text-xs text-white/70 font-medium animate-fade-in -mt-0.5">
                             Active
                           </span>
                         )}
