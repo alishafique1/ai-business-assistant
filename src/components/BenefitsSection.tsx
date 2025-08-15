@@ -135,9 +135,21 @@ export const BenefitsSection = () => {
         <div className="mt-24 text-center">
           <div className="inline-flex items-center gap-3 bg-slate-800/60 backdrop-blur-sm rounded-full px-8 py-4 mb-12 border border-slate-600/30">
             <div className="flex -space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full border-2 border-slate-700 shadow-lg"></div>
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-blue-600 rounded-full border-2 border-slate-700 shadow-lg"></div>
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full border-2 border-slate-700 shadow-lg"></div>
+              <img 
+                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face&auto=format" 
+                alt="User 1" 
+                className="w-10 h-10 rounded-full border-2 border-slate-700 shadow-lg object-cover"
+              />
+              <img 
+                src="https://images.unsplash.com/photo-1494790108755-2616b612b776?w=40&h=40&fit=crop&crop=face&auto=format" 
+                alt="User 2" 
+                className="w-10 h-10 rounded-full border-2 border-slate-700 shadow-lg object-cover"
+              />
+              <img 
+                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face&auto=format" 
+                alt="User 3" 
+                className="w-10 h-10 rounded-full border-2 border-slate-700 shadow-lg object-cover"
+              />
               <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-full border-2 border-slate-700 flex items-center justify-center text-xs text-white font-bold shadow-lg">
                 +150
               </div>
@@ -151,9 +163,11 @@ export const BenefitsSection = () => {
               for $39 and keeps my data private. Plus they keep adding features every week!"
             </blockquote>
             <div className="flex items-center justify-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-lg">JK</span>
-              </div>
+              <img 
+                src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=48&h=48&fit=crop&crop=face&auto=format" 
+                alt="Jennifer Kim" 
+                className="w-12 h-12 rounded-full object-cover border-2 border-slate-600"
+              />
               <div className="text-left">
                 <cite className="text-gray-300 font-semibold block">Jennifer Kim</cite>
                 <p className="text-blue-400 text-sm">Marketing Agency Owner • Early Adopter</p>

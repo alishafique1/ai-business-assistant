@@ -152,7 +152,7 @@ export const FeaturesSection = () => {
                 <CardTitle className="text-xl font-bold text-foreground">
                   {feature.title}
                 </CardTitle>
-                <CardDescription className="text-muted-foreground">
+                <CardDescription className="text-white">
                   {feature.description}
                 </CardDescription>
               </CardHeader>

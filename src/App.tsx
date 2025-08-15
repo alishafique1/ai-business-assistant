@@ -12,6 +12,7 @@ import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
+import EmailConfirmation from "./pages/EmailConfirmation";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -28,8 +29,9 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/forgot-password" element={<ForgotPassword />} />
             <Route path="/auth/reset-password" element={<ResetPassword />} />
+            <Route path="/email-confirmation" element={<EmailConfirmation />} />
             <Route path="/onboarding" element={
-              <ProtectedRoute>
+              <ProtectedRoute requireOnboarding={false}>
                 <Onboarding />
               </ProtectedRoute>
             } />
