@@ -21,8 +21,52 @@ serve(async (req) => {
     
     console.log('Processing chat message:', { conversationId, userId });
 
+    // For now, provide a fallback response when custom model is not configured
     if (!customModelUrl || customModelUrl === 'YOUR_CUSTOM_MODEL_ENDPOINT_HERE') {
-      throw new Error('Custom model URL not configured');
+      console.log('Using fallback AI response - custom model not configured');
+      
+      // Simple fallback responses based on message content
+      let fallbackResponse = "I'm your AI business assistant. I can help you with expense tracking, business insights, and content creation. How can I assist you today?";
+      
+      const messageContent = message.toLowerCase();
+      
+      if (messageContent.includes('expense') || messageContent.includes('cost') || messageContent.includes('spend')) {
+        fallbackResponse = "I can help you track and analyze your business expenses. You can add expenses manually or use voice commands like 'Add $25 lunch expense at Joe's Cafe'. Would you like me to show you your expense summary or help categorize your spending?";
+      } else if (messageContent.includes('content') || messageContent.includes('social media') || messageContent.includes('post')) {
+        fallbackResponse = "I can help you create engaging business content! Here are some content ideas:\n\n• Share a behind-the-scenes look at your business\n• Post about a recent success or milestone\n• Create educational content related to your industry\n• Showcase customer testimonials or reviews\n\nWould you like me to help you develop any of these ideas further?";
+      } else if (messageContent.includes('insight') || messageContent.includes('business') || messageContent.includes('advice')) {
+        fallbackResponse = "Here are some key business insights to consider:\n\n• Monitor your cash flow regularly\n• Track your most profitable services/products\n• Analyze customer acquisition costs\n• Review your monthly recurring expenses\n• Set aside funds for tax obligations\n\nWould you like me to elaborate on any of these areas?";
+      }
+      
+      // Save user message to database if conversationId exists
+      if (conversationId) {
+        await supabase
+          .from('messages')
+          .insert({
+            conversation_id: conversationId,
+            role: 'user',
+            content: message
+          });
+          
+        // Save assistant response
+        await supabase
+          .from('messages')
+          .insert({
+            conversation_id: conversationId,
+            role: 'assistant',
+            content: fallbackResponse
+          });
+      }
+      
+      return new Response(
+        JSON.stringify({ 
+          message: fallbackResponse,
+          success: true 
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);

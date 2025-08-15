@@ -157,6 +157,12 @@ export function Settings() {
     notification_schedule: 'immediate'
   });
 
+  // Automation states
+  const [autoExpenseDetection, setAutoExpenseDetection] = useState(true);
+  
+  // Voice settings states
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+
   // Currency to timezone mapping
   const currencyTimezoneMap = {
     'usd': 'America/New_York', // UTC-5 (EST)
@@ -1562,6 +1568,8 @@ export function Settings() {
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          <TabsTrigger value="automation">Automation</TabsTrigger>
+          <TabsTrigger value="voice">Voice Settings</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
           <TabsTrigger value="privacy">Privacy & Security</TabsTrigger>
         </TabsList>
@@ -2114,6 +2122,87 @@ export function Settings() {
               </Button>
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="automation">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5" />
+                AI Automation Settings
+              </CardTitle>
+              <CardDescription>Configure automatic AI behaviors and responses</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="auto-expense">Auto Expense Detection</Label>
+                  <p className="text-sm text-muted-foreground">Automatically detect and categorize expenses from messages</p>
+                </div>
+                <Switch 
+                  id="auto-expense"
+                  checked={autoExpenseDetection}
+                  onCheckedChange={setAutoExpenseDetection}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="smart-categorization">Smart Categorization</Label>
+                  <p className="text-sm text-muted-foreground">AI suggests expense categories based on context</p>
+                </div>
+                <Switch id="smart-categorization" defaultChecked />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="receipt-ocr">Receipt OCR Processing</Label>
+                  <p className="text-sm text-muted-foreground">Extract expense data from receipt images automatically</p>
+                </div>
+                <Switch id="receipt-ocr" defaultChecked />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="business-insights">Daily Business Insights</Label>
+                  <p className="text-sm text-muted-foreground">Receive daily summaries and spending insights</p>
+                </div>
+                <Switch id="business-insights" />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="voice">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                Voice Settings
+              </CardTitle>
+              <CardDescription>Configure voice recognition and response settings</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="voice-enabled">Enable Voice Recognition</Label>
+                  <p className="text-sm text-muted-foreground">Allow voice commands through Telegram/WhatsApp</p>
+                </div>
+                <Switch 
+                  id="voice-enabled"
+                  checked={voiceEnabled}
+                  onCheckedChange={setVoiceEnabled}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Voice Language</div>
+                <Button variant="outline" className="w-full justify-start">
+                  English (US)
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="billing">
