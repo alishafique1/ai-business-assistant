@@ -291,6 +291,7 @@ export function AIAssistant() {
   };
 
   const handleQuickAction = async (action: string) => {
+
     let prompt = '';
     let contentType = '';
     

@@ -169,8 +169,8 @@ export const BenefitsSection = () => {
           
           <div className="max-w-5xl mx-auto bg-slate-800/40 backdrop-blur-sm rounded-2xl p-8 border border-slate-600/30 shadow-2xl">
             <blockquote className="text-xl md:text-2xl text-white font-medium leading-relaxed mb-6 italic">
-              "I was paying $75/month for ChatGPT Plus, Claude, and two other business apps. This platform does everything 
-              for $39 and keeps my data private. Plus they keep adding features every week!"
+              "I was paying $75/month for ChatGPT Plus, and two other business apps. This platform does everything 
+              for $29 and keeps my data private. Plus they keep adding features!"
             </blockquote>
             <div className="flex items-center justify-center gap-4">
               <img 

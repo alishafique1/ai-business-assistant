@@ -6,12 +6,15 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useRetellCall } from "@/hooks/useRetellCall";
+import { useStripeCheckout } from "@/hooks/useStripeCheckout";
+import { STRIPE_PRICE_IDS } from "@/lib/stripe";
 
 export default function PricingSection() {
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { state: callState, initiateCall } = useRetellCall();
+  const { state: checkoutState, createCheckoutSession } = useStripeCheckout();
 
   // Retell AI Agent ID from environment variables
   const RETELL_AGENT_ID = import.meta.env.VITE_RETELL_AGENT_ID;
@@ -52,6 +55,33 @@ export default function PricingSection() {
       // User is not signed in, redirect to signup page
       navigate("/auth?tab=signup");
     }
+  };
+
+  const handleBusinessProClick = async () => {
+    if (!user) {
+      // Redirect to signup first
+      navigate("/auth?tab=signup");
+      return;
+    }
+
+    if (!STRIPE_PRICE_IDS.BUSINESS_PRO) {
+      toast({
+        title: "Configuration Error",
+        description: "Payment system is not configured. Please contact support.",
+        variant: "destructive",
+        duration: 7000,
+      });
+      return;
+    }
+
+    await createCheckoutSession({
+      priceId: STRIPE_PRICE_IDS.BUSINESS_PRO,
+      planName: "Business Pro",
+      metadata: {
+        plan_type: "business_pro",
+        source: "pricing_page",
+      },
+    });
   };
 
   const plans = [
@@ -245,14 +275,21 @@ export default function PricingSection() {
                   onClick={
                     plan.name === "Enterprise" 
                       ? handleContactSales 
-                      : index === 0 
-                        ? handleFreePlanClick 
-                        : undefined
+                      : plan.name === "Business Pro"
+                        ? handleBusinessProClick
+                        : index === 0 
+                          ? handleFreePlanClick 
+                          : undefined
                   }
-                  disabled={(plan.name === "Enterprise" && (callState.isInitiating || callState.isCallActive)) || (index === 0 && user)}
+                  disabled={
+                    (plan.name === "Enterprise" && (callState.isInitiating || callState.isCallActive)) || 
+                    (plan.name === "Business Pro" && checkoutState.isLoading) ||
+                    (index === 0 && user)
+                  }
                 >
                   {plan.name === "Enterprise" && callState.isInitiating ? "Connecting..." : 
                    plan.name === "Enterprise" && callState.isCallActive ? "Call Active" : 
+                   plan.name === "Business Pro" && checkoutState.isLoading ? "Processing..." :
                    plan.cta}
                 </Button>
 

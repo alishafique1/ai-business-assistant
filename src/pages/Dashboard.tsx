@@ -9,6 +9,8 @@ import { Settings } from "@/components/dashboard/Settings";
 import { Overview } from "@/components/dashboard/Overview";
 import { KnowledgeBase } from "@/components/dashboard/KnowledgeBase";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import SubscriptionGate from "@/components/SubscriptionGate";
+import SubscriptionManager from "@/components/SubscriptionManager";
 
 type DashboardView = "overview" | "expenses" | "knowledge" | "assistant" | "integrations" | "settings";
 
@@ -27,9 +29,21 @@ const Dashboard = () => {
       case "assistant":
         return <AIAssistant />;
       case "integrations":
-        return <Integrations />;
+        return (
+          <SubscriptionGate 
+            feature="Advanced Integrations" 
+            description="Connect with external tools and services with Business Pro subscription."
+          >
+            <Integrations />
+          </SubscriptionGate>
+        );
       case "settings":
-        return <Settings />;
+        return (
+          <div className="space-y-6">
+            <SubscriptionManager />
+            <Settings />
+          </div>
+        );
       default:
         return <Overview />;
     }

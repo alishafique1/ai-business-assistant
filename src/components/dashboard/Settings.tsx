@@ -7,13 +7,14 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Bell, CreditCard, Lock, User, Trash2, Loader2, MapPin, Clock, AlertTriangle, Download, FileText, Shield, Zap, MessageSquare, Smartphone, AlertCircle, TrendingUp, Brain, Settings as SettingsIcon } from "lucide-react";
+import { Bell, CreditCard, Lock, User, Trash2, Loader2, MapPin, Clock, AlertTriangle, Download, FileText, Shield, Zap, MessageSquare, Smartphone, AlertCircle, TrendingUp, Brain, Settings as SettingsIcon, HelpCircle, Mail, Phone } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlan } from "@/hooks/usePlan";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useSubscription } from "@/hooks/useSubscription";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -94,6 +95,7 @@ export function Settings() {
   const { user, session } = useAuth();
   const { planData, upgradeToPro, downgradeToFree } = usePlan();
   const { toast } = useToast();
+  const { hasActiveSubscription } = useSubscription();
   const { notifyDataExportComplete, notifyAccountChange } = useNotifications();
   
   // Profile state
@@ -1572,6 +1574,7 @@ export function Settings() {
           <TabsTrigger value="voice">Voice Settings</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
           <TabsTrigger value="privacy">Privacy & Security</TabsTrigger>
+          <TabsTrigger value="support">Help & Support</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile">
@@ -2400,6 +2403,133 @@ export function Settings() {
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="support">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <HelpCircle className="h-5 w-5" />
+                Help & Support
+              </CardTitle>
+              <CardDescription>Get help and contact our support team</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <h4 className="font-medium">Support Options</h4>
+                <div className="grid gap-4">
+                  {/* Email Support - Available for all users */}
+                  <div className="flex items-start gap-4 p-4 bg-muted/50 rounded-lg">
+                    <Mail className="h-5 w-5 text-primary mt-1" />
+                    <div className="flex-1">
+                      <h5 className="font-medium">Email Support</h5>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Get help via email. We typically respond within 24-48 hours.
+                      </p>
+                      <Button variant="outline" asChild>
+                        <a href="mailto:support@aibusinesshub.com" className="inline-flex items-center gap-2">
+                          <Mail className="h-4 w-4" />
+                          Email Support
+                        </a>
+                      </Button>
+                    </div>
+                    <Badge variant="secondary">Free</Badge>
+                  </div>
+
+                  {/* Priority Support - Pro only */}
+                  <div className={`flex items-start gap-4 p-4 rounded-lg border ${hasActiveSubscription ? 'bg-green-50 border-green-200' : 'bg-muted/30 border-dashed'}`}>
+                    <Phone className={`h-5 w-5 mt-1 ${hasActiveSubscription ? 'text-green-600' : 'text-muted-foreground'}`} />
+                    <div className="flex-1">
+                      <h5 className="font-medium">Priority Support</h5>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {hasActiveSubscription 
+                          ? "Get priority email support with faster response times and phone support during business hours." 
+                          : "Upgrade to Business Pro for priority support with faster response times and phone support."
+                        }
+                      </p>
+                      {hasActiveSubscription ? (
+                        <div className="space-y-2">
+                          <Button variant="outline" asChild>
+                            <a href="mailto:priority@aibusinesshub.com" className="inline-flex items-center gap-2">
+                              <Mail className="h-4 w-4" />
+                              Priority Email
+                            </a>
+                          </Button>
+                          <Button variant="outline" asChild className="ml-2">
+                            <a href="tel:+1-555-AI-HELP" className="inline-flex items-center gap-2">
+                              <Phone className="h-4 w-4" />
+                              Call Support
+                            </a>
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button variant="outline" disabled className="opacity-50">
+                          <Phone className="h-4 w-4 mr-2" />
+                          Upgrade Required
+                        </Button>
+                      )}
+                    </div>
+                    <Badge variant={hasActiveSubscription ? "default" : "secondary"}>
+                      {hasActiveSubscription ? "Pro" : "Pro Only"}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="font-medium">Frequently Asked Questions</h4>
+                <div className="space-y-3">
+                  <details className="group">
+                    <summary className="flex cursor-pointer items-center justify-between p-3 bg-muted/50 rounded-lg group-open:bg-muted">
+                      <span className="font-medium">How do I upload receipts?</span>
+                      <span className="text-muted-foreground">+</span>
+                    </summary>
+                    <div className="p-3 text-sm text-muted-foreground">
+                      You can upload receipts in the Expense Tracker section by clicking the "Add Receipt" button or by using the camera icon to take a photo directly.
+                    </div>
+                  </details>
+                  
+                  <details className="group">
+                    <summary className="flex cursor-pointer items-center justify-between p-3 bg-muted/50 rounded-lg group-open:bg-muted">
+                      <span className="font-medium">What's included in the free plan?</span>
+                      <span className="text-muted-foreground">+</span>
+                    </summary>
+                    <div className="p-3 text-sm text-muted-foreground">
+                      The free plan includes 5 receipt uploads per month, basic expense categorization, simple reports, email support, and 5 AI content suggestions per month.
+                    </div>
+                  </details>
+                  
+                  <details className="group">
+                    <summary className="flex cursor-pointer items-center justify-between p-3 bg-muted/50 rounded-lg group-open:bg-muted">
+                      <span className="font-medium">How do I upgrade to Business Pro?</span>
+                      <span className="text-muted-foreground">+</span>
+                    </summary>
+                    <div className="p-3 text-sm text-muted-foreground">
+                      You can upgrade to Business Pro in the Billing section of Settings or click any "Upgrade" button throughout the application.
+                    </div>
+                  </details>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="font-medium">Resources</h4>
+                <div className="grid gap-3">
+                  <Button variant="outline" asChild className="justify-start">
+                    <a href="/docs" target="_blank" className="inline-flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Documentation
+                    </a>
+                  </Button>
+                  <Button variant="outline" asChild className="justify-start">
+                    <a href="/tutorials" target="_blank" className="inline-flex items-center gap-2">
+                      <Brain className="h-4 w-4" />
+                      Video Tutorials
+                    </a>
+                  </Button>
                 </div>
               </div>
             </CardContent>
