@@ -5,54 +5,42 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { useRetellCall } from "@/hooks/useRetellCall";
 
 export default function PricingSection() {
-  const [isContactingSupport, setIsContactingSupport] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { state: callState, initiateCall } = useRetellCall();
 
-  // Auto caller webhook URL - you can customize this
-  const AUTO_CALLER_WEBHOOK_URL = import.meta.env.VITE_AUTO_CALLER_WEBHOOK || 'https://your-auto-caller-webhook.com/api/call';
+  // Retell AI Agent ID from environment variables
+  const RETELL_AGENT_ID = import.meta.env.VITE_RETELL_AGENT_ID;
 
   const handleContactSales = async () => {
-    setIsContactingSupport(true);
-    
+    if (!RETELL_AGENT_ID) {
+      toast({
+        title: "Configuration Error",
+        description: "Voice calling is not configured. Please email us directly at hr@socialdots.ca",
+        variant: "destructive",
+        duration: 7000,
+      });
+      return;
+    }
+
     try {
-      const response = await fetch(AUTO_CALLER_WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'enterprise_contact_sales',
-          timestamp: new Date().toISOString(),
+      await initiateCall({
+        agentId: RETELL_AGENT_ID,
+        customerName: user?.user_metadata?.full_name || 'Enterprise Prospect',
+        customerEmail: user?.email,
+        metadata: {
           source: 'pricing_page',
           plan: 'Enterprise',
           user_agent: navigator.userAgent,
           referrer: document.referrer || 'direct'
-        })
+        }
       });
-
-      if (response.ok) {
-        toast({
-          title: "Call Request Initiated! 📞",
-          description: "Our sales team will contact you within 15 minutes during business hours.",
-          duration: 5000,
-        });
-      } else {
-        throw new Error('Failed to initiate call');
-      }
     } catch (error) {
-      console.error('Error contacting sales:', error);
-      toast({
-        title: "Call Request Error",
-        description: "Unable to initiate call. Please email hr@socialdots.ca or call (555) 123-4567",
-        variant: "destructive",
-        duration: 7000,
-      });
-    } finally {
-      setIsContactingSupport(false);
+      console.error('Error initiating voice call:', error);
     }
   };
 
@@ -261,9 +249,11 @@ export default function PricingSection() {
                         ? handleFreePlanClick 
                         : undefined
                   }
-                  disabled={(plan.name === "Enterprise" && isContactingSupport) || (index === 0 && user)}
+                  disabled={(plan.name === "Enterprise" && (callState.isInitiating || callState.isCallActive)) || (index === 0 && user)}
                 >
-                  {plan.name === "Enterprise" && isContactingSupport ? "Initiating Call..." : plan.cta}
+                  {plan.name === "Enterprise" && callState.isInitiating ? "Connecting..." : 
+                   plan.name === "Enterprise" && callState.isCallActive ? "Call Active" : 
+                   plan.cta}
                 </Button>
 
                 {index === 0 && (

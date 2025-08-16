@@ -59,3 +59,6 @@ verify_jwt = false
 [functions.check-receipt-limit]
 verify_jwt = true
 
+[functions.create-web-call]
+verify_jwt = false
+
