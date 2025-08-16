@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import * as React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { RetellWebClient } from 'retell-client-js-sdk';
@@ -25,6 +26,9 @@ export const useRetellCall = () => {
     error: null,
   });
   const { toast } = useToast();
+  
+  // Store the retell client instance for call management
+  const retellClientRef = React.useRef<RetellWebClient | null>(null);
 
   const initiateCall = useCallback(async (options: RetellCallOptions) => {
     setState(prev => ({ ...prev, isInitiating: true, error: null }));
@@ -72,6 +76,7 @@ export const useRetellCall = () => {
 
       // Initialize the call
       const retellWebClient = new RetellWebClient();
+      retellClientRef.current = retellWebClient;
       
       retellWebClient.startCall({
         accessToken: access_token,
@@ -101,6 +106,7 @@ export const useRetellCall = () => {
           isCallActive: false, 
           callId: null 
         }));
+        retellClientRef.current = null; // Clear the client reference
         toast({
           title: "Call Ended",
           description: "Thank you for speaking with our sales team. We'll follow up with you soon!",
@@ -116,6 +122,7 @@ export const useRetellCall = () => {
           error: error.message || 'Call failed',
           callId: null
         }));
+        retellClientRef.current = null; // Clear the client reference on error
         toast({
           title: "Call Error",
           description: "Unable to connect the call. Please try again or contact us directly.",
@@ -145,9 +152,38 @@ export const useRetellCall = () => {
   }, [toast]);
 
   const endCall = useCallback(() => {
-    // End call functionality can be implemented when needed
-    console.log('End call requested');
-  }, []);
+    try {
+      if (retellClientRef.current && state.isCallActive) {
+        console.log('Ending call...');
+        retellClientRef.current.stopCall();
+        
+        // Update state immediately to provide user feedback
+        setState(prev => ({ 
+          ...prev, 
+          isCallActive: false, 
+          callId: null 
+        }));
+        
+        retellClientRef.current = null;
+        
+        toast({
+          title: "Call Ended",
+          description: "Call has been ended successfully.",
+          duration: 3000,
+        });
+      } else {
+        console.log('No active call to end');
+      }
+    } catch (error) {
+      console.error('Error ending call:', error);
+      toast({
+        title: "Error",
+        description: "Failed to end the call properly.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
+  }, [state.isCallActive, toast]);
 
   return {
     state,

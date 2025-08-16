@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, DollarSign, Clock, TrendingUp } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Check, DollarSign, Clock, TrendingUp, ChevronDown, Mail, Phone, PhoneOff } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,7 +14,7 @@ export default function PricingSection() {
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { state: callState, initiateCall } = useRetellCall();
+  const { state: callState, initiateCall, endCall } = useRetellCall();
   const { state: checkoutState, createCheckoutSession } = useStripeCheckout();
 
   // Retell AI Agent ID from environment variables
@@ -23,7 +24,7 @@ export default function PricingSection() {
     if (!RETELL_AGENT_ID) {
       toast({
         title: "Configuration Error",
-        description: "Voice calling is not configured. Please email us directly at hr@socialdots.ca",
+        description: "Voice calling is not configured. Please email us directly at hr@socialdots.com",
         variant: "destructive",
         duration: 7000,
       });
@@ -45,6 +46,11 @@ export default function PricingSection() {
     } catch (error) {
       console.error('Error initiating voice call:', error);
     }
+  };
+
+  const handleEmailContact = () => {
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=hr@socialdots.com&su=Enterprise%20Plan%20Inquiry&body=Hi,%0D%0A%0D%0AI'm%20interested%20in%20learning%20more%20about%20your%20Enterprise%20plan.%0D%0A%0D%0APlease%20contact%20me%20to%20discuss%20further.%0D%0A%0D%0AThank%20you!`;
+    window.open(gmailUrl, '_blank');
   };
 
   const handleFreePlanClick = () => {
@@ -262,36 +268,74 @@ export default function PricingSection() {
                   </div>
                 )}
                 
-                <Button 
-                  variant={plan.popular ? "hero" : index === 0 ? "secondary" : "outline"} 
-                  className={`w-full ${
-                    index === 0 
-                      ? user 
-                        ? 'bg-gray-500 hover:bg-gray-600 text-white cursor-default' 
-                        : 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                      : ''
-                  }`}
-                  size="lg"
-                  onClick={
-                    plan.name === "Enterprise" 
-                      ? handleContactSales 
-                      : plan.name === "Business Pro"
+{plan.name === "Enterprise" ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button 
+                        variant="outline"
+                        className="w-full"
+                        size="lg"
+                        disabled={callState.isInitiating || callState.isCallActive}
+                      >
+                        {callState.isInitiating ? "Connecting..." : 
+                         callState.isCallActive ? "Call Active" : 
+                         plan.cta}
+                        <ChevronDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56" align="center">
+                      <DropdownMenuItem onClick={handleEmailContact} className="cursor-pointer">
+                        <Mail className="mr-2 h-4 w-4" />
+                        Email hr@socialdots.com
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={handleContactSales} 
+                        className="cursor-pointer"
+                        disabled={callState.isInitiating || callState.isCallActive}
+                      >
+                        <Phone className="mr-2 h-4 w-4" />
+                        Have a live call
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Button 
+                    variant={plan.popular ? "hero" : index === 0 ? "secondary" : "outline"} 
+                    className={`w-full ${
+                      index === 0 
+                        ? user 
+                          ? 'bg-gray-500 hover:bg-gray-600 text-white cursor-default' 
+                          : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                        : ''
+                    }`}
+                    size="lg"
+                    onClick={
+                      plan.name === "Business Pro"
                         ? handleBusinessProClick
                         : index === 0 
                           ? handleFreePlanClick 
                           : undefined
-                  }
-                  disabled={
-                    (plan.name === "Enterprise" && (callState.isInitiating || callState.isCallActive)) || 
-                    (plan.name === "Business Pro" && checkoutState.isLoading) ||
-                    (index === 0 && user)
-                  }
-                >
-                  {plan.name === "Enterprise" && callState.isInitiating ? "Connecting..." : 
-                   plan.name === "Enterprise" && callState.isCallActive ? "Call Active" : 
-                   plan.name === "Business Pro" && checkoutState.isLoading ? "Processing..." :
-                   plan.cta}
-                </Button>
+                    }
+                    disabled={
+                      (plan.name === "Business Pro" && checkoutState.isLoading) ||
+                      (index === 0 && user)
+                    }
+                  >
+                    {plan.name === "Business Pro" && checkoutState.isLoading ? "Processing..." : plan.cta}
+                  </Button>
+                )}
+
+                {plan.name === "Enterprise" && callState.isCallActive && (
+                  <Button 
+                    variant="destructive"
+                    className="w-full mt-3"
+                    size="lg"
+                    onClick={endCall}
+                  >
+                    <PhoneOff className="mr-2 h-4 w-4" />
+                    End Call
+                  </Button>
+                )}
 
                 {index === 0 && (
                   <p className="text-center text-xs text-muted-foreground mt-2">
