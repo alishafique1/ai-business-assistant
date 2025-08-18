@@ -286,6 +286,8 @@ export default function Auth() {
       const productionUrl = import.meta.env.VITE_SITE_URL || 'https://ai-business-assistant-flame.vercel.app';
       const redirectUrl = isLocalhost ? `${window.location.origin}/auth` : `${productionUrl}/auth`;
       
+      console.log('📧 Attempting signup for email:', email.trim());
+      
       const { error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -314,22 +316,53 @@ export default function Auth() {
       setBusinessName("");
     } catch (error: unknown) {
       let errorMessage = "An unexpected error occurred. Please try again.";
+      let showSignInButton = false;
+      
+      console.error('🚨 Signup error:', error);
       
       // Provide user-friendly error messages
-      if (error instanceof Error && error.message.includes('already registered')) {
-        errorMessage = "This email is already registered. Please sign in instead or use a different email.";
-      } else if (error instanceof Error && error.message.includes('Password should be at least 6 characters')) {
-        errorMessage = "Password must be at least 6 characters long.";
-      } else if (error instanceof Error && error.message.includes('Invalid email')) {
-        errorMessage = "Please enter a valid email address.";
-      } else if (error instanceof Error && error.message.includes('Network request failed')) {
-        errorMessage = "Network error. Please check your connection and try again.";
+      if (error instanceof Error) {
+        const errorMsg = error.message.toLowerCase();
+        
+        // Handle various duplicate email scenarios
+        if (errorMsg.includes('already registered') || 
+            errorMsg.includes('user already exists') ||
+            errorMsg.includes('email already in use') ||
+            errorMsg.includes('user with this email already exists') ||
+            errorMsg.includes('duplicate') ||
+            errorMsg.includes('email address already used')) {
+          errorMessage = "An account with this email address already exists. Please sign in instead or use a different email address.";
+          showSignInButton = true;
+        } else if (errorMsg.includes('password should be at least 6 characters')) {
+          errorMessage = "Password must be at least 6 characters long.";
+        } else if (errorMsg.includes('invalid email') || errorMsg.includes('email address is invalid')) {
+          errorMessage = "Please enter a valid email address.";
+        } else if (errorMsg.includes('network request failed') || errorMsg.includes('fetch')) {
+          errorMessage = "Network error. Please check your connection and try again.";
+        } else if (errorMsg.includes('rate limit') || errorMsg.includes('too many requests')) {
+          errorMessage = "Too many signup attempts. Please wait a moment before trying again.";
+        } else if (errorMsg.includes('signup is disabled')) {
+          errorMessage = "Account creation is currently disabled. Please contact support.";
+        } else {
+          // Log the actual error for debugging but show a generic message
+          console.error('🚨 Unhandled signup error:', error.message);
+          errorMessage = `Signup failed: ${error.message}`;
+        }
       }
 
       toast({
         title: "Sign Up Failed",
         description: errorMessage,
         variant: "destructive",
+        action: showSignInButton ? (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setActiveTab('signin')}
+          >
+            Go to Sign In
+          </Button>
+        ) : undefined,
       });
     } finally {
       setIsLoading(false);
