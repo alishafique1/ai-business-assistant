@@ -30,8 +30,13 @@ export default function ForgotPassword() {
     setIsLoading(true);
 
     try {
+      // Use production URL for password reset redirects, fallback to current origin for local dev
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const productionUrl = import.meta.env.VITE_SITE_URL;
+      const redirectUrl = isLocalhost ? `${window.location.origin}/auth/reset-password` : `${productionUrl}/auth/reset-password`;
+      
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
+        redirectTo: redirectUrl,
       });
 
       if (error) {

@@ -285,7 +285,10 @@ export default function Auth() {
     setIsLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/auth`;
+      // Use production URL for email redirects, fallback to current origin for local dev
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const productionUrl = import.meta.env.VITE_SITE_URL;
+      const redirectUrl = isLocalhost ? `${window.location.origin}/auth` : `${productionUrl}/auth`;
       
       const { error } = await supabase.auth.signUp({
         email: email.trim(),
@@ -406,10 +409,15 @@ export default function Auth() {
 
   const handleGoogleAuth = async () => {
     try {
+      // Use production URL for OAuth redirects, fallback to current origin for local dev
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const productionUrl = import.meta.env.VITE_SITE_URL;
+      const redirectUrl = isLocalhost ? `${window.location.origin}/onboarding` : `${productionUrl}/onboarding`;
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/onboarding`
+          redirectTo: redirectUrl
         }
       });
       if (error) throw error;
@@ -424,10 +432,15 @@ export default function Auth() {
 
   const handleGithubAuth = async () => {
     try {
+      // Use production URL for OAuth redirects, fallback to current origin for local dev
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const productionUrl = import.meta.env.VITE_SITE_URL;
+      const redirectUrl = isLocalhost ? `${window.location.origin}/onboarding` : `${productionUrl}/onboarding`;
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `${window.location.origin}/onboarding`
+          redirectTo: redirectUrl
         }
       });
       if (error) throw error;
@@ -473,11 +486,16 @@ export default function Auth() {
     console.log('Attempting to resend email to:', resendEmail);
     
     try {
+      // Use production URL for email redirects, fallback to current origin for local dev
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const productionUrl = import.meta.env.VITE_SITE_URL;
+      const redirectUrl = isLocalhost ? `${window.location.origin}/auth` : `${productionUrl}/auth`;
+      
       const { data, error } = await supabase.auth.resend({
         type: 'signup',
         email: resendEmail,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth`
+          emailRedirectTo: redirectUrl
         }
       });
 
