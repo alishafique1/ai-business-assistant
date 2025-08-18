@@ -87,19 +87,17 @@ export default function Auth() {
           if (error) throw error;
           
           if (data.user) {
-            // Clear URL parameters and stay on auth page
+            // Clear URL parameters
             window.history.replaceState({}, document.title, '/auth');
             
-            // Set confirmation state and show success message
-            setEmailConfirmed(true);
-            setActiveTab('signin'); // Switch to signin tab
             toast({
               title: "Email Confirmed!",
-              description: "Your email has been successfully confirmed. Please sign in to continue.",
+              description: "Welcome! Redirecting to onboarding...",
             });
             
-            // Sign out the user so they need to sign in manually
-            await supabase.auth.signOut();
+            // Check onboarding status and redirect accordingly
+            await checkOnboardingStatus();
+            // The redirect will happen automatically via the useEffect below
             return;
           }
         } catch (error) {
@@ -122,19 +120,17 @@ export default function Auth() {
           if (error) throw error;
           
           if (data.user) {
-            // Clear URL parameters and stay on auth page
+            // Clear URL parameters
             window.history.replaceState({}, document.title, '/auth');
             
-            // Set confirmation state and show success message
-            setEmailConfirmed(true);
-            setActiveTab('signin'); // Switch to signin tab
             toast({
               title: "Email Confirmed!",
-              description: "Your email has been successfully confirmed. Please sign in to continue.",
+              description: "Welcome! Redirecting to onboarding...",
             });
             
-            // Sign out the user so they need to sign in manually
-            await supabase.auth.signOut();
+            // Check onboarding status and redirect accordingly
+            await checkOnboardingStatus();
+            // The redirect will happen automatically via the useEffect below
             return;
           }
         } catch (error) {
