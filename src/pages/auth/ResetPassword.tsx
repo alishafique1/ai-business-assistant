@@ -21,26 +21,83 @@ export default function ResetPassword() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if we have the necessary tokens in the URL
-    const accessToken = searchParams.get("access_token");
-    const refreshToken = searchParams.get("refresh_token");
-    
-    if (!accessToken || !refreshToken) {
-      toast({
-        title: "Invalid reset link",
-        description: "This password reset link is invalid or expired",
-        variant: "destructive",
-      });
-      navigate("/auth/forgot-password");
-      return;
-    }
+    const handlePasswordReset = async () => {
+      console.log('🔑 Password reset page loaded');
+      console.log('🔑 URL:', window.location.href);
+      console.log('🔑 Search params:', window.location.search);
+      console.log('🔑 Hash params:', window.location.hash);
 
-    // Set the session with the tokens from the URL
-    supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    });
-  }, [searchParams, navigate, toast]);
+      // Check for tokens in both URL search params and hash (Supabase can use either)
+      const urlParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      
+      const accessToken = urlParams.get("access_token") || hashParams.get("access_token");
+      const refreshToken = urlParams.get("refresh_token") || hashParams.get("refresh_token");
+      const type = urlParams.get("type") || hashParams.get("type");
+      
+      console.log('🔑 Found tokens:', { 
+        accessToken: accessToken ? 'present' : 'missing', 
+        refreshToken: refreshToken ? 'present' : 'missing',
+        type 
+      });
+      
+      if (!accessToken || !refreshToken) {
+        console.error('🔑 Missing tokens in URL');
+        toast({
+          title: "Invalid reset link",
+          description: "This password reset link is invalid or expired. Please request a new one.",
+          variant: "destructive",
+        });
+        navigate("/auth/forgot-password");
+        return;
+      }
+
+      if (type !== "recovery") {
+        console.error('🔑 Invalid link type:', type);
+        toast({
+          title: "Invalid reset link",
+          description: "This is not a valid password reset link.",
+          variant: "destructive",
+        });
+        navigate("/auth/forgot-password");
+        return;
+      }
+
+      try {
+        // Set the session with the tokens from the URL
+        console.log('🔑 Setting session with tokens...');
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        
+        if (error) {
+          console.error('🔑 Session set error:', error);
+          throw error;
+        }
+        
+        console.log('🔑 Session set successfully:', data);
+        
+        // Clear the URL parameters to clean up the address bar
+        window.history.replaceState({}, document.title, '/auth/reset-password');
+        
+        toast({
+          title: "Ready to reset password",
+          description: "Please enter your new password below.",
+        });
+      } catch (error) {
+        console.error('🔑 Error setting session:', error);
+        toast({
+          title: "Session error",
+          description: "Unable to verify reset link. Please try requesting a new one.",
+          variant: "destructive",
+        });
+        navigate("/auth/forgot-password");
+      }
+    };
+
+    handlePasswordReset();
+  }, [navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,23 +132,42 @@ export default function ResetPassword() {
     setIsLoading(true);
 
     try {
+      // Verify we have an active session before updating password
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: "Session expired",
+          description: "Your reset session has expired. Please request a new password reset link.",
+          variant: "destructive",
+        });
+        navigate("/auth/forgot-password");
+        return;
+      }
+
+      console.log('🔑 Updating password for user:', session.user.id);
       const { error } = await supabase.auth.updateUser({
         password: password,
       });
 
       if (error) {
+        console.error('🔑 Password update error:', error);
         throw error;
       }
 
+      console.log('🔑 Password updated successfully');
       setIsSuccess(true);
       toast({
         title: "Password updated successfully",
         description: "Your password has been updated. You can now sign in with your new password.",
       });
 
-      // Redirect to dashboard after a short delay
+      // Sign out the user and redirect to login
+      await supabase.auth.signOut();
+      
+      // Redirect to auth page after a short delay
       setTimeout(() => {
-        navigate("/dashboard");
+        navigate("/auth");
       }, 2000);
     } catch (error: any) {
       console.error("Password update error:", error);
@@ -115,7 +191,7 @@ export default function ResetPassword() {
             </div>
             <CardTitle>Password updated successfully</CardTitle>
             <CardDescription>
-              Your password has been updated. Redirecting you to your dashboard...
+              Your password has been updated. Redirecting you to sign in...
             </CardDescription>
           </CardHeader>
         </Card>
