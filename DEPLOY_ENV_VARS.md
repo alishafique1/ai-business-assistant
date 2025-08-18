@@ -40,18 +40,41 @@ STRIPE_SECRET_KEY=sk_test_your_secret_key_here
 STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
 ```
 
-## Quick Fix Steps
+## 🚨 URGENT: Fix Voice Call Issue
 
-### 1. Fix Voice Call Issue (Most Important)
-In your **Vercel** project dashboard:
-1. Go to Settings → Environment Variables
-2. Add: `VITE_RETELL_AGENT_ID` = `agent_a1e893d620045b987b17f58efa`
-3. Redeploy
+### Step 1: Fix Frontend (Vercel) - REQUIRED
+**Without this, voice buttons show "Voice calling is not configured"**
 
-### 2. Fix Supabase Backend for Voice Calls
-In your **Supabase** project dashboard:
-1. Go to Settings → Edge Functions → Environment variables
-2. Add: `RETELL_API_KEY` = `key_142fe7fca9596e496dc5fd6dab2b`
+1. Go to your **Vercel** project dashboard: https://vercel.com/dashboard
+2. Select your `ai-business-assistant` project 
+3. Navigate to **Settings** → **Environment Variables**
+4. Click **Add New**
+5. Add this exact variable:
+   - **Name**: `VITE_RETELL_AGENT_ID`
+   - **Value**: `agent_a1e893d620045b987b17f58efa`
+   - **Environment**: Production (and Preview if you want)
+6. Click **Save**
+7. Go to **Deployments** tab
+8. Click **Redeploy** on your latest deployment
+9. Wait for deployment to complete (~2-3 minutes)
+
+### Step 2: Fix Backend (Supabase) - REQUIRED  
+**Without this, calls fail with "Missing RETELL_API_KEY"**
+
+1. Go to your **Supabase** project dashboard: https://supabase.com/dashboard
+2. Select your project
+3. Navigate to **Settings** → **Edge Functions** → **Environment variables**
+4. Click **Add new variable**
+5. Add this exact variable:
+   - **Name**: `RETELL_API_KEY` 
+   - **Value**: `key_142fe7fca9596e496dc5fd6dab2b`
+6. Click **Save**
+7. No redeploy needed - Edge Functions use environment variables immediately
+
+### Step 3: Test the Fix
+1. Visit your deployed application
+2. Go to the pricing section or any "Contact Sales" button
+3. The button should work and initiate a voice call instead of showing an error
 
 ### 3. Optional: Configure Stripe (for subscriptions)
 - Configure Stripe keys if you want payment functionality
