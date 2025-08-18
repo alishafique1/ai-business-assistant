@@ -238,6 +238,46 @@ export default function Auth() {
     };
   }, [navigate, toast]);
 
+  // Function to check if email already exists in Supabase auth
+  const checkEmailExists = async (email: string): Promise<boolean> => {
+    try {
+      console.log('🔍 Checking if email exists:', email);
+      
+      // Try to initiate password reset for the email
+      // This will succeed if the email exists, fail if it doesn't
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`
+      });
+      
+      // If no error, the email exists in the system
+      if (!error) {
+        console.log('📧 Email exists in authentication system');
+        return true;
+      }
+      
+      // Check the specific error message to determine if email exists
+      const errorMessage = error.message.toLowerCase();
+      
+      // These errors indicate the email doesn't exist
+      if (errorMessage.includes('user not found') || 
+          errorMessage.includes('email not found') ||
+          errorMessage.includes('no user found') ||
+          errorMessage.includes('invalid email')) {
+        console.log('📧 Email does not exist in authentication system');
+        return false;
+      }
+      
+      // For other errors (rate limiting, etc.), assume email might exist
+      console.log('⚠️ Ambiguous error when checking email:', error.message);
+      return false; // Allow signup attempt, let Supabase handle the actual validation
+      
+    } catch (error) {
+      console.error('❌ Error checking email existence:', error);
+      // On error, allow the signup to proceed (fail open)
+      return false;
+    }
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -281,6 +321,30 @@ export default function Auth() {
     setIsLoading(true);
 
     try {
+      // Check if email already exists before attempting signup
+      const emailExists = await checkEmailExists(email.trim());
+      
+      if (emailExists) {
+        console.log('🚫 Preventing signup - email already exists');
+        toast({
+          title: "Account Already Exists",
+          description: "An account with this email address already exists. Please sign in instead or use a different email address.",
+          variant: "destructive",
+          action: (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setActiveTab('signin')}
+            >
+              Go to Sign In
+            </Button>
+          ),
+        });
+        return;
+      }
+
+      console.log('✅ Email check passed, proceeding with signup');
+      
       // Use production URL for email redirects, fallback to current origin for local dev
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       const productionUrl = import.meta.env.VITE_SITE_URL || 'https://ai-business-assistant-flame.vercel.app';
@@ -314,6 +378,7 @@ export default function Auth() {
       setEmail("");
       setPassword("");
       setBusinessName("");
+      
     } catch (error: unknown) {
       let errorMessage = "An unexpected error occurred. Please try again.";
       let showSignInButton = false;
@@ -324,15 +389,22 @@ export default function Auth() {
       if (error instanceof Error) {
         const errorMsg = error.message.toLowerCase();
         
-        // Handle various duplicate email scenarios
+        // Enhanced duplicate email detection
         if (errorMsg.includes('already registered') || 
             errorMsg.includes('user already exists') ||
             errorMsg.includes('email already in use') ||
             errorMsg.includes('user with this email already exists') ||
             errorMsg.includes('duplicate') ||
-            errorMsg.includes('email address already used')) {
+            errorMsg.includes('email address already used') ||
+            errorMsg.includes('email already taken') ||
+            errorMsg.includes('email is already registered') ||
+            errorMsg.includes('account already exists') ||
+            errorMsg.includes('user already registered')) {
+          
+          console.log('🚫 Detected duplicate email error from Supabase');
           errorMessage = "An account with this email address already exists. Please sign in instead or use a different email address.";
           showSignInButton = true;
+          
         } else if (errorMsg.includes('password should be at least 6 characters')) {
           errorMessage = "Password must be at least 6 characters long.";
         } else if (errorMsg.includes('invalid email') || errorMsg.includes('email address is invalid')) {
@@ -343,6 +415,8 @@ export default function Auth() {
           errorMessage = "Too many signup attempts. Please wait a moment before trying again.";
         } else if (errorMsg.includes('signup is disabled')) {
           errorMessage = "Account creation is currently disabled. Please contact support.";
+        } else if (errorMsg.includes('email rate limit')) {
+          errorMessage = "Too many emails sent to this address. Please wait before trying again.";
         } else {
           // Log the actual error for debugging but show a generic message
           console.error('🚨 Unhandled signup error:', error.message);
@@ -351,7 +425,7 @@ export default function Auth() {
       }
 
       toast({
-        title: "Sign Up Failed",
+        title: "Sign Up Failed", 
         description: errorMessage,
         variant: "destructive",
         action: showSignInButton ? (

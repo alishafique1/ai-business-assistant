@@ -43,7 +43,7 @@ export function ExpenseTracker() {
   const { formatAmount } = useCurrency();
   const { planData } = usePlan();
   const { canAddReceipt, remainingReceipts, incrementCount, limitData, loading: limitLoading, error: limitError, liveTimer, formatTimeRemaining, shouldShowTimer } = useReceiptLimit();
-  const { incrementReceiptUpload, getRemainingUploads, canUploadReceipt } = useFeatureLimits();
+  const { incrementReceiptUpload, getRemainingUploads, canUploadReceipt, refreshUsage } = useFeatureLimits();
   const { formatExpenseDate, formatDateTime, getCurrentDate, getTimezoneDisplay } = useTimezone();
   const { notifyExpenseAdded, notifyLargeExpense, notifyDuplicateExpense, notifyReceiptProcessed } = useNotifications();
   // const [isRecording, setIsRecording] = useState(false); // Replaced by isVoiceRecording
@@ -880,8 +880,16 @@ export function ExpenseTracker() {
         description: "Expense created successfully"
       });
       
-      // Manual expenses don't count towards receipt limit
-      console.log('✍️ MANUAL EXPENSE: Created successfully - no receipt counter increment (this is correct)');
+      // Increment receipt count for all expenses (manual, voice, OCR)
+      console.log('✍️ MANUAL EXPENSE: About to increment receipt counter...');
+      const receiptCountResult = await incrementCount();
+      console.log('✍️ MANUAL EXPENSE: incrementCount() result:', receiptCountResult);
+      
+      // Also increment the feature limits counter for UI display
+      await incrementReceiptUpload();
+      // Force refresh of usage data to ensure counter updates immediately
+      await refreshUsage();
+      console.log('✍️ MANUAL EXPENSE: Receipt counter increment completed');
       
       resetForm();
       setShowAddDialog(false);
@@ -1593,20 +1601,29 @@ export function ExpenseTracker() {
               throw new Error(`Supabase save error: ${saveError.message}`);
             } else {
               console.log('✅ Voice expense saved to Supabase:', savedExpense);
+              console.log('🎤 VOICE EXPENSE: Successfully saved, now processing counters...');
               
               // Increment receipt count for voice expenses (they use ML processing)
               console.log('🎤 VOICE EXPENSE: About to increment receipt counters...');
+              console.log('🎤 VOICE EXPENSE: Current user ID:', user?.id);
+              console.log('🎤 VOICE EXPENSE: Counter functions available:', { 
+                incrementReceiptUpload: typeof incrementReceiptUpload, 
+                incrementCount: typeof incrementCount 
+              });
               
               // Increment monthly feature limit counter (useFeatureLimits)
               console.log('🎤 Current remaining uploads before:', getRemainingUploads());
               const incrementResult = await incrementReceiptUpload();
               console.log('🎤 incrementReceiptUpload() result:', incrementResult);
-              console.log('🎤 Current remaining uploads after:', getRemainingUploads());
               
               // Increment receipt processing counter (useReceiptLimit) - this updates the displayed count
               console.log('🎤 About to increment receipt processing count...');
               const receiptCountResult = await incrementCount();
               console.log('🎤 incrementCount() result:', receiptCountResult);
+              
+              // Force refresh of usage data to ensure counter updates immediately
+              await refreshUsage();
+              console.log('🎤 Current remaining uploads after refresh:', getRemainingUploads());
               console.log('🎤 VOICE EXPENSE: All receipt counter increments completed');
             }
           } catch (supabaseError) {
@@ -2046,12 +2063,15 @@ export function ExpenseTracker() {
         console.log('📸 Current remaining uploads before:', getRemainingUploads());
         const incrementResult = await incrementReceiptUpload();
         console.log('📸 incrementReceiptUpload() result:', incrementResult);
-        console.log('📸 Current remaining uploads after:', getRemainingUploads());
         
         // Increment receipt processing counter (useReceiptLimit) - this updates the displayed count
         console.log('📸 About to increment receipt processing count...');
         const receiptCountResult = await incrementCount();
         console.log('📸 incrementCount() result:', receiptCountResult);
+        
+        // Force refresh of usage data to ensure counter updates immediately
+        await refreshUsage();
+        console.log('📸 Current remaining uploads after refresh:', getRemainingUploads());
         console.log('📸 PHOTO UPLOAD: All receipt counter increments completed');
         
         // Add the category to user categories if it doesn't exist
@@ -2293,7 +2313,12 @@ export function ExpenseTracker() {
                 </Badge>
                 {planData.plan === 'free' && (
                   <Badge variant={canUploadReceipt() ? "secondary" : "destructive"} className="text-sm font-medium">
-                    {getRemainingUploads() === -1 ? 'Unlimited' : `${5 - getRemainingUploads()}/5`} receipt uploads used
+                    {(() => {
+                      const remaining = getRemainingUploads();
+                      const used = remaining === -1 ? 0 : Math.max(0, 5 - remaining);
+                      console.log('📊 COUNTER DEBUG:', { remaining, used, total: 5 });
+                      return remaining === -1 ? 'Unlimited' : `${used}/5`;
+                    })()} receipt uploads used
                     {!canUploadReceipt() && " - Limit reached!"}
                   </Badge>
                 )}
