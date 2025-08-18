@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Signup Debug Tool</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Signup Debug Tool</h1>
+    <div id="results"></div>
+    
+    <script>
+        const SUPABASE_URL = "https://xdinmyztzvrcasvgupir.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkaW5teXp0enZyY2Fzdmd1cGlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NzgyMjksImV4cCI6MjA2ODI1NDIyOX0.nUYgDJHoZNX5P4ZYKeeY0_AeIV8ZGpCaYjHMyScxwCQ";
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        async function testSignup() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h2>Testing Signup...</h2>';
+            
+            try {
+                // Test connection
+                const { data: testData, error: testError } = await supabase
+                    .from('profiles')
+                    .select('count')
+                    .limit(1);
+                
+                if (testError) {
+                    results.innerHTML += `<p style="color: red;">❌ Database Connection Error: ${testError.message}</p>`;
+                } else {
+                    results.innerHTML += '<p style="color: green;">✅ Database connection successful</p>';
+                }
+                
+                // Test signup
+                const testEmail = `test-${Date.now()}@example.com`;
+                const { data, error } = await supabase.auth.signUp({
+                    email: testEmail,
+                    password: 'test123456',
+                    options: {
+                        emailRedirectTo: `${window.location.origin}/auth`,
+                        data: {
+                            business_name: 'Test Business'
+                        }
+                    }
+                });
+                
+                if (error) {
+                    results.innerHTML += `<p style="color: red;">❌ Signup Error: ${error.message}</p>`;
+                    results.innerHTML += `<p>Error Code: ${error.status || 'N/A'}</p>`;
+                    console.error('Signup error details:', error);
+                } else {
+                    results.innerHTML += '<p style="color: green;">✅ Signup successful!</p>';
+                    results.innerHTML += `<p>User ID: ${data.user?.id || 'N/A'}</p>`;
+                    results.innerHTML += `<p>Email confirmation required: ${!data.user?.email_confirmed_at}</p>`;
+                }
+                
+            } catch (err) {
+                results.innerHTML += `<p style="color: red;">❌ Unexpected Error: ${err.message}</p>`;
+                console.error('Test error:', err);
+            }
+        }
+        
+        // Run test on page load
+        testSignup();
+        
+        // Add button to re-run test
+        document.body.innerHTML += '<button onclick="testSignup()" style="margin-top: 20px; padding: 10px;">Re-run Test</button>';
+    </script>
+</body>
+</html>
