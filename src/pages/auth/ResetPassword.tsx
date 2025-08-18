@@ -18,6 +18,10 @@ export default function ResetPassword() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [isValidating, setIsValidating] = useState(true);
   const [hasValidSession, setHasValidSession] = useState(false);
+  const [errorState, setErrorState] = useState<{
+    title: string;
+    message: string;
+  } | null>(null);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -39,7 +43,7 @@ export default function ResetPassword() {
 
         // Check for explicit error parameters first
         if (params.error) {
-          handleExplicitError(params.error, params.error_description);
+          handleExplicitError(params.error, params.error_description, params.error_code);
           return;
         }
 
@@ -79,6 +83,11 @@ export default function ResetPassword() {
       const urlParams = new URLSearchParams(window.location.search);
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       
+      console.log('🔑 Raw URL search:', window.location.search);
+      console.log('🔑 Raw URL hash:', window.location.hash);
+      console.log('🔑 Parsed query params:', Object.fromEntries(urlParams));
+      console.log('🔑 Parsed hash params:', Object.fromEntries(hashParams));
+      
       const params = {
         // Authentication tokens (can be in query or hash)
         access_token: urlParams.get("access_token") || hashParams.get("access_token"),
@@ -89,7 +98,7 @@ export default function ResetPassword() {
         // Code-based flow
         code: urlParams.get("code") || hashParams.get("code"),
         
-        // Error parameters
+        // Error parameters - prioritize query params over hash for errors
         error: urlParams.get("error") || hashParams.get("error"),
         error_code: urlParams.get("error_code") || hashParams.get("error_code"),
         error_description: urlParams.get("error_description") || hashParams.get("error_description"),
@@ -98,8 +107,16 @@ export default function ResetPassword() {
       const errors = [];
       if (params.error) {
         errors.push(`Error: ${params.error}`);
+        if (params.error_code) {
+          errors.push(`Error Code: ${params.error_code}`);
+        }
         if (params.error_description) {
-          errors.push(`Description: ${decodeURIComponent(params.error_description)}`);
+          try {
+            const decoded = decodeURIComponent(params.error_description.replace(/\+/g, ' '));
+            errors.push(`Description: ${decoded}`);
+          } catch (e) {
+            errors.push(`Description (raw): ${params.error_description}`);
+          }
         }
       }
 
@@ -107,26 +124,56 @@ export default function ResetPassword() {
     };
 
     // Handle explicit error parameters in URL
-    const handleExplicitError = (error: string, description?: string) => {
-      console.error('🔑 Explicit error in URL:', { error, description });
+    const handleExplicitError = (error: string, description?: string | null, errorCode?: string | null) => {
+      console.error('🔑 Explicit error in URL:', { 
+        error, 
+        description, 
+        errorCode,
+        rawDescription: description,
+        decodedDescription: description ? decodeURIComponent(description) : null
+      });
       
       let message = "Your reset link is invalid or has expired.";
+      let title = "Invalid Reset Link";
       
-      if (error === "access_denied" || error === "otp_expired") {
-        message = "Your reset link is invalid or has expired.";
+      // Handle specific error types with user-friendly messages
+      if (error === "access_denied") {
+        if (errorCode === "otp_expired") {
+          message = "Your reset link has expired. Please request a new one.";
+          title = "Link Expired";
+        } else {
+          message = "Access to reset your password was denied. Please request a new reset link.";
+          title = "Access Denied";
+        }
+      } else if (error === "otp_expired") {
+        message = "Your reset link has expired. Please request a new one.";
+        title = "Link Expired";
+      } else if (error === "invalid_request") {
+        message = "Invalid reset request. Please try requesting a new reset link.";
+        title = "Invalid Request";
       } else if (description) {
-        message = decodeURIComponent(description);
+        // Decode and clean up the description
+        try {
+          const decodedDesc = decodeURIComponent(description.replace(/\+/g, ' '));
+          message = decodedDesc;
+        } catch (e) {
+          console.warn('Failed to decode error description:', description);
+          message = "Your reset link is invalid or has expired.";
+        }
       }
 
       setIsValidating(false);
-      toast({
-        title: "Invalid Reset Link",
-        description: `${message} Please request a new one.`,
-        variant: "destructive",
+      setErrorState({
+        title: title,
+        message: message
       });
       
-      // Navigate after a short delay to show the error
-      setTimeout(() => navigate("/auth/forgot-password"), 2000);
+      // Also show a toast for immediate feedback
+      toast({
+        title: title,
+        description: message,
+        variant: "destructive",
+      });
     };
 
     // Try to establish session from URL parameters
@@ -349,19 +396,67 @@ export default function ResetPassword() {
     );
   }
 
-  // Show error state if link is invalid (this will only show briefly before redirect)
-  if (!hasValidSession) {
+  // Show error state for expired/invalid links
+  if (errorState) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+              <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <CardTitle className="text-red-600">{errorState.title}</CardTitle>
+            <CardDescription className="text-gray-600">
+              {errorState.message}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button 
+              onClick={() => navigate("/auth/forgot-password")}
+              className="w-full"
+            >
+              Request New Reset Link
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => navigate("/auth")}
+              className="w-full"
+            >
+              Back to Sign In
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show fallback error state if no valid session and no specific error
+  if (!hasValidSession && !isValidating) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <CardTitle className="text-red-600">Invalid Reset Link</CardTitle>
             <CardDescription>
-              Your reset link is invalid or has expired. Redirecting to request a new one...
+              Your reset link is invalid or has expired.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
+          <CardContent className="space-y-4">
+            <Button 
+              onClick={() => navigate("/auth/forgot-password")}
+              className="w-full"
+            >
+              Request New Reset Link
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => navigate("/auth")}
+              className="w-full"
+            >
+              Back to Sign In
+            </Button>
           </CardContent>
         </Card>
       </div>
