@@ -31,69 +31,111 @@ export default function ResetPassword() {
       const urlParams = new URLSearchParams(window.location.search);
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       
+      // Check for different token formats Supabase might use
       const accessToken = urlParams.get("access_token") || hashParams.get("access_token");
       const refreshToken = urlParams.get("refresh_token") || hashParams.get("refresh_token");
       const type = urlParams.get("type") || hashParams.get("type");
+      const code = urlParams.get("code") || hashParams.get("code");
       
-      console.log('🔑 Found tokens:', { 
+      console.log('🔑 Found parameters:', { 
         accessToken: accessToken ? 'present' : 'missing', 
         refreshToken: refreshToken ? 'present' : 'missing',
-        type 
+        type,
+        code: code ? 'present' : 'missing'
       });
       
-      if (!accessToken || !refreshToken) {
-        console.error('🔑 Missing tokens in URL');
-        toast({
-          title: "Invalid reset link",
-          description: "This password reset link is invalid or expired. Please request a new one.",
-          variant: "destructive",
-        });
-        navigate("/auth/forgot-password");
-        return;
-      }
-
-      if (type !== "recovery") {
-        console.error('🔑 Invalid link type:', type);
-        toast({
-          title: "Invalid reset link",
-          description: "This is not a valid password reset link.",
-          variant: "destructive",
-        });
-        navigate("/auth/forgot-password");
-        return;
-      }
-
-      try {
-        // Set the session with the tokens from the URL
-        console.log('🔑 Setting session with tokens...');
-        const { data, error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        });
-        
-        if (error) {
-          console.error('🔑 Session set error:', error);
-          throw error;
+      // Handle code-based flow (newer Supabase versions)
+      if (code) {
+        console.log('🔑 Using code-based password reset flow');
+        try {
+          // Exchange the code for a session
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+          
+          if (error) {
+            console.error('🔑 Code exchange error:', error);
+            throw error;
+          }
+          
+          console.log('🔑 Session established via code exchange:', data);
+          
+          // Clear the URL parameters to clean up the address bar
+          window.history.replaceState({}, document.title, '/auth/reset-password');
+          
+          toast({
+            title: "Ready to reset password",
+            description: "Please enter your new password below.",
+          });
+          return;
+        } catch (error) {
+          console.error('🔑 Error exchanging code for session:', error);
+          toast({
+            title: "Invalid reset link",
+            description: "This password reset link is invalid or expired. Please request a new one.",
+            variant: "destructive",
+          });
+          navigate("/auth/forgot-password");
+          return;
         }
-        
-        console.log('🔑 Session set successfully:', data);
-        
-        // Clear the URL parameters to clean up the address bar
-        window.history.replaceState({}, document.title, '/auth/reset-password');
-        
-        toast({
-          title: "Ready to reset password",
-          description: "Please enter your new password below.",
-        });
-      } catch (error) {
-        console.error('🔑 Error setting session:', error);
-        toast({
-          title: "Session error",
-          description: "Unable to verify reset link. Please try requesting a new one.",
-          variant: "destructive",
-        });
-        navigate("/auth/forgot-password");
       }
+      
+      // Handle token-based flow (older Supabase versions)
+      if (accessToken && refreshToken) {
+        console.log('🔑 Using token-based password reset flow');
+        
+        if (type && type !== "recovery") {
+          console.error('🔑 Invalid link type:', type);
+          toast({
+            title: "Invalid reset link",
+            description: "This is not a valid password reset link.",
+            variant: "destructive",
+          });
+          navigate("/auth/forgot-password");
+          return;
+        }
+
+        try {
+          // Set the session with the tokens from the URL
+          console.log('🔑 Setting session with tokens...');
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          
+          if (error) {
+            console.error('🔑 Session set error:', error);
+            throw error;
+          }
+          
+          console.log('🔑 Session set successfully:', data);
+          
+          // Clear the URL parameters to clean up the address bar
+          window.history.replaceState({}, document.title, '/auth/reset-password');
+          
+          toast({
+            title: "Ready to reset password",
+            description: "Please enter your new password below.",
+          });
+          return;
+        } catch (error) {
+          console.error('🔑 Error setting session:', error);
+          toast({
+            title: "Session error",
+            description: "Unable to verify reset link. Please try requesting a new one.",
+            variant: "destructive",
+          });
+          navigate("/auth/forgot-password");
+          return;
+        }
+      }
+      
+      // No valid tokens or code found
+      console.error('🔑 No valid reset parameters found in URL');
+      toast({
+        title: "Invalid reset link",
+        description: "This password reset link is invalid or expired. Please request a new one.",
+        variant: "destructive",
+      });
+      navigate("/auth/forgot-password");
     };
 
     handlePasswordReset();
