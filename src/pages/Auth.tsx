@@ -332,9 +332,10 @@ export default function Auth() {
           variant: "destructive",
           action: (
             <Button 
-              variant="outline" 
+              variant="secondary" 
               size="sm" 
               onClick={() => setActiveTab('signin')}
+              className="bg-white text-black border border-gray-300 hover:bg-gray-100"
             >
               Go to Sign In
             </Button>
@@ -430,9 +431,10 @@ export default function Auth() {
         variant: "destructive",
         action: showSignInButton ? (
           <Button 
-            variant="outline" 
+            variant="secondary" 
             size="sm" 
             onClick={() => setActiveTab('signin')}
+            className="bg-white text-black border border-gray-300 hover:bg-gray-100"
           >
             Go to Sign In
           </Button>
