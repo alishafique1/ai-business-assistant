@@ -1595,12 +1595,19 @@ export function ExpenseTracker() {
               console.log('✅ Voice expense saved to Supabase:', savedExpense);
               
               // Increment receipt count for voice expenses (they use ML processing)
-              console.log('🎤 VOICE EXPENSE: About to increment receipt counter...');
+              console.log('🎤 VOICE EXPENSE: About to increment receipt counters...');
+              
+              // Increment monthly feature limit counter (useFeatureLimits)
               console.log('🎤 Current remaining uploads before:', getRemainingUploads());
               const incrementResult = await incrementReceiptUpload();
               console.log('🎤 incrementReceiptUpload() result:', incrementResult);
               console.log('🎤 Current remaining uploads after:', getRemainingUploads());
-              console.log('🎤 VOICE EXPENSE: Receipt counter increment completed');
+              
+              // Increment receipt processing counter (useReceiptLimit) - this updates the displayed count
+              console.log('🎤 About to increment receipt processing count...');
+              const receiptCountResult = await incrementCount();
+              console.log('🎤 incrementCount() result:', receiptCountResult);
+              console.log('🎤 VOICE EXPENSE: All receipt counter increments completed');
             }
           } catch (supabaseError) {
             console.error('❌ Error saving to Supabase:', supabaseError);
@@ -2032,13 +2039,20 @@ export function ExpenseTracker() {
 
         console.log('✅ ML expense saved to database:', savedExpense);
 
-        // Increment receipt count for photo uploads using useFeatureLimits
-        console.log('📸 PHOTO UPLOAD: About to increment receipt counter using useFeatureLimits...');
+        // Increment receipt count for photo uploads
+        console.log('📸 PHOTO UPLOAD: About to increment receipt counters...');
+        
+        // Increment monthly feature limit counter (useFeatureLimits)
         console.log('📸 Current remaining uploads before:', getRemainingUploads());
         const incrementResult = await incrementReceiptUpload();
         console.log('📸 incrementReceiptUpload() result:', incrementResult);
         console.log('📸 Current remaining uploads after:', getRemainingUploads());
-        console.log('📸 PHOTO UPLOAD: Receipt counter increment completed');
+        
+        // Increment receipt processing counter (useReceiptLimit) - this updates the displayed count
+        console.log('📸 About to increment receipt processing count...');
+        const receiptCountResult = await incrementCount();
+        console.log('📸 incrementCount() result:', receiptCountResult);
+        console.log('📸 PHOTO UPLOAD: All receipt counter increments completed');
         
         // Add the category to user categories if it doesn't exist
         // This ensures new ML categories appear in the Categories tab
