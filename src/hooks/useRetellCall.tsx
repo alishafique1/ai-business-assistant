@@ -38,6 +38,15 @@ export const useRetellCall = () => {
       console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
       console.log('Anon Key:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Present' : 'Missing');
       
+      // Validate required environment variables
+      if (!import.meta.env.VITE_SUPABASE_URL) {
+        throw new Error('VITE_SUPABASE_URL environment variable is required');
+      }
+      
+      if (!import.meta.env.VITE_SUPABASE_ANON_KEY) {
+        throw new Error('VITE_SUPABASE_ANON_KEY environment variable is required');
+      }
+      
       const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-web-call`;
       console.log('Making request to:', functionUrl);
       
@@ -72,7 +81,15 @@ export const useRetellCall = () => {
       const data = await response.json();
       console.log('Function response data:', data);
 
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid response format from create-web-call function');
+      }
+
       const { call_id, access_token } = data;
+      
+      if (!call_id || !access_token) {
+        throw new Error(`Missing required fields in response: call_id=${call_id}, access_token=${access_token ? 'present' : 'missing'}`);
+      }
 
       // Initialize the call
       const retellWebClient = new RetellWebClient();
