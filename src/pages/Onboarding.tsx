@@ -333,7 +333,7 @@ Help with business operations and categorize expenses into: ${defaultCategories}
       });
 
       // Try to save with all fields first, then gracefully degrade
-      let aiSettingsToSave: any = {
+      const aiSettingsToSave: any = {
         user_id: user.id,
         system_prompt: systemPrompt,
       };

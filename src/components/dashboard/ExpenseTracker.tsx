@@ -43,7 +43,7 @@ export function ExpenseTracker() {
   const { formatAmount } = useCurrency();
   const { planData } = usePlan();
   const { canAddReceipt, remainingReceipts, incrementCount, limitData, loading: limitLoading, error: limitError, liveTimer, formatTimeRemaining, shouldShowTimer } = useReceiptLimit();
-  const { incrementReceiptUpload, getRemainingUploads, canUploadReceipt, refreshUsage } = useFeatureLimits();
+  const { incrementReceiptUpload, getRemainingUploads, canUploadReceipt, refreshUsage, usage } = useFeatureLimits();
   const { formatExpenseDate, formatDateTime, getCurrentDate, getTimezoneDisplay } = useTimezone();
   const { notifyExpenseAdded, notifyLargeExpense, notifyDuplicateExpense, notifyReceiptProcessed } = useNotifications();
   // const [isRecording, setIsRecording] = useState(false); // Replaced by isVoiceRecording
@@ -62,6 +62,9 @@ export function ExpenseTracker() {
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [voiceResponse, setVoiceResponse] = useState<string>('');
   const [processingVoice, setProcessingVoice] = useState(false);
+  
+  // Input method selection state
+  const [activeInputMethod, setActiveInputMethod] = useState<'none' | 'voice' | 'upload'>('none');
 
   const [formData, setFormData] = useState({
     amount: '',
@@ -74,6 +77,14 @@ export function ExpenseTracker() {
 
   // Debug logging for form data changes
   console.log('📋 CURRENT FORM DATA STATE:', formData);
+
+  // Debug usage changes and force re-render
+  useEffect(() => {
+    console.log('📊 USAGE STATE CHANGED:', usage);
+    if (usage) {
+      console.log('📊 Current receipt uploads:', usage.receipt_uploads);
+    }
+  }, [usage]);
 
   useEffect(() => {
     if (user) {
@@ -880,12 +891,7 @@ export function ExpenseTracker() {
         description: "Expense created successfully"
       });
       
-      // Increment receipt count for all expenses (manual, voice, OCR)
-      console.log('✍️ MANUAL EXPENSE: About to increment receipt counter...');
-      const receiptCountResult = await incrementCount();
-      console.log('✍️ MANUAL EXPENSE: incrementCount() result:', receiptCountResult);
-      
-      // Also increment the feature limits counter for UI display
+      // Increment the feature limits counter
       await incrementReceiptUpload();
       // Force refresh of usage data to ensure counter updates immediately
       await refreshUsage();
@@ -1616,10 +1622,7 @@ export function ExpenseTracker() {
               const incrementResult = await incrementReceiptUpload();
               console.log('🎤 incrementReceiptUpload() result:', incrementResult);
               
-              // Increment receipt processing counter (useReceiptLimit) - this updates the displayed count
-              console.log('🎤 About to increment receipt processing count...');
-              const receiptCountResult = await incrementCount();
-              console.log('🎤 incrementCount() result:', receiptCountResult);
+              // Counter already incremented by incrementReceiptUpload above
               
               // Force refresh of usage data to ensure counter updates immediately
               await refreshUsage();
@@ -1676,6 +1679,7 @@ export function ExpenseTracker() {
       });
     } finally {
       setProcessingVoice(false);
+      setActiveInputMethod('none');
     }
   };
 
@@ -1683,6 +1687,7 @@ export function ExpenseTracker() {
     if (isVoiceRecording) {
       stopVoiceRecording();
     } else {
+      setActiveInputMethod('voice');
       startVoiceRecording();
     }
   };
@@ -2064,10 +2069,7 @@ export function ExpenseTracker() {
         const incrementResult = await incrementReceiptUpload();
         console.log('📸 incrementReceiptUpload() result:', incrementResult);
         
-        // Increment receipt processing counter (useReceiptLimit) - this updates the displayed count
-        console.log('📸 About to increment receipt processing count...');
-        const receiptCountResult = await incrementCount();
-        console.log('📸 incrementCount() result:', receiptCountResult);
+        // Counter already incremented by incrementReceiptUpload above
         
         // Force refresh of usage data to ensure counter updates immediately
         await refreshUsage();
@@ -2160,6 +2162,7 @@ export function ExpenseTracker() {
       });
     } finally {
       setUploadingReceipt(false);
+      setActiveInputMethod('none');
       // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -2289,6 +2292,7 @@ export function ExpenseTracker() {
   };
 
   const handlePhotoUpload = () => {
+    setActiveInputMethod('upload');
     fileInputRef.current?.click();
   };
 
@@ -2315,13 +2319,59 @@ export function ExpenseTracker() {
                   <Badge variant={canUploadReceipt() ? "secondary" : "destructive"} className="text-sm font-medium">
                     {(() => {
                       const remaining = getRemainingUploads();
-                      const used = remaining === -1 ? 0 : Math.max(0, 5 - remaining);
-                      console.log('📊 COUNTER DEBUG:', { remaining, used, total: 5 });
+                      const used = usage?.receipt_uploads || 0;
+                      const canUpload = canUploadReceipt();
+                      console.log('📊 RENDER COUNTER:', { remaining, used, total: 5, usage, canUpload, timestamp: new Date().toISOString() });
                       return remaining === -1 ? 'Unlimited' : `${used}/5`;
                     })()} receipt uploads used
                     {!canUploadReceipt() && " - Limit reached!"}
                   </Badge>
                 )}
+                {/* Debug buttons for testing counter */}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={async () => {
+                    console.log('🧪 TEST: Manual refresh usage...');
+                    await refreshUsage();
+                  }}
+                >
+                  Refresh Usage
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={async () => {
+                    console.log('🧪 TEST: Manual increment...');
+                    const result = await incrementReceiptUpload();
+                    console.log('🧪 TEST: Increment result:', result);
+                  }}
+                >
+                  Test Increment
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={async () => {
+                    console.log('🧪 TEST: Direct database test...');
+                    if (!user) {
+                      console.log('❌ No user logged in');
+                      return;
+                    }
+                    
+                    // Test direct RPC call
+                    try {
+                      const { data, error } = await supabase.rpc('get_current_month_usage', {
+                        user_uuid: user.id
+                      });
+                      console.log('🧪 Direct DB test result:', { data, error });
+                    } catch (e) {
+                      console.error('🧪 Direct DB test error:', e);
+                    }
+                  }}
+                >
+                  Test DB Direct
+                </Button>
               </div>
               {shouldShowTimer && (
                 <p className="text-xs text-muted-foreground animate-pulse">
@@ -2372,7 +2422,7 @@ export function ExpenseTracker() {
                   variant="outline" 
                   className="h-20 flex-col gap-2"
                   onClick={handleVoiceRecord}
-                  disabled={processingVoice || !canUploadReceipt()}
+                  disabled={processingVoice || !canUploadReceipt() || activeInputMethod === 'upload'}
                 >
                   <Mic className={`h-6 w-6 ${isVoiceRecording ? 'animate-pulse text-red-500' : processingVoice ? 'animate-spin' : ''}`} />
                   <span className="text-sm">
@@ -2391,7 +2441,7 @@ export function ExpenseTracker() {
                   variant="outline" 
                   className="h-20 flex-col gap-2"
                   onClick={handlePhotoUpload}
-                  disabled={uploadingReceipt || !canUploadReceipt()}
+                  disabled={uploadingReceipt || !canUploadReceipt() || activeInputMethod === 'voice'}
                 >
                   {uploadingReceipt ? (
                     <>
@@ -2563,10 +2613,10 @@ export function ExpenseTracker() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Mic className="h-5 w-5" />
-                Voice Expense Suggestions
+                Voice Expense
               </CardTitle>
               <CardDescription>
-                Record your voice to get AI-powered marketing ideas and expense suggestions
+                Record your voice to add an expense
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -2575,7 +2625,7 @@ export function ExpenseTracker() {
                   onClick={handleVoiceRecord}
                   variant={isVoiceRecording ? "destructive" : "default"}
                   className="gap-2"
-                  disabled={processingVoice || !canUploadReceipt()}
+                  disabled={processingVoice || !canUploadReceipt() || activeInputMethod === 'upload'}
                 >
                   <Mic className={`h-4 w-4 ${isVoiceRecording ? "animate-pulse" : ""}`} />
                   {processingVoice 
@@ -2623,10 +2673,6 @@ export function ExpenseTracker() {
 
               {!isVoiceRecording && !processingVoice && !voiceResponse && (
                 <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Click "Record Expense" and speak about your business expenses or marketing ideas. 
-                    The AI will provide detailed suggestions and play an audio confirmation.
-                  </p>
                   
                   <div className="p-3 bg-muted/50 rounded-lg">
                     <h4 className="font-medium mb-2 text-sm">Voice Commands Examples:</h4>

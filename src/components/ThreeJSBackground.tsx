@@ -13,8 +13,8 @@ export const ThreeJSBackground = () => {
     let scene: THREE.Scene;
     let camera: THREE.PerspectiveCamera;
     let animationId: number;
-    let buildings: THREE.Mesh[] = [];
-    let windowLights: THREE.PointLight[] = [];
+    const buildings: THREE.Mesh[] = [];
+    const windowLights: THREE.PointLight[] = [];
     let ground: THREE.Mesh;
 
     try {

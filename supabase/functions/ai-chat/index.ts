@@ -72,7 +72,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get conversation history if conversationId exists
-    let conversationMessages = [
+    const conversationMessages = [
       {
         role: 'system',
         content: 'You are a helpful AI business assistant. You help users with document management, business questions, and general assistance. Be concise and professional.'

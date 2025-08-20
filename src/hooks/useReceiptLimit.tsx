@@ -142,9 +142,32 @@ export const useReceiptLimit = () => {
       
       const limit = planData.features.receiptLimit;
       
-      // Check if user can add more expenses (unlimited plans can always add)
-      if (limit !== 'unlimited' && currentCount >= limit) {
-        console.log('User has reached limit:', currentCount, '>=', limit);
+      // For unlimited plans, always allow increments
+      if (limit === 'unlimited') {
+        const newCount = currentCount + 1;
+        localStorage.setItem(storageKey, JSON.stringify({
+          count: newCount,
+          resetTime: new Date(0).toISOString() // No timer for unlimited
+        }));
+        console.log('Successfully incremented count from', currentCount, 'to', newCount, '(unlimited plan)');
+        await checkLimit();
+        return true;
+      }
+      
+      // For limited plans, check if we need to reset first
+      const now = new Date();
+      const tenMinutesFromReset = new Date(resetTime.getTime() + 10 * 60 * 1000);
+      
+      // If timer has expired and we had reached limit, reset counter
+      if (resetTime.getTime() > 0 && now >= tenMinutesFromReset) {
+        console.log('⏰ Timer expired, resetting counter before increment');
+        currentCount = 0;
+        resetTime = new Date(0);
+      }
+      
+      // Now check if we can add (after potential reset)
+      if (currentCount >= limit) {
+        console.log('User has reached limit and timer not expired yet:', currentCount, '>=', limit);
         return false;
       }
       
@@ -152,9 +175,9 @@ export const useReceiptLimit = () => {
       const newCount = currentCount + 1;
       
       // If this increment reaches the limit, set resetTime to NOW (when limit is hit)
-      console.log('Checking if limit reached:', { limit, newCount, isLimitReached: (limit !== 'unlimited' && newCount >= limit) });
+      console.log('Checking if limit reached:', { limit, newCount, isLimitReached: newCount >= limit });
       
-      if (limit !== 'unlimited' && newCount >= limit) {
+      if (newCount >= limit) {
         resetTime = new Date(); // Start timer when limit is reached
         console.log('🚨 LIMIT REACHED! Starting 10-minute timer from now:', resetTime);
         console.log('Timer will expire at:', new Date(resetTime.getTime() + 10 * 60 * 1000));
