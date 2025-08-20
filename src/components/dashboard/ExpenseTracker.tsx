@@ -14,6 +14,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useReceiptLimit } from "@/hooks/useReceiptLimit";
 import { useFeatureLimits } from "@/hooks/useFeatureLimits";
+import { useSimpleCounter } from "@/hooks/useSimpleCounter";
 import { usePlan } from "@/hooks/usePlan";
 import { useTimezone } from "@/hooks/useTimezone";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -21,7 +22,7 @@ import { ExpenseHistory } from "./ExpenseHistory";
 import { CategoryExpenseHistory } from "./CategoryExpenseHistory";
 
 // Available categories for all users
-const DEFAULT_CATEGORIES = ['Meals', 'Entertainment', 'Travel', 'Office Supplies', 'Marketing', 'Software', 'Other'];
+const DEFAULT_CATEGORIES = ['Food', 'Transportation', 'Household', 'Utilities', 'Entertainment', 'Healthcare', 'Education', 'Savings/Investments', 'Personal', 'Gifts/Charity', 'Miscellaneous', 'Other'];
 
 interface Expense {
   id: string;
@@ -42,8 +43,9 @@ export function ExpenseTracker() {
   const { toast } = useToast();
   const { formatAmount } = useCurrency();
   const { planData } = usePlan();
-  const { canAddReceipt, remainingReceipts, incrementCount, limitData, loading: limitLoading, error: limitError, liveTimer, formatTimeRemaining, shouldShowTimer } = useReceiptLimit();
+  const { canAddReceipt, remainingReceipts, incrementCount, limitData, loading: limitLoading, error: limitError } = useReceiptLimit();
   const { incrementReceiptUpload, getRemainingUploads, canUploadReceipt, refreshUsage, usage } = useFeatureLimits();
+  const simpleCounter = useSimpleCounter();
   const { formatExpenseDate, formatDateTime, getCurrentDate, getTimezoneDisplay } = useTimezone();
   const { notifyExpenseAdded, notifyLargeExpense, notifyDuplicateExpense, notifyReceiptProcessed } = useNotifications();
   // const [isRecording, setIsRecording] = useState(false); // Replaced by isVoiceRecording
@@ -470,15 +472,58 @@ export function ExpenseTracker() {
     // Enhanced mapping for common ML categories to existing user categories
     const categoryMap: Record<string, string> = {
       // Food & Dining variations
-      'meals': 'Meals',
-      'food & dining': 'Meals',
-      'food': 'Meals',
-      'restaurant': 'Meals',
-      'dining': 'Meals',
-      'meal': 'Meals',
-      'grocery': 'Meals',
-      'groceries': 'Meals',
-      'supermarket': 'Meals',
+      'meals': 'Food',
+      'food & dining': 'Food',
+      'food': 'Food',
+      'restaurant': 'Food',
+      'dining': 'Food',
+      'meal': 'Food',
+      'grocery': 'Food',
+      'groceries': 'Food',
+      'supermarket': 'Food',
+      'coffee': 'Food',
+      'lunch': 'Food',
+      'dinner': 'Food',
+      'breakfast': 'Food',
+      
+      // Transportation variations
+      'travel': 'Transportation',
+      'transportation': 'Transportation',
+      'gas': 'Transportation',
+      'fuel': 'Transportation',
+      'parking': 'Transportation',
+      'taxi': 'Transportation',
+      'uber': 'Transportation',
+      'lyft': 'Transportation',
+      'bus': 'Transportation',
+      'train': 'Transportation',
+      'flight': 'Transportation',
+      'flights': 'Transportation',
+      'car': 'Transportation',
+      'vehicle': 'Transportation',
+      
+      // Household variations
+      'home': 'Household',
+      'house': 'Household',
+      'household': 'Household',
+      'home improvement': 'Household',
+      'furniture': 'Household',
+      'appliances': 'Household',
+      'cleaning': 'Household',
+      'maintenance': 'Household',
+      'repair': 'Household',
+      'supplies': 'Household',
+      
+      // Utilities variations
+      'utilities': 'Utilities',
+      'electricity': 'Utilities',
+      'gas bill': 'Utilities',
+      'water': 'Utilities',
+      'internet': 'Utilities',
+      'phone': 'Utilities',
+      'cable': 'Utilities',
+      'heating': 'Utilities',
+      'cooling': 'Utilities',
       
       // Entertainment variations
       'entertainment': 'Entertainment',
@@ -492,35 +537,70 @@ export function ExpenseTracker() {
       'concert': 'Entertainment',
       'event': 'Entertainment',
       'events': 'Entertainment',
+      'sports': 'Entertainment',
+      'hobby': 'Entertainment',
       
-      // Travel variations
-      'travel': 'Travel',
-      'transportation': 'Travel',
-      'hotel': 'Travel',
-      'flights': 'Travel',
-      'accommodation': 'Travel',
+      // Healthcare variations
+      'health & wellness': 'Healthcare',
+      'health': 'Healthcare',
+      'healthcare': 'Healthcare',
+      'medical': 'Healthcare',
+      'doctor': 'Healthcare',
+      'pharmacy': 'Healthcare',
+      'medicine': 'Healthcare',
+      'hospital': 'Healthcare',
+      'dental': 'Healthcare',
+      'wellness': 'Healthcare',
+      'fitness': 'Healthcare',
+      'gym': 'Healthcare',
       
-      // Health & Wellness variations
-      'health & wellness': 'other', // Map to other since it's not in default categories
-      'health': 'other',
-      'wellness': 'other',
-      'medical': 'other',
+      // Education variations
+      'education': 'Education',
+      'school': 'Education',
+      'tuition': 'Education',
+      'books': 'Education',
+      'course': 'Education',
+      'training': 'Education',
+      'workshop': 'Education',
+      'certification': 'Education',
+      'learning': 'Education',
       
-      // Office/Business variations
-      'office supplies': 'Office Supplies',
-      'supplies': 'Office Supplies',
-      'business': 'other',
+      // Savings/Investments variations
+      'savings': 'Savings/Investments',
+      'investment': 'Savings/Investments',
+      'investments': 'Savings/Investments',
+      'retirement': 'Savings/Investments',
+      'stocks': 'Savings/Investments',
+      'bonds': 'Savings/Investments',
+      'mutual funds': 'Savings/Investments',
       
-      // Software variations
-      'software': 'Software',
-      'technology': 'Software',
-      'tech': 'Software',
-      'subscription': 'Software',
+      // Personal variations
+      'personal': 'Personal',
+      'personal care': 'Personal',
+      'clothing': 'Personal',
+      'beauty': 'Personal',
+      'haircut': 'Personal',
+      'grooming': 'Personal',
+      'shopping': 'Personal',
       
-      // Marketing variations
-      'marketing': 'Marketing',
-      'advertising': 'Marketing',
-      'promotion': 'Marketing'
+      // Gifts/Charity variations
+      'gifts': 'Gifts/Charity',
+      'gift': 'Gifts/Charity',
+      'charity': 'Gifts/Charity',
+      'donation': 'Gifts/Charity',
+      'donations': 'Gifts/Charity',
+      'giving': 'Gifts/Charity',
+      
+      // Business/Office (map to miscellaneous since no business category)
+      'office supplies': 'Miscellaneous',
+      'business': 'Miscellaneous',
+      'software': 'Miscellaneous',
+      'technology': 'Miscellaneous',
+      'tech': 'Miscellaneous',
+      'subscription': 'Miscellaneous',
+      'marketing': 'Miscellaneous',
+      'advertising': 'Miscellaneous',
+      'promotion': 'Miscellaneous'
     };
     
     const normalizedCategory = normalizedMLCategory.toLowerCase();
@@ -891,10 +971,8 @@ export function ExpenseTracker() {
         description: "Expense created successfully"
       });
       
-      // Increment the feature limits counter
-      await incrementReceiptUpload();
-      // Force refresh of usage data to ensure counter updates immediately
-      await refreshUsage();
+      // Increment the simple counter
+      simpleCounter.increment();
       console.log('✍️ MANUAL EXPENSE: Receipt counter increment completed');
       
       resetForm();
@@ -1259,7 +1337,7 @@ export function ExpenseTracker() {
   const startVoiceRecording = async () => {
     try {
       // Check receipt limit for voice expenses (they use ML processing)
-      if (!canUploadReceipt()) {
+      if (!simpleCounter.canAdd) {
         console.log('🚫 VOICE EXPENSE LIMIT REACHED - blocking recording');
         toast({
           title: "Voice Expense Limit Reached",
@@ -1617,17 +1695,9 @@ export function ExpenseTracker() {
                 incrementCount: typeof incrementCount 
               });
               
-              // Increment monthly feature limit counter (useFeatureLimits)
-              console.log('🎤 Current remaining uploads before:', getRemainingUploads());
-              const incrementResult = await incrementReceiptUpload();
-              console.log('🎤 incrementReceiptUpload() result:', incrementResult);
-              
-              // Counter already incremented by incrementReceiptUpload above
-              
-              // Force refresh of usage data to ensure counter updates immediately
-              await refreshUsage();
-              console.log('🎤 Current remaining uploads after refresh:', getRemainingUploads());
-              console.log('🎤 VOICE EXPENSE: All receipt counter increments completed');
+              // Increment the simple counter
+              simpleCounter.increment();
+              console.log('🎤 VOICE EXPENSE: Receipt counter incremented');
             }
           } catch (supabaseError) {
             console.error('❌ Error saving to Supabase:', supabaseError);
@@ -1692,54 +1762,6 @@ export function ExpenseTracker() {
     }
   };
 
-  // Debug function to test API with minimal data
-  const testVoiceAPI = async () => {
-    try {
-      console.log('Testing voice API with minimal request...');
-      
-      // Create a minimal test blob (just some bytes that represent audio-like data)
-      const testData = new Uint8Array([
-        0x52, 0x49, 0x46, 0x46, 0x24, 0x00, 0x00, 0x00, // RIFF header
-        0x57, 0x41, 0x56, 0x45, 0x66, 0x6d, 0x74, 0x20, // WAVE fmt
-        0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, // PCM mono
-        0x44, 0xac, 0x00, 0x00, 0x88, 0x58, 0x01, 0x00, // 44.1kHz
-        0x02, 0x00, 0x10, 0x00, 0x64, 0x61, 0x74, 0x61, // data header
-        0x00, 0x00, 0x00, 0x00 // empty data
-      ]);
-      
-      const testBlob = new Blob([testData], { type: 'audio/wav' });
-      console.log('Test blob created:', { size: testBlob.size, type: testBlob.type });
-      
-      const formData = new FormData();
-      formData.append('file', testBlob, 'test.wav');
-      
-      console.log('Sending test request...');
-      const response = await fetch('https://socialdots-ai-expense-backend.hf.space/voice-expense', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Accept': 'application/json',
-        }
-      });
-      
-      console.log('Test response status:', response.status);
-      const responseText = await response.text();
-      console.log('Test response body:', responseText);
-      
-      toast({
-        title: "Test Complete",
-        description: `Status: ${response.status}. Check console for details.`
-      });
-      
-    } catch (error) {
-      console.error('Test API error:', error);
-      toast({
-        title: "Test Failed",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
 
   const clearVoiceResponse = () => {
     setVoiceResponse('');
@@ -1757,10 +1779,9 @@ export function ExpenseTracker() {
     console.log('📊 Current canAddReceipt:', canAddReceipt);
     console.log('📊 Current limitData:', limitData);
 
-    // Check receipt limit for free users using useFeatureLimits
-    if (!canUploadReceipt()) {
+    // Check receipt limit using simple counter
+    if (!simpleCounter.canAdd) {
       console.log('🚫 RECEIPT LIMIT REACHED - blocking upload');
-      const remaining = getRemainingUploads();
       toast({
         title: "Receipt Upload Limit Reached",
         description: `You've reached your limit of 5 receipt uploads for this month. The limit resets at the beginning of each month.`,
@@ -2064,17 +2085,9 @@ export function ExpenseTracker() {
         // Increment receipt count for photo uploads
         console.log('📸 PHOTO UPLOAD: About to increment receipt counters...');
         
-        // Increment monthly feature limit counter (useFeatureLimits)
-        console.log('📸 Current remaining uploads before:', getRemainingUploads());
-        const incrementResult = await incrementReceiptUpload();
-        console.log('📸 incrementReceiptUpload() result:', incrementResult);
-        
-        // Counter already incremented by incrementReceiptUpload above
-        
-        // Force refresh of usage data to ensure counter updates immediately
-        await refreshUsage();
-        console.log('📸 Current remaining uploads after refresh:', getRemainingUploads());
-        console.log('📸 PHOTO UPLOAD: All receipt counter increments completed');
+        // Increment the simple counter
+        simpleCounter.increment();
+        console.log('📸 PHOTO UPLOAD: Receipt counter incremented');
         
         // Add the category to user categories if it doesn't exist
         // This ensures new ML categories appear in the Categories tab
@@ -2192,14 +2205,58 @@ export function ExpenseTracker() {
     // Enhanced mapping for common ML categories to existing user categories
     const categoryMap: Record<string, { key: string; name: string }> = {
       // Food & Dining variations
-      'food & dining': { key: 'meals', name: 'Meals' },
-      'food': { key: 'meals', name: 'Meals' },
-      'restaurant': { key: 'meals', name: 'Meals' },
-      'dining': { key: 'meals', name: 'Meals' },
-      'meal': { key: 'meals', name: 'Meals' },
-      'grocery': { key: 'meals', name: 'Meals' },
-      'groceries': { key: 'meals', name: 'Meals' },
-      'supermarket': { key: 'meals', name: 'Meals' },
+      'food & dining': { key: 'food', name: 'Food' },
+      'food': { key: 'food', name: 'Food' },
+      'restaurant': { key: 'food', name: 'Food' },
+      'dining': { key: 'food', name: 'Food' },
+      'meal': { key: 'food', name: 'Food' },
+      'meals': { key: 'food', name: 'Food' },
+      'grocery': { key: 'food', name: 'Food' },
+      'groceries': { key: 'food', name: 'Food' },
+      'supermarket': { key: 'food', name: 'Food' },
+      'coffee': { key: 'food', name: 'Food' },
+      'lunch': { key: 'food', name: 'Food' },
+      'dinner': { key: 'food', name: 'Food' },
+      'breakfast': { key: 'food', name: 'Food' },
+      
+      // Transportation variations
+      'travel': { key: 'transportation', name: 'Transportation' },
+      'transportation': { key: 'transportation', name: 'Transportation' },
+      'gas': { key: 'transportation', name: 'Transportation' },
+      'fuel': { key: 'transportation', name: 'Transportation' },
+      'parking': { key: 'transportation', name: 'Transportation' },
+      'taxi': { key: 'transportation', name: 'Transportation' },
+      'uber': { key: 'transportation', name: 'Transportation' },
+      'lyft': { key: 'transportation', name: 'Transportation' },
+      'bus': { key: 'transportation', name: 'Transportation' },
+      'train': { key: 'transportation', name: 'Transportation' },
+      'flight': { key: 'transportation', name: 'Transportation' },
+      'flights': { key: 'transportation', name: 'Transportation' },
+      'car': { key: 'transportation', name: 'Transportation' },
+      'vehicle': { key: 'transportation', name: 'Transportation' },
+      
+      // Household variations
+      'home': { key: 'household', name: 'Household' },
+      'house': { key: 'household', name: 'Household' },
+      'household': { key: 'household', name: 'Household' },
+      'home improvement': { key: 'household', name: 'Household' },
+      'furniture': { key: 'household', name: 'Household' },
+      'appliances': { key: 'household', name: 'Household' },
+      'cleaning': { key: 'household', name: 'Household' },
+      'maintenance': { key: 'household', name: 'Household' },
+      'repair': { key: 'household', name: 'Household' },
+      'supplies': { key: 'household', name: 'Household' },
+      
+      // Utilities variations
+      'utilities': { key: 'utilities', name: 'Utilities' },
+      'electricity': { key: 'utilities', name: 'Utilities' },
+      'gas bill': { key: 'utilities', name: 'Utilities' },
+      'water': { key: 'utilities', name: 'Utilities' },
+      'internet': { key: 'utilities', name: 'Utilities' },
+      'phone': { key: 'utilities', name: 'Utilities' },
+      'cable': { key: 'utilities', name: 'Utilities' },
+      'heating': { key: 'utilities', name: 'Utilities' },
+      'cooling': { key: 'utilities', name: 'Utilities' },
       
       // Entertainment variations
       'entertainment': { key: 'entertainment', name: 'Entertainment' },
@@ -2213,28 +2270,70 @@ export function ExpenseTracker() {
       'concert': { key: 'entertainment', name: 'Entertainment' },
       'event': { key: 'entertainment', name: 'Entertainment' },
       'events': { key: 'entertainment', name: 'Entertainment' },
+      'sports': { key: 'entertainment', name: 'Entertainment' },
+      'hobby': { key: 'entertainment', name: 'Entertainment' },
       
-      // Travel variations
-      'travel': { key: 'travel', name: 'Travel' },
-      'transportation': { key: 'travel', name: 'Travel' },
-      'hotel': { key: 'travel', name: 'Travel' },
-      'flights': { key: 'travel', name: 'Travel' },
-      'accommodation': { key: 'travel', name: 'Travel' },
+      // Healthcare variations
+      'health & wellness': { key: 'healthcare', name: 'Healthcare' },
+      'health': { key: 'healthcare', name: 'Healthcare' },
+      'healthcare': { key: 'healthcare', name: 'Healthcare' },
+      'medical': { key: 'healthcare', name: 'Healthcare' },
+      'doctor': { key: 'healthcare', name: 'Healthcare' },
+      'pharmacy': { key: 'healthcare', name: 'Healthcare' },
+      'medicine': { key: 'healthcare', name: 'Healthcare' },
+      'hospital': { key: 'healthcare', name: 'Healthcare' },
+      'dental': { key: 'healthcare', name: 'Healthcare' },
+      'wellness': { key: 'healthcare', name: 'Healthcare' },
+      'fitness': { key: 'healthcare', name: 'Healthcare' },
+      'gym': { key: 'healthcare', name: 'Healthcare' },
       
-      // Office/Business variations
-      'office supplies': { key: 'officesupplies', name: 'Office Supplies' },
-      'supplies': { key: 'officesupplies', name: 'Office Supplies' },
+      // Education variations
+      'education': { key: 'education', name: 'Education' },
+      'school': { key: 'education', name: 'Education' },
+      'tuition': { key: 'education', name: 'Education' },
+      'books': { key: 'education', name: 'Education' },
+      'course': { key: 'education', name: 'Education' },
+      'training': { key: 'education', name: 'Education' },
+      'workshop': { key: 'education', name: 'Education' },
+      'certification': { key: 'education', name: 'Education' },
+      'learning': { key: 'education', name: 'Education' },
       
-      // Software variations
-      'software': { key: 'software', name: 'Software' },
-      'technology': { key: 'software', name: 'Software' },
-      'tech': { key: 'software', name: 'Software' },
-      'subscription': { key: 'software', name: 'Software' },
+      // Savings/Investments variations
+      'savings': { key: 'savingsinvestments', name: 'Savings/Investments' },
+      'investment': { key: 'savingsinvestments', name: 'Savings/Investments' },
+      'investments': { key: 'savingsinvestments', name: 'Savings/Investments' },
+      'retirement': { key: 'savingsinvestments', name: 'Savings/Investments' },
+      'stocks': { key: 'savingsinvestments', name: 'Savings/Investments' },
+      'bonds': { key: 'savingsinvestments', name: 'Savings/Investments' },
+      'mutual funds': { key: 'savingsinvestments', name: 'Savings/Investments' },
       
-      // Marketing variations
-      'marketing': { key: 'marketing', name: 'Marketing' },
-      'advertising': { key: 'marketing', name: 'Marketing' },
-      'promotion': { key: 'marketing', name: 'Marketing' }
+      // Personal variations
+      'personal': { key: 'personal', name: 'Personal' },
+      'personal care': { key: 'personal', name: 'Personal' },
+      'clothing': { key: 'personal', name: 'Personal' },
+      'beauty': { key: 'personal', name: 'Personal' },
+      'haircut': { key: 'personal', name: 'Personal' },
+      'grooming': { key: 'personal', name: 'Personal' },
+      'shopping': { key: 'personal', name: 'Personal' },
+      
+      // Gifts/Charity variations
+      'gifts': { key: 'giftscharity', name: 'Gifts/Charity' },
+      'gift': { key: 'giftscharity', name: 'Gifts/Charity' },
+      'charity': { key: 'giftscharity', name: 'Gifts/Charity' },
+      'donation': { key: 'giftscharity', name: 'Gifts/Charity' },
+      'donations': { key: 'giftscharity', name: 'Gifts/Charity' },
+      'giving': { key: 'giftscharity', name: 'Gifts/Charity' },
+      
+      // Business/Office (map to miscellaneous since no business category)
+      'office supplies': { key: 'miscellaneous', name: 'Miscellaneous' },
+      'business': { key: 'miscellaneous', name: 'Miscellaneous' },
+      'software': { key: 'miscellaneous', name: 'Miscellaneous' },
+      'technology': { key: 'miscellaneous', name: 'Miscellaneous' },
+      'tech': { key: 'miscellaneous', name: 'Miscellaneous' },
+      'subscription': { key: 'miscellaneous', name: 'Miscellaneous' },
+      'marketing': { key: 'miscellaneous', name: 'Miscellaneous' },
+      'advertising': { key: 'miscellaneous', name: 'Miscellaneous' },
+      'promotion': { key: 'miscellaneous', name: 'Miscellaneous' }
     };
     
     const normalizedCategory = normalizedMLCategory.toLowerCase();
@@ -2316,66 +2415,15 @@ export function ExpenseTracker() {
                   {planData.planLabel} Plan
                 </Badge>
                 {planData.plan === 'free' && (
-                  <Badge variant={canUploadReceipt() ? "secondary" : "destructive"} className="text-sm font-medium">
-                    {(() => {
-                      const remaining = getRemainingUploads();
-                      const used = usage?.receipt_uploads || 0;
-                      const canUpload = canUploadReceipt();
-                      console.log('📊 RENDER COUNTER:', { remaining, used, total: 5, usage, canUpload, timestamp: new Date().toISOString() });
-                      return remaining === -1 ? 'Unlimited' : `${used}/5`;
-                    })()} receipt uploads used
-                    {!canUploadReceipt() && " - Limit reached!"}
+                  <Badge variant={simpleCounter.canAdd ? "secondary" : "destructive"} className="text-sm font-medium">
+                    {simpleCounter.used}/{simpleCounter.limit} receipt uploads used
+                    {!simpleCounter.canAdd && " - Limit reached!"}
                   </Badge>
                 )}
-                {/* Debug buttons for testing counter */}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={async () => {
-                    console.log('🧪 TEST: Manual refresh usage...');
-                    await refreshUsage();
-                  }}
-                >
-                  Refresh Usage
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={async () => {
-                    console.log('🧪 TEST: Manual increment...');
-                    const result = await incrementReceiptUpload();
-                    console.log('🧪 TEST: Increment result:', result);
-                  }}
-                >
-                  Test Increment
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={async () => {
-                    console.log('🧪 TEST: Direct database test...');
-                    if (!user) {
-                      console.log('❌ No user logged in');
-                      return;
-                    }
-                    
-                    // Test direct RPC call
-                    try {
-                      const { data, error } = await supabase.rpc('get_current_month_usage', {
-                        user_uuid: user.id
-                      });
-                      console.log('🧪 Direct DB test result:', { data, error });
-                    } catch (e) {
-                      console.error('🧪 Direct DB test error:', e);
-                    }
-                  }}
-                >
-                  Test DB Direct
-                </Button>
               </div>
-              {shouldShowTimer && (
+              {simpleCounter.shouldShowTimer && (
                 <p className="text-xs text-muted-foreground animate-pulse">
-                  ⏰ Resets in {formatTimeRemaining(liveTimer)}
+                  ⏰ Resets in {simpleCounter.formatTimeRemaining(simpleCounter.timeLeft)}
                 </p>
               )}
               {limitLoading && (
@@ -2422,7 +2470,7 @@ export function ExpenseTracker() {
                   variant="outline" 
                   className="h-20 flex-col gap-2"
                   onClick={handleVoiceRecord}
-                  disabled={processingVoice || !canUploadReceipt() || activeInputMethod === 'upload'}
+                  disabled={processingVoice || !simpleCounter.canAdd || activeInputMethod === 'upload'}
                 >
                   <Mic className={`h-6 w-6 ${isVoiceRecording ? 'animate-pulse text-red-500' : processingVoice ? 'animate-spin' : ''}`} />
                   <span className="text-sm">
@@ -2430,7 +2478,7 @@ export function ExpenseTracker() {
                       ? 'Processing...' 
                       : isVoiceRecording 
                       ? 'Recording...' 
-                      : !canUploadReceipt()
+                      : !simpleCounter.canAdd
                       ? 'Limit Reached'
                       : 'Voice Entry'
                     }
@@ -2441,14 +2489,14 @@ export function ExpenseTracker() {
                   variant="outline" 
                   className="h-20 flex-col gap-2"
                   onClick={handlePhotoUpload}
-                  disabled={uploadingReceipt || !canUploadReceipt() || activeInputMethod === 'voice'}
+                  disabled={uploadingReceipt || !simpleCounter.canAdd || activeInputMethod === 'voice'}
                 >
                   {uploadingReceipt ? (
                     <>
                       <Upload className="h-6 w-6 animate-spin" />
                       <span className="text-sm">Processing...</span>
                     </>
-                  ) : !canUploadReceipt() ? (
+                  ) : !simpleCounter.canAdd ? (
                     <>
                       <Camera className="h-6 w-6 opacity-50" />
                       <span className="text-sm">Limit Reached</span>
@@ -2625,7 +2673,7 @@ export function ExpenseTracker() {
                   onClick={handleVoiceRecord}
                   variant={isVoiceRecording ? "destructive" : "default"}
                   className="gap-2"
-                  disabled={processingVoice || !canUploadReceipt() || activeInputMethod === 'upload'}
+                  disabled={processingVoice || !simpleCounter.canAdd || activeInputMethod === 'upload'}
                 >
                   <Mic className={`h-4 w-4 ${isVoiceRecording ? "animate-pulse" : ""}`} />
                   {processingVoice 

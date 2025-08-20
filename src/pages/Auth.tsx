@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { Brain, Building2, Github, Mail } from "lucide-react";
+import { runAuthDiagnostics, testRealAuth, testPasswordReset } from "@/utils/authDebug";
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -158,18 +159,40 @@ export default function Auth() {
   // Handle redirect based on onboarding status for authenticated users
   useEffect(() => {
     const checkAndRedirectUser = async () => {
+      console.log('🔄 Checking redirect conditions:', { 
+        onboardingLoading, 
+        isOnboardingCompleted, 
+        from 
+      });
+      
       if (!onboardingLoading) {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('❌ Error getting session:', error);
+          return;
+        }
+        
         if (session) {
-          console.log('User authenticated, onboarding completed:', isOnboardingCompleted);
+          console.log('✅ User authenticated, redirecting...', {
+            userId: session.user.id,
+            email: session.user.email,
+            onboardingCompleted: isOnboardingCompleted,
+            redirectTo: isOnboardingCompleted ? from : '/onboarding'
+          });
+          
           // Clear email confirmed state when navigating away
           setEmailConfirmed(false);
           
           if (isOnboardingCompleted) {
+            console.log('🔄 Redirecting to:', from);
             navigate(from, { replace: true });
           } else {
+            console.log('🔄 Redirecting to onboarding');
             navigate('/onboarding', { replace: true });
           }
+        } else {
+          console.log('ℹ️ No active session found');
         }
       }
     };
@@ -449,7 +472,11 @@ export default function Auth() {
     e.preventDefault();
     
     // Client-side validation
+    console.log('🔑 === SIGNIN ATTEMPT ===');
+    console.log('🔑 Form data:', { email: email.trim(), hasPassword: !!password, passwordLength: password.length });
+    
     if (!email || !password) {
+      console.log('❌ Validation failed: Missing email or password');
       toast({
         title: "Validation Error",
         description: "Please fill in all fields",
@@ -459,6 +486,7 @@ export default function Auth() {
     }
 
     if (!email.includes('@')) {
+      console.log('❌ Validation failed: Invalid email format');
       toast({
         title: "Validation Error",
         description: "Please enter a valid email address",
@@ -466,50 +494,79 @@ export default function Auth() {
       });
       return;
     }
-
+    
+    console.log('✅ Client-side validation passed');
     setIsLoading(true);
 
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-
-      if (error) throw error;
-
-      if (data.user) {
-        const userName = data.user.email?.split('@')[0] || data.user.user_metadata?.business_name || 'User';
-        toast({
-          title: `Welcome back, ${userName}!`,
-          description: "You have been successfully signed in.",
-        });
-        
-        // Check onboarding status and redirect accordingly
-        await checkOnboardingStatus();
-        // The redirect will happen automatically via the useEffect above
-      }
-    } catch (error: unknown) {
-      let errorMessage = "An unexpected error occurred. Please try again.";
+    // Use our enhanced auth testing
+    const result = await testRealAuth(email, password);
+    
+    if (result.success && result.data?.user) {
+      console.log('✅ SIGNIN SUCCESSFUL');
+      const userName = result.data.user.email?.split('@')[0] || result.data.user.user_metadata?.business_name || 'User';
       
-      // Provide user-friendly error messages
-      if (error instanceof Error && error.message.includes('Invalid login credentials')) {
-        errorMessage = "Invalid email or password. Please check your credentials and try again.";
-      } else if (error instanceof Error && error.message.includes('Email not confirmed')) {
-        errorMessage = "Please check your email and click the confirmation link before signing in.";
-      } else if (error instanceof Error && error.message.includes('Too many requests')) {
-        errorMessage = "Too many login attempts. Please wait a moment before trying again.";
-      } else if (error instanceof Error && error.message.includes('Network request failed')) {
-        errorMessage = "Network error. Please check your connection and try again.";
+      toast({
+        title: `Welcome back, ${userName}!`,
+        description: "You have been successfully signed in.",
+      });
+      
+      // Check onboarding status and redirect accordingly
+      console.log('🔑 Checking onboarding status...');
+      await checkOnboardingStatus();
+      console.log('🔑 Onboarding check completed');
+      
+    } else {
+      console.error('❌ SIGNIN FAILED:', result.error);
+      
+      let errorMessage = result.error || "An unexpected error occurred. Please try again.";
+      let showForgotPassword = false;
+      
+      // Enhanced error handling
+      if (result.error) {
+        const errorMsg = result.error.toLowerCase();
+        
+        if (errorMsg.includes('invalid login credentials') || 
+            errorMsg.includes('invalid credentials') ||
+            errorMsg.includes('wrong password') ||
+            errorMsg.includes('incorrect password')) {
+          errorMessage = "❌ Invalid email or password. Please check your credentials.";
+          showForgotPassword = true;
+        } else if (errorMsg.includes('email not confirmed') ||
+                   errorMsg.includes('email confirmation') ||
+                   errorMsg.includes('not verified')) {
+          errorMessage = "📧 Please check your email and click the confirmation link first.";
+        } else if (errorMsg.includes('user not found') ||
+                   errorMsg.includes('no user found') ||
+                   errorMsg.includes('account not found')) {
+          errorMessage = "👤 No account found with this email. Please sign up first.";
+        } else if (errorMsg.includes('too many requests') ||
+                   errorMsg.includes('rate limit')) {
+          errorMessage = "⏰ Too many attempts. Please wait before trying again.";
+        } else if (errorMsg.includes('network') ||
+                   errorMsg.includes('fetch') ||
+                   errorMsg.includes('connection')) {
+          errorMessage = "🌐 Network error. Please check your internet connection.";
+        }
       }
 
       toast({
         title: "Sign In Failed",
         description: errorMessage,
         variant: "destructive",
+        action: showForgotPassword ? (
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            onClick={() => window.location.href = '/auth/forgot-password'}
+            className="bg-white text-black border border-gray-300 hover:bg-gray-100"
+          >
+            Reset Password
+          </Button>
+        ) : undefined,
       });
-    } finally {
-      setIsLoading(false);
     }
+    
+    setIsLoading(false);
   };
 
   const handleGoogleAuth = async () => {
@@ -553,6 +610,37 @@ export default function Auth() {
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Test Supabase connection
+  const testConnection = async () => {
+    try {
+      console.log('🔧 Testing Supabase connection...');
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('❌ Supabase connection error:', error);
+        toast({
+          title: "Connection Error",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      console.log('✅ Supabase connection successful');
+      toast({
+        title: "Connection Test",
+        description: `Supabase connected successfully. Current session: ${data.session ? 'Active' : 'None'}`,
+      });
+    } catch (error) {
+      console.error('❌ Connection test failed:', error);
+      toast({
+        title: "Connection Test Failed",
+        description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
     }
@@ -847,6 +935,77 @@ export default function Auth() {
                   <Github className="mr-2 h-4 w-4" />
                   GitHub
                 </Button>
+              </div>
+              
+              {/* Debug section */}
+              <div className="mt-4">
+                <details className="text-xs">
+                  <summary className="cursor-pointer text-muted-foreground">Debug Tools</summary>
+                  <div className="mt-2 space-y-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={testConnection}
+                      className="w-full text-xs"
+                    >
+                      Test Supabase Connection
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => {
+                        console.log('🧪 Current form state:', { email, password: password ? '***' : '', isLoading });
+                        console.log('🧪 Auth context:', { onboardingLoading, isOnboardingCompleted });
+                      }}
+                      className="w-full text-xs"
+                    >
+                      Debug Form State
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={async () => {
+                        await runAuthDiagnostics();
+                        toast({
+                          title: "Diagnostics Complete",
+                          description: "Check console for detailed results",
+                        });
+                      }}
+                      className="w-full text-xs"
+                    >
+                      Full System Check
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={async () => {
+                        if (email) {
+                          console.log('🧪 Testing password reset for:', email);
+                          const result = await testPasswordReset(email);
+                          toast({
+                            title: result.success ? "Reset Test Passed" : "Reset Test Failed",
+                            description: result.error || "Password reset function is working",
+                            variant: result.success ? "default" : "destructive"
+                          });
+                        } else {
+                          toast({
+                            title: "Enter Email First",
+                            description: "Please enter an email address to test password reset",
+                            variant: "destructive"
+                          });
+                        }
+                      }}
+                      className="w-full text-xs"
+                    >
+                      Test Password Reset
+                    </Button>
+                    <div className="text-muted-foreground">
+                      <p>Environment: {import.meta.env.MODE}</p>
+                      <p>Site URL: {import.meta.env.VITE_SITE_URL || 'Not set'}</p>
+                      <p>Current URL: {window.location.href}</p>
+                    </div>
+                  </div>
+                </details>
               </div>
             </div>
           </CardContent>

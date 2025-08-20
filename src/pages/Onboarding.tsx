@@ -320,7 +320,7 @@ export default function Onboarding() {
       console.log('✅ Profile saved successfully');
 
       // Create or update AI settings with default categories
-      const defaultCategories = 'Meals, Entertainment, Travel, Office Supplies, Marketing, Software, Other';
+      const defaultCategories = 'Food, Transportation, Household, Utilities, Entertainment, Healthcare, Education, Savings/Investments, Personal, Gifts/Charity, Miscellaneous, Other';
       const systemPrompt = `You are ${formData.aiName}, a helpful AI business assistant for ${formData.businessName}. 
 Your response style is ${formData.responseStyle}. 
 Help with business operations and categorize expenses into: ${defaultCategories}.`;
@@ -864,7 +864,7 @@ Help with business operations and categorize expenses into: ${defaultCategories}
                     Expense categories will automatically be prepared according to the expense.
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {['Meals', 'Entertainment', 'Travel', 'Office Supplies', 'Marketing', 'Software', 'Other'].map((category) => (
+                    {['Food', 'Transportation', 'Household', 'Utilities', 'Entertainment', 'Healthcare', 'Education', 'Savings/Investments', 'Personal', 'Gifts/Charity', 'Miscellaneous', 'Other'].map((category) => (
                       <span key={category} className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
                         {category}
                       </span>
