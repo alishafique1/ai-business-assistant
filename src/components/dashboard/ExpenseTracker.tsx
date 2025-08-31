@@ -12,8 +12,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
 import { useCurrency } from "@/hooks/useCurrency";
-import { useReceiptLimit } from "@/hooks/useReceiptLimit";
-import { useFeatureLimits } from "@/hooks/useFeatureLimits";
+// Removed unused hooks that were causing 404 errors:
+// import { useReceiptLimit } from "@/hooks/useReceiptLimit";
+// import { useFeatureLimits } from "@/hooks/useFeatureLimits";
 import { useSimpleCounter } from "@/hooks/useSimpleCounter";
 import { usePlan } from "@/hooks/usePlan";
 import { useTimezone } from "@/hooks/useTimezone";
@@ -43,8 +44,7 @@ export function ExpenseTracker() {
   const { toast } = useToast();
   const { formatAmount } = useCurrency();
   const { planData } = usePlan();
-  const { canAddReceipt, remainingReceipts, incrementCount, limitData, loading: limitLoading, error: limitError } = useReceiptLimit();
-  const { incrementReceiptUpload, getRemainingUploads, canUploadReceipt, refreshUsage, usage } = useFeatureLimits();
+  // Removed unused hook calls that were causing 404 errors
   const simpleCounter = useSimpleCounter();
   const { formatExpenseDate, formatDateTime, getCurrentDate, getTimezoneDisplay } = useTimezone();
   const { notifyExpenseAdded, notifyLargeExpense, notifyDuplicateExpense, notifyReceiptProcessed } = useNotifications();
@@ -1616,6 +1616,12 @@ export function ExpenseTracker() {
                 });
                 
                 console.log('🌐 Categorization API status:', categorizationResponse.status);
+                
+                // Handle API errors gracefully
+                if (!categorizationResponse.ok) {
+                  console.warn('⚠️ Categorization API returned error:', categorizationResponse.status);
+                  throw new Error(`API returned ${categorizationResponse.status}`);
+                }
                 console.log('🌐 Categorization API headers:', [...categorizationResponse.headers.entries()]);
                 
                 if (categorizationResponse.ok) {
@@ -1690,10 +1696,7 @@ export function ExpenseTracker() {
               // Increment receipt count for voice expenses (they use ML processing)
               console.log('🎤 VOICE EXPENSE: About to increment receipt counters...');
               console.log('🎤 VOICE EXPENSE: Current user ID:', user?.id);
-              console.log('🎤 VOICE EXPENSE: Counter functions available:', { 
-                incrementReceiptUpload: typeof incrementReceiptUpload, 
-                incrementCount: typeof incrementCount 
-              });
+              console.log('🎤 VOICE EXPENSE: Using simple counter system');
               
               // Increment the simple counter
               simpleCounter.increment();
@@ -1776,8 +1779,7 @@ export function ExpenseTracker() {
     }
 
     console.log('📁 File selected:', file.name, file.size, 'bytes');
-    console.log('📊 Current canAddReceipt:', canAddReceipt);
-    console.log('📊 Current limitData:', limitData);
+    console.log('📊 Current simpleCounter:', simpleCounter);
 
     // Check receipt limit using simple counter
     if (!simpleCounter.canAdd) {
@@ -2424,16 +2426,6 @@ export function ExpenseTracker() {
               {simpleCounter.shouldShowTimer && (
                 <p className="text-xs text-muted-foreground animate-pulse">
                   ⏰ Resets in {simpleCounter.formatTimeRemaining(simpleCounter.timeLeft)}
-                </p>
-              )}
-              {limitLoading && (
-                <p className="text-xs text-muted-foreground">
-                  Loading limit data...
-                </p>
-              )}
-              {limitError && (
-                <p className="text-xs text-red-500">
-                  Error: {limitError}
                 </p>
               )}
             </div>

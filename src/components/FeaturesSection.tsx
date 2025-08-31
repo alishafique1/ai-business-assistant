@@ -16,7 +16,6 @@ import {
   Zap
 } from "lucide-react";
 import { useScrollAnimation, useStaggeredAnimation } from "@/hooks/useScrollAnimation";
-import { VantaNet } from "@/components/backgrounds/VantaNet";
 import expenseTrackingImg from "@/assets/expense-tracking.jpg";
 import aiContentImg from "@/assets/ai-content.jpg";
 import voiceModelImg from "@/assets/voice-model.jpg";
@@ -95,26 +94,38 @@ export const FeaturesSection = () => {
   ];
 
   return (
-    <section id="features" className="py-24 bg-gradient-to-br from-gradient-feature via-primary/8 to-accent/12 relative overflow-hidden">
+    <section id="features" className="py-24 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
 
-      {/* Vanta.js Net Animation Background */}
-      <VantaNet className="opacity-90" />
-      
-      {/* Subtle overlay for better text readability */}
-      <div className="absolute inset-0 bg-gradient-feature/10 pointer-events-none" />
+      {/* Elegant geometric background */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Subtle grid pattern */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: 'linear-gradient(rgba(148, 163, 184, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.1) 1px, transparent 1px)',
+          backgroundSize: '60px 60px'
+        }}></div>
+        
+        {/* Floating geometric shapes */}
+        <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-blue-500/8 to-purple-500/6 rounded-full blur-3xl animate-pulse-slow"></div>
+        <div className="absolute bottom-20 right-10 w-64 h-64 bg-gradient-to-l from-emerald-500/6 to-blue-500/6 rounded-full blur-3xl animate-pulse-very-slow"></div>
+        <div className="absolute top-1/3 right-1/4 w-48 h-48 bg-gradient-to-r from-purple-500/4 to-pink-500/4 rounded-full blur-2xl animate-gentle-breathe"></div>
+        
+        {/* Subtle line patterns */}
+        <div className="absolute top-1/4 left-1/3 w-px h-32 bg-gradient-to-b from-transparent via-slate-600/30 to-transparent rotate-12"></div>
+        <div className="absolute bottom-1/4 right-1/3 w-px h-40 bg-gradient-to-b from-transparent via-slate-600/20 to-transparent -rotate-12"></div>
+      </div>
 
       <div className="container mx-auto px-6 relative z-10">
         <div 
           ref={titleRef as React.RefObject<HTMLDivElement>}
           className={`text-center mb-16 transition-all duration-1000 ${titleVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 animate-text-reveal">
-            <span className="text-white">Three </span>
-            <span className="bg-gradient-to-r from-red-500 via-pink-500 to-orange-500 bg-clip-text text-transparent">Powerful</span>
-            <span className="text-white"> AI Agents,</span>
-            <span className="bg-gradient-primary bg-clip-text text-transparent"> One Platform</span>
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 animate-text-reveal leading-tight">
+            <span className="text-slate-100">Three </span>
+            <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-emerald-400 bg-clip-text text-transparent font-semibold">Powerful</span>
+            <span className="text-slate-100"> AI Agents,</span>
+            <span className="bg-gradient-to-r from-slate-300 to-slate-200 bg-clip-text text-transparent"> One Platform</span>
           </h2>
-          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+          <p className="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
             Our comprehensive suite of AI agents work together to transform how you manage your business, 
             from financial tracking to content creation and strategic planning.
           </p>
@@ -127,11 +138,11 @@ export const FeaturesSection = () => {
           {features.map((feature, index) => (
             <Card 
               key={index} 
-              className={`relative overflow-hidden bg-card/90 backdrop-blur-sm border-0 shadow-feature hover:shadow-hero transition-all duration-500 group transform-gpu ${
+              className={`relative overflow-hidden bg-slate-800/60 backdrop-blur-sm border border-slate-700/40 shadow-xl hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 group transform-gpu ${
                 visibleFeatures.has(index) 
                   ? 'opacity-100 translate-y-0 rotate-0' 
-                  : 'opacity-0 translate-y-12 rotate-3'
-              } hover:scale-105 hover:animate-magnetic-hover`}
+                  : 'opacity-0 translate-y-12 rotate-1'
+              } hover:scale-[1.02] hover:-translate-y-1`}
             >
               <div className="aspect-video relative overflow-hidden">
                 <img 
@@ -139,8 +150,8 @@ export const FeaturesSection = () => {
                   alt={feature.title}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 filter group-hover:brightness-110"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-holographic-shimmer" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/8 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 <div className="absolute bottom-4 left-4">
                   <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${feature.gradient} flex items-center justify-center group-hover:scale-110 transition-all duration-300`}>
                     <feature.icon className="w-6 h-6 text-white" />
@@ -149,10 +160,10 @@ export const FeaturesSection = () => {
               </div>
               
               <CardHeader className="relative z-10">
-                <CardTitle className="text-xl font-bold text-foreground">
+                <CardTitle className="text-xl font-bold text-slate-100 group-hover:text-blue-100 transition-colors">
                   {feature.title}
                 </CardTitle>
-                <CardDescription className="text-white">
+                <CardDescription className="text-slate-300">
                   {feature.description}
                 </CardDescription>
               </CardHeader>
@@ -161,13 +172,13 @@ export const FeaturesSection = () => {
                 <ul className="space-y-3 mb-6">
                   {feature.details.map((detail, detailIndex) => (
                     <li key={detailIndex} className="flex items-start gap-3">
-                      <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                      <span className="text-foreground">{detail}</span>
+                      <CheckCircle className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-slate-300">{detail}</span>
                     </li>
                   ))}
                 </ul>
                 
-                <Button variant="feature" className="w-full">
+                <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300">
                   <span>Learn More</span>
                   <ArrowRight className="w-4 h-4" />
                 </Button>
@@ -178,7 +189,7 @@ export const FeaturesSection = () => {
 
         {/* Technology Stack */}
         <div className="text-center">
-          <h3 className="text-2xl font-bold text-white mb-8 animate-text-reveal">
+          <h3 className="text-2xl font-bold text-slate-100 mb-8 animate-text-reveal">
             Powered by Enterprise-Grade Technology
           </h3>
           <div 
@@ -188,18 +199,18 @@ export const FeaturesSection = () => {
             {technologies.map((tech, index) => (
               <div 
                 key={index} 
-                className={`flex items-center gap-3 bg-white rounded-lg px-4 py-3 shadow-soft hover:shadow-feature transition-all duration-500 transform-gpu hover:scale-110 hover:animate-magnetic-hover group ${
+                className={`flex items-center gap-3 bg-slate-800/70 border border-slate-700/50 rounded-lg px-4 py-3 shadow-lg hover:shadow-xl hover:bg-slate-700/70 transition-all duration-500 transform-gpu hover:scale-105 group ${
                   visibleTech.has(index) 
                     ? 'opacity-100 translate-y-0 rotate-0' 
-                    : 'opacity-0 translate-y-8 rotate-2'
+                    : 'opacity-0 translate-y-8 rotate-1'
                 }`}
               >
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
                   tech.logo 
                     ? tech.name === "Vertex AI" 
-                      ? 'bg-black' 
-                      : 'bg-white'
-                    : 'bg-gradient-primary'
+                      ? 'bg-slate-900' 
+                      : 'bg-slate-100'
+                    : 'bg-gradient-to-br from-blue-500 to-purple-600'
                 }`}>
                   {tech.logo ? (
                     <img 
@@ -214,8 +225,8 @@ export const FeaturesSection = () => {
                   )}
                 </div>
                 <div className="text-left">
-                  <span className="text-foreground font-medium block">{tech.name}</span>
-                  <span className="text-muted-foreground text-sm">{tech.description}</span>
+                  <span className="text-slate-200 font-medium block">{tech.name}</span>
+                  <span className="text-slate-400 text-sm">{tech.description}</span>
                 </div>
               </div>
             ))}

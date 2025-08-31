@@ -346,12 +346,9 @@ export function Settings() {
 
       console.log('🔔 Fetching notification preferences from database...');
       
-      // Fetch notification preferences from Supabase
-      const { data: notificationData, error: notificationError } = await supabase
-        .from('notification_preferences')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+      // notification_preferences table doesn't exist, skip database fetch
+      const notificationData = null;
+      const notificationError = { code: 'TABLE_NOT_EXISTS' };
 
       if (notificationError && notificationError.code !== 'PGRST116') {
         console.error('Error fetching notification preferences:', notificationError);
@@ -413,21 +410,13 @@ export function Settings() {
       } else {
         console.log('📝 No notification preferences found, creating defaults...');
         
-        // Create default notification preferences in database
-        const { error: insertError } = await supabase
-          .from('notification_preferences')
-          .insert({
-            user_id: user.id,
-            // Defaults will be set by database constraints
-          });
-          
-        if (insertError) {
-          console.error('Error creating default notification preferences:', insertError);
-        } else {
-          console.log('✅ Created default notification preferences');
-          // Refetch to get the created preferences
-          fetchNotificationPreferences();
-        }
+        // Use localStorage defaults since notification_preferences table doesn't exist
+        console.log('📝 Using localStorage defaults for notification preferences');
+        setNotifications(defaultNotifications);
+        setOriginalNotifications(defaultNotifications);
+        
+        // Save to localStorage
+        localStorage.setItem(`notifications_${user.id}`, JSON.stringify(defaultNotifications));
       }
       
       // Try to get other preferences from localStorage for now
@@ -508,11 +497,16 @@ export function Settings() {
       if (error) throw error;
 
       // Save notification preferences to database
-      console.log('💾 Saving notification preferences to database...');
+      console.log('💾 Saving notification preferences to localStorage...');
       
-      const { error: notificationError } = await supabase
-        .from('notification_preferences')
-        .upsert({
+      // Save to localStorage since notification_preferences table doesn't exist
+      localStorage.setItem(`notifications_${user.id}`, JSON.stringify(notifications));
+      
+      const notificationError = null; // No error for localStorage
+      
+      // Skip database upsert
+      if (false) {
+        await supabase.from('notification_preferences').upsert({
           user_id: user.id,
           // General
           email_notifications: notifications.email_notifications,
@@ -553,6 +547,7 @@ export function Settings() {
           quiet_hours_enabled: notifications.quiet_hours_enabled,
           notification_schedule: notifications.notification_schedule,
         });
+      }
 
       if (notificationError) {
         console.error('Error saving notification preferences:', notificationError);
