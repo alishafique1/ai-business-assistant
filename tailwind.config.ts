@@ -162,7 +162,7 @@ export default {
 					'50%': {
 						transform: 'scale(1.05)'
 					}
-				}
+				},
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
@@ -173,7 +173,7 @@ export default {
 				'gentle-float': 'gentle-float 6s ease-in-out infinite',
 				'pulse-slow': 'pulse-slow 3s ease-in-out infinite',
 				'pulse-very-slow': 'pulse-very-slow 4s ease-in-out infinite',
-				'gentle-breathe': 'gentle-breathe 8s ease-in-out infinite'
+				'gentle-breathe': 'gentle-breathe 8s ease-in-out infinite',
 			}
 		}
 	},

@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 
+
 export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -224,27 +225,31 @@ export default function Navigation() {
             <div className="flex flex-col space-y-2">
               <button 
                 onClick={scrollToTop}
-                className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-primary/10 text-left"
+                className="text-foreground/80 hover:text-foreground transition-all duration-300 py-2 px-3 rounded-md hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 text-left relative group hover:scale-105 hover:shadow-lg hover:shadow-primary/20"
               >
-                Home
+                <span className="relative z-10 group-hover:text-primary transition-colors duration-300">Home</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </button>
               <button 
                 onClick={() => scrollToSection('features')}
-                className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-primary/10 text-left"
+                className="text-foreground/80 hover:text-foreground transition-all duration-300 py-2 px-3 rounded-md hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 text-left relative group hover:scale-105 hover:shadow-lg hover:shadow-primary/20"
               >
-                Features
+                <span className="relative z-10 group-hover:text-primary transition-colors duration-300">Features</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </button>
               <button 
                 onClick={() => scrollToSection('benefits')}
-                className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-primary/10 text-left"
+                className="text-foreground/80 hover:text-foreground transition-all duration-300 py-2 px-3 rounded-md hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 text-left relative group hover:scale-105 hover:shadow-lg hover:shadow-primary/20"
               >
-                Benefits
+                <span className="relative z-10 group-hover:text-primary transition-colors duration-300">Benefits</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </button>
               <button 
                 onClick={() => scrollToSection('pricing')}
-                className="text-foreground/80 hover:text-foreground transition-colors py-2 px-3 rounded-md hover:bg-primary/10 text-left"
+                className="text-foreground/80 hover:text-foreground transition-all duration-300 py-2 px-3 rounded-md hover:bg-gradient-to-r hover:from-primary/10 hover:to-accent/10 text-left relative group hover:scale-105 hover:shadow-lg hover:shadow-primary/20"
               >
-                Pricing
+                <span className="relative z-10 group-hover:text-primary transition-colors duration-300">Pricing</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-accent/5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </button>
               <div className="flex flex-col space-y-2 pt-4 border-t border-border/50">
                 {user ? (
