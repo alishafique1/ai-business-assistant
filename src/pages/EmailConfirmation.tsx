@@ -234,7 +234,7 @@ export default function EmailConfirmation() {
           <div className="flex items-center">
             <Brain className="h-8 w-8 text-primary mr-2" />
             <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              AI Business Hub
+              Expenzify
             </h1>
           </div>
         </div>

@@ -238,7 +238,7 @@ export function AIAssistant() {
       const kbContext = await fetchKnowledgeBaseContext();
       
       // Prepare the system prompt with knowledge base context
-      let systemPrompt = `You are an AI business assistant. Be helpful, professional, and provide actionable insights.`;
+      let systemPrompt = `You are an AI assistant. Be helpful, professional, and provide actionable insights.`;
       
       if (kbContext) {
         systemPrompt += `\n\nKnowledge Base Context:\n${kbContext}`;
@@ -420,7 +420,7 @@ export function AIAssistant() {
       const kbContext = await fetchKnowledgeBaseContext();
       
       // Prepare system prompt based on action type
-      let systemPrompt = `You are an AI business assistant. Provide ${contentType} that is practical and actionable.`;
+      let systemPrompt = `You are an AI assistant. Provide ${contentType} that is practical and actionable.`;
       
       if (kbContext) {
         systemPrompt += `\n\nKnowledge Base Context:\n${kbContext}`;
@@ -672,7 +672,7 @@ export function AIAssistant() {
       <div className="flex items-center justify-between mb-6 flex-shrink-0">
         <div>
           <h2 className="text-3xl font-bold text-foreground">AI Assistant</h2>
-          <p className="text-muted-foreground">Configure and interact with your AI business assistant</p>
+          <p className="text-muted-foreground">Configure and interact with your AI assistant</p>
         </div>
         <Badge variant="outline" className="gap-2">
           <div className="w-2 h-2 bg-green-500 rounded-full"></div>

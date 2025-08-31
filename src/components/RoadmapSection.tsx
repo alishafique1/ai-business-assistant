@@ -13,8 +13,13 @@ import {
   Shield,
   Sparkles
 } from "lucide-react";
+import { useScrollAnimation, useStaggeredAnimation } from "@/hooks/useScrollAnimation";
 
 export default function RoadmapSection() {
+  // Animation hooks
+  const { elementRef: titleRef, isVisible: titleVisible } = useScrollAnimation({ threshold: 0.2 });
+  const { containerRef: currentFeaturesRef, visibleItems: visibleCurrentFeatures } = useStaggeredAnimation(4, 150);
+  const { containerRef: upcomingFeaturesRef, visibleItems: visibleUpcomingFeatures } = useStaggeredAnimation(6, 100);
   const currentFeatures = [
     {
       icon: FileText,
@@ -102,7 +107,12 @@ export default function RoadmapSection() {
       }}></div>
 
       <div className="container mx-auto px-6 relative z-10">
-        <div className="text-center mb-16">
+        <div 
+          ref={titleRef as React.RefObject<HTMLDivElement>}
+          className={`text-center mb-16 transition-all duration-1000 ${
+            titleVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+          }`}
+        >
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-tight">
             <span className="text-white">Innovation Pipeline: </span>
             <span className="bg-gradient-to-r from-emerald-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">Continuous AI Evolution</span>
@@ -122,9 +132,19 @@ export default function RoadmapSection() {
             </Badge>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div 
+            ref={currentFeaturesRef as React.RefObject<HTMLDivElement>}
+            className="grid grid-cols-1 md:grid-cols-3 gap-8"
+          >
             {currentFeatures.map((feature, index) => (
-              <Card key={index} className="bg-slate-800/60 backdrop-blur-sm border-emerald-500/20 hover:border-emerald-400/40 transition-all duration-500 relative overflow-hidden group hover:scale-105 hover:-translate-y-2">
+              <Card 
+                key={index} 
+                className={`bg-slate-800/60 backdrop-blur-sm border-emerald-500/20 hover:border-emerald-400/40 transition-all duration-700 relative overflow-hidden group hover:scale-105 hover:-translate-y-2 transform-gpu ${
+                  visibleCurrentFeatures.has(index) 
+                    ? 'opacity-100 translate-x-0 rotate-0' 
+                    : 'opacity-0 -translate-x-12 rotate-2'
+                }`}
+              >
                 <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
                 <CardHeader className="pb-6 relative z-10">
@@ -155,9 +175,19 @@ export default function RoadmapSection() {
             </Badge>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div 
+            ref={upcomingFeaturesRef as React.RefObject<HTMLDivElement>}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          >
             {upcomingFeatures.map((feature, index) => (
-              <Card key={index} className="bg-slate-800/40 backdrop-blur-sm border-blue-500/20 hover:border-blue-400/40 transition-all duration-500 relative overflow-hidden group hover:scale-105 hover:-translate-y-2">
+              <Card 
+                key={index} 
+                className={`bg-slate-800/40 backdrop-blur-sm border-blue-500/20 hover:border-blue-400/40 transition-all duration-700 relative overflow-hidden group hover:scale-105 hover:-translate-y-2 transform-gpu ${
+                  visibleUpcomingFeatures.has(index) 
+                    ? 'opacity-100 translate-x-0 rotate-0' 
+                    : 'opacity-0 translate-x-12 -rotate-1'
+                }`}
+              >
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
                 <CardHeader className="pb-6 relative z-10">

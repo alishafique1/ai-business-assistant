@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useOnboarding } from "@/hooks/useOnboarding";
-import { Brain, Building2, Github, Mail } from "lucide-react";
+import { Brain, Building2, Github, Mail, ArrowLeft } from "lucide-react";
 import { runAuthDiagnostics, testRealAuth, testPasswordReset } from "@/utils/authDebug";
 
 export default function Auth() {
@@ -751,6 +751,17 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-accent/20 to-primary/10 p-4">
       <div className="w-full max-w-md">
+        {/* Back Arrow */}
+        <div className="mb-6">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors duration-200 p-2 -ml-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span className="text-sm">Back to Home</span>
+          </Button>
+        </div>
         <div className="flex items-center justify-center mb-8">
           <Link 
             to="/" 
@@ -758,7 +769,7 @@ export default function Auth() {
           >
             <Brain className="h-8 w-8 text-primary mr-2 group-hover:rotate-12 transition-transform duration-300" />
             <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent group-hover:drop-shadow-md transition-all duration-300">
-              AI Business Hub
+              Expenzify
             </h1>
           </Link>
         </div>

@@ -8,10 +8,19 @@ import {
   Users
 } from "lucide-react";
 import { useScrollAnimation, useStaggeredAnimation } from "@/hooks/useScrollAnimation";
+import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 
 export const BenefitsSection = () => {
   const { elementRef: titleRef, isVisible: titleVisible } = useScrollAnimation({ threshold: 0.2 });
   const { containerRef: benefitsRef, visibleItems: visibleBenefits } = useStaggeredAnimation(6, 150);
+  const { elementRef: statsRef, isVisible: statsVisible } = useScrollAnimation({ threshold: 0.3 });
+  const { elementRef: clientsRef, isVisible: clientsVisible } = useScrollAnimation({ threshold: 0.3 });
+  const { elementRef: testimonialRef, isVisible: testimonialVisible } = useScrollAnimation({ threshold: 0.3 });
+  
+  // Animated counters
+  const costSavings = useAnimatedCounter({ end: 85, isVisible: statsVisible, suffix: '%' });
+  const transformations = useAnimatedCounter({ end: 150, isVisible: statsVisible, suffix: '+' });
+  const operations = useAnimatedCounter({ end: 24, isVisible: statsVisible });
 
   const benefits = [
     {
@@ -133,7 +142,12 @@ export const BenefitsSection = () => {
 
         {/* Enhanced social proof section */}
         <div className="mt-24 text-center">
-          <div className="inline-flex items-center gap-3 bg-slate-800/60 backdrop-blur-sm rounded-full px-8 py-4 mb-12 border border-slate-600/30">
+          <div 
+            ref={clientsRef as React.RefObject<HTMLDivElement>}
+            className={`inline-flex items-center gap-3 bg-slate-800/60 backdrop-blur-sm rounded-full px-8 py-4 mb-12 border border-slate-600/30 transition-all duration-1000 delay-200 ${
+              clientsVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-16'
+            }`}
+          >
             <div className="flex -space-x-3">
               <img 
                 src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face&auto=format" 
@@ -167,7 +181,12 @@ export const BenefitsSection = () => {
             <span className="text-white font-semibold text-lg">Enterprise clients optimizing operations</span>
           </div>
           
-          <div className="max-w-5xl mx-auto bg-slate-800/40 backdrop-blur-sm rounded-2xl p-8 border border-slate-600/30 shadow-2xl">
+          <div 
+            ref={testimonialRef as React.RefObject<HTMLDivElement>}
+            className={`max-w-5xl mx-auto bg-slate-800/40 backdrop-blur-sm rounded-2xl p-8 border border-slate-600/30 shadow-2xl transition-all duration-1000 delay-400 ${
+              testimonialVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-95'
+            }`}
+          >
             <blockquote className="text-xl md:text-2xl text-white font-medium leading-relaxed mb-6 italic">
               "I was paying $75/month for ChatGPT Plus, and two other business apps. This platform does everything 
               for $29 and keeps my data private. Plus they keep adding features!"
@@ -185,17 +204,22 @@ export const BenefitsSection = () => {
             </div>
           </div>
           
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div 
+            ref={statsRef as React.RefObject<HTMLDivElement>}
+            className={`mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto transition-all duration-1000 ${
+              statsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+            }`}
+          >
             <div className="text-center">
-              <div className="text-3xl font-bold text-white mb-2">85%</div>
+              <div className="text-3xl font-bold text-white mb-2">{costSavings}</div>
               <p className="text-gray-400">Average cost savings</p>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-white mb-2">150+</div>
+              <div className="text-3xl font-bold text-white mb-2">{transformations}</div>
               <p className="text-gray-400">Business transformations</p>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-white mb-2">24/7</div>
+              <div className="text-3xl font-bold text-white mb-2">{operations}/7</div>
               <p className="text-gray-400">AI-powered operations</p>
             </div>
           </div>

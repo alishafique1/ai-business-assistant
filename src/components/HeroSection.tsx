@@ -47,7 +47,7 @@ export const HeroSection = () => {
           {/* Main heading with subtle text animations */}
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
             <span className={`inline-block transition-all duration-800 delay-200 text-white hover:scale-102 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-              Your AI Business Assistant
+              Your AI Assistant
             </span>
             <br />
             <span className={`bg-gradient-primary bg-clip-text text-transparent inline-block transition-all duration-800 delay-400 hover:scale-102 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>

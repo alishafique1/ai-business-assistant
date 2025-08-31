@@ -16,6 +16,7 @@ export default function PricingSection() {
   const navigate = useNavigate();
   const { state: callState, initiateCall, endCall } = useRetellCall();
   const { state: checkoutState, createCheckoutSession } = useStripeCheckout();
+  
 
   // Retell AI Agent ID from environment variables
   const RETELL_AGENT_ID = import.meta.env.VITE_RETELL_AGENT_ID;
@@ -158,10 +159,10 @@ export default function PricingSection() {
     <section id="pricing" className="py-24 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
       {/* Premium background elements */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-20 left-1/4 w-96 h-96 bg-gradient-to-r from-emerald-500/6 to-blue-500/6 rounded-full blur-3xl animate-slow-float"></div>
-        <div className="absolute bottom-20 right-1/4 w-80 h-80 bg-gradient-to-l from-blue-500/4 to-purple-500/4 rounded-full blur-3xl animate-pulse-very-slow"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-br from-purple-500/3 to-pink-500/3 rounded-full blur-2xl animate-gentle-breathe"></div>
-        <div className="absolute bottom-1/3 left-1/6 w-48 h-48 bg-gradient-to-r from-cyan-500/4 to-blue-500/4 rounded-full blur-xl animate-pulse-slow"></div>
+        <div className="absolute top-20 left-1/4 w-96 h-96 bg-gradient-to-r from-emerald-500/6 to-blue-500/6 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-1/4 w-80 h-80 bg-gradient-to-l from-blue-500/4 to-purple-500/4 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-gradient-to-br from-purple-500/3 to-pink-500/3 rounded-full blur-2xl"></div>
+        <div className="absolute bottom-1/3 left-1/6 w-48 h-48 bg-gradient-to-r from-cyan-500/4 to-blue-500/4 rounded-full blur-xl"></div>
       </div>
       
       {/* Elegant grid pattern */}
@@ -189,17 +190,17 @@ export default function PricingSection() {
           {plans.map((plan, index) => (
             <Card 
               key={index} 
-              className={`relative transition-all duration-500 overflow-visible group ${
+              className={`relative overflow-visible group ${
                 plan.popular 
-                  ? 'bg-gradient-to-br from-white via-blue-200 to-indigo-100 border-2 border-blue-500 shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 scale-105 hover:scale-110 hover:border-purple-500' 
+                  ? 'bg-gradient-to-br from-white via-blue-200 to-indigo-100 border-2 border-blue-500 shadow-xl shadow-blue-500/30 scale-105' 
                   : index === 0 
-                    ? 'bg-slate-800/60 border-emerald-500/20 hover:border-emerald-400/40 hover:shadow-lg hover:shadow-emerald-500/20 hover:scale-105' 
-                    : 'bg-slate-800/40 border-slate-700/30 hover:border-blue-400/40 hover:shadow-lg hover:shadow-blue-500/20 hover:scale-105'
+                    ? 'bg-slate-800/60 border-emerald-500/20' 
+                    : 'bg-slate-800/40 border-slate-700/30'
               } backdrop-blur-sm`}
             >
               {plan.popular && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-                  <span className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg animate-pulse">
+                  <span className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg">
                     Most Popular
                   </span>
                 </div>
@@ -214,15 +215,10 @@ export default function PricingSection() {
               )}
               
               
-              <div className={`absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
-                plan.popular 
-                  ? 'bg-gradient-to-br from-blue-300/50 via-indigo-200/30 to-purple-200/50' 
-                  : 'bg-gradient-to-br from-transparent via-white/5 to-transparent'
-              }`}></div>
               
               <CardHeader className="text-center pb-8 relative z-10">
-                <CardTitle className={`text-2xl font-bold transition-colors duration-300 ${
-                  plan.popular ? 'text-black group-hover:text-gray-800' : 'text-white group-hover:text-blue-100'
+                <CardTitle className={`text-2xl font-bold ${
+                  plan.popular ? 'text-black' : 'text-white'
                 }`}>{plan.name}</CardTitle>
                 <div className="mt-4">
                   <span className={`text-4xl font-bold ${plan.popular ? 'text-black' : 'text-white'}`}>{plan.price}</span>
@@ -349,7 +345,6 @@ export default function PricingSection() {
 
         <div className="mt-20 text-center">
           <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-3xl p-10 max-w-6xl mx-auto mb-12 border border-slate-700/30 shadow-2xl relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent rounded-3xl"></div>
             
             <h3 className="text-3xl font-bold text-white mb-8 relative z-10">
               <span className="bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent">Exclusive Early Adopter</span> Advantages

@@ -104,10 +104,10 @@ export default function Navigation() {
               <Sparkles className="absolute -top-1 -right-1 h-4 w-4 text-accent opacity-0 group-hover:opacity-100 transition-all duration-500" />
             </div>
             <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent group-hover:drop-shadow-sm transition-all duration-500 group-hover:scale-105 relative">
-              AI Business Hub
+              Expenzify
               {/* Subtle glow effect */}
               <span className="absolute inset-0 bg-gradient-primary bg-clip-text text-transparent opacity-0 group-hover:opacity-50 blur-sm transition-all duration-500">
-                AI Business Hub
+                Expenzify
               </span>
             </span>
           </button>

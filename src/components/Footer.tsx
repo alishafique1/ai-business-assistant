@@ -169,7 +169,7 @@ export const Footer = () => {
               <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
                 <div className="w-4 h-4 bg-white rounded-sm"></div>
               </div>
-              <span className="text-xl font-bold">BusinessAI</span>
+              <span className="text-xl font-bold">Expenzify</span>
             </div>
             <p className="text-background/70 mb-6 max-w-md">
               Comprehensive AI platform designed to transform how small businesses 
@@ -279,7 +279,7 @@ export const Footer = () => {
         {/* Bottom section */}
         <div className="border-t border-background/20 pt-4 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-background/70 text-sm">
-            © 2024 BusinessAI. All rights reserved.
+            © 2024 Expenzify. All rights reserved.
           </p>
           <div className="flex items-center gap-6 text-sm text-background/70">
             <span>Made with ❤️ for small businesses</span>

@@ -110,12 +110,70 @@ export default {
 						transform: 'translateX(25%)',
 						animationTimingFunction: 'cubic-bezier(0, 0, 0.2, 1)'
 					}
+				},
+				'fade-in-up': {
+					'0%': {
+						opacity: '0',
+						transform: 'translateY(20px)'
+					},
+					'100%': {
+						opacity: '1',
+						transform: 'translateY(0)'
+					}
+				},
+				'fade-in-left': {
+					'0%': {
+						opacity: '0',
+						transform: 'translateX(-30px)'
+					},
+					'100%': {
+						opacity: '1',
+						transform: 'translateX(0)'
+					}
+				},
+				'gentle-float': {
+					'0%, 100%': {
+						transform: 'translateY(0px) rotate(0deg)'
+					},
+					'50%': {
+						transform: 'translateY(-10px) rotate(1deg)'
+					}
+				},
+				'pulse-slow': {
+					'0%, 100%': {
+						opacity: '0.6'
+					},
+					'50%': {
+						opacity: '0.8'
+					}
+				},
+				'pulse-very-slow': {
+					'0%, 100%': {
+						opacity: '0.4'
+					},
+					'50%': {
+						opacity: '0.7'
+					}
+				},
+				'gentle-breathe': {
+					'0%, 100%': {
+						transform: 'scale(1)'
+					},
+					'50%': {
+						transform: 'scale(1.05)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
-				'bounce-x': 'bounce-x 1s ease-in-out infinite'
+				'bounce-x': 'bounce-x 1s ease-in-out infinite',
+				'fade-in-up': 'fade-in-up 0.6s ease-out',
+				'fade-in-left': 'fade-in-left 0.6s ease-out',
+				'gentle-float': 'gentle-float 6s ease-in-out infinite',
+				'pulse-slow': 'pulse-slow 3s ease-in-out infinite',
+				'pulse-very-slow': 'pulse-very-slow 4s ease-in-out infinite',
+				'gentle-breathe': 'gentle-breathe 8s ease-in-out infinite'
 			}
 		}
 	},
