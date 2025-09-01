@@ -30,20 +30,13 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const { agent_id, customer_name, customer_email, metadata } = body;
 
-  const RETELL_API_KEY = Deno.env.get('RETELL_API_KEY')!;
+  // Temporary hardcoded API key for testing
+  const RETELL_API_KEY = 'key_142fe7fca9596e496dc5fd6dab2b';
   
-  // Debug: Log environment variable status
-  console.log('RETELL_API_KEY present:', !!RETELL_API_KEY);
-  console.log('RETELL_API_KEY length:', RETELL_API_KEY?.length || 0);
+  console.log('Using hardcoded RETELL_API_KEY for testing');
   
   if (!RETELL_API_KEY) {
-    return new Response(JSON.stringify({
-      error: 'Missing RETELL_API_KEY',
-      debug: {
-        envKeys: Object.keys(Deno.env.toObject()).filter(k => k.includes('RETELL')),
-        timestamp: new Date().toISOString()
-      }
-    }), { 
+    return new Response('Missing RETELL_API_KEY', { 
       status: 500,
       headers: corsHeaders,
     });
