@@ -31,8 +31,19 @@ Deno.serve(async (req) => {
   const { agent_id, customer_name, customer_email, metadata } = body;
 
   const RETELL_API_KEY = Deno.env.get('RETELL_API_KEY')!;
+  
+  // Debug: Log environment variable status
+  console.log('RETELL_API_KEY present:', !!RETELL_API_KEY);
+  console.log('RETELL_API_KEY length:', RETELL_API_KEY?.length || 0);
+  
   if (!RETELL_API_KEY) {
-    return new Response('Missing RETELL_API_KEY', { 
+    return new Response(JSON.stringify({
+      error: 'Missing RETELL_API_KEY',
+      debug: {
+        envKeys: Object.keys(Deno.env.toObject()).filter(k => k.includes('RETELL')),
+        timestamp: new Date().toISOString()
+      }
+    }), { 
       status: 500,
       headers: corsHeaders,
     });
