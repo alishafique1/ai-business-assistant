@@ -104,19 +104,61 @@ export const testRealAuth = async (email: string, password: string) => {
   console.log('Password length:', password.length);
   
   try {
+    // Try direct API call as fallback
+    console.log('🔄 Attempting Supabase auth...');
+    
+    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://xdinmyztzvrcasvgupir.supabase.co";
+    const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkaW5teXp0enZyY2Fzdmd1cGlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NzgyMjksImV4cCI6MjA2ODI1NDIyOX0.nUYgDJHoZNX5P4ZYKeeY0_AeIV8ZGpCaYjHMyScxwCQ";
+    
+    // First try the normal Supabase client
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password
     });
 
-    console.log('🔑 Real auth result:', {
-      success: !!data.user,
-      userId: data.user?.id,
-      email: data.user?.email,
-      error: error?.message
+    if (data.user || !error || !error.message.includes('Invalid value')) {
+      console.log('✅ Supabase client auth successful');
+      console.log('🔑 Real auth result:', {
+        success: !!data.user,
+        userId: data.user?.id,
+        email: data.user?.email,
+        error: error?.message
+      });
+
+      return { success: !!data.user, error: error?.message || null, data };
+    }
+
+    // If we get "Invalid value" error, try direct API call
+    console.log('🔄 Falling back to direct API call...');
+    
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify({
+        email: email.trim(),
+        password: password
+      })
     });
 
-    return { success: !!data.user, error: error?.message || null, data };
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Direct API error:', errorText);
+      return { success: false, error: `Authentication failed: ${response.status} ${errorText}`, data: null };
+    }
+
+    const authData = await response.json();
+    console.log('✅ Direct API auth successful');
+    
+    return { 
+      success: !!authData.user, 
+      error: authData.error?.message || null, 
+      data: { user: authData.user, session: authData }
+    };
+
   } catch (e) {
     console.error('❌ Real auth exception:', e);
     return { success: false, error: e instanceof Error ? e.message : 'Unknown error', data: null };
