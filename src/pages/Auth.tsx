@@ -371,7 +371,7 @@ export default function Auth() {
       
       // Use production URL for email redirects, fallback to current origin for local dev
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const productionUrl = import.meta.env.VITE_SITE_URL || 'https://ai-business-assistant-flame.vercel.app';
+      const productionUrl = import.meta.env.VITE_SITE_URL || 'https://www.expenzify.com';
       const redirectUrl = isLocalhost ? `${window.location.origin}/auth` : `${productionUrl}/auth`;
       
       console.log('📧 Attempting signup for email:', email.trim());
@@ -573,7 +573,7 @@ export default function Auth() {
     try {
       // Use production URL for OAuth redirects, fallback to current origin for local dev
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const productionUrl = import.meta.env.VITE_SITE_URL || 'https://ai-business-assistant-flame.vercel.app';
+      const productionUrl = import.meta.env.VITE_SITE_URL || 'https://www.expenzify.com';
       const redirectUrl = isLocalhost ? `${window.location.origin}/onboarding` : `${productionUrl}/onboarding`;
       
       const { error } = await supabase.auth.signInWithOAuth({
@@ -596,7 +596,7 @@ export default function Auth() {
     try {
       // Use production URL for OAuth redirects, fallback to current origin for local dev
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const productionUrl = import.meta.env.VITE_SITE_URL || 'https://ai-business-assistant-flame.vercel.app';
+      const productionUrl = import.meta.env.VITE_SITE_URL || 'https://www.expenzify.com';
       const redirectUrl = isLocalhost ? `${window.location.origin}/onboarding` : `${productionUrl}/onboarding`;
       
       const { error } = await supabase.auth.signInWithOAuth({
@@ -681,7 +681,7 @@ export default function Auth() {
     try {
       // Use production URL for email redirects, fallback to current origin for local dev
       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const productionUrl = import.meta.env.VITE_SITE_URL || 'https://ai-business-assistant-flame.vercel.app';
+      const productionUrl = import.meta.env.VITE_SITE_URL || 'https://www.expenzify.com';
       const redirectUrl = isLocalhost ? `${window.location.origin}/auth` : `${productionUrl}/auth`;
       
       const { data, error } = await supabase.auth.resend({
