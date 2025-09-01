@@ -35,63 +35,49 @@ export const useRetellCall = () => {
 
     try {
       console.log('Initiating call with options:', options);
-      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-      console.log('Anon Key:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Present' : 'Missing');
       
-      // Validate required environment variables
-      if (!import.meta.env.VITE_SUPABASE_URL) {
-        throw new Error('VITE_SUPABASE_URL environment variable is required');
+      // Validate all required parameters
+      if (!options.agentId) {
+        throw new Error('Agent ID is required');
       }
       
-      if (!import.meta.env.VITE_SUPABASE_ANON_KEY) {
-        throw new Error('VITE_SUPABASE_ANON_KEY environment variable is required');
-      }
+      // Create clean payload with validated data
+      const cleanPayload = {
+        agent_id: String(options.agentId),
+        customer_name: options.customerName ? String(options.customerName) : undefined,
+        customer_email: options.customerEmail ? String(options.customerEmail) : undefined,
+        metadata: {
+          source: 'enterprise_contact',
+          timestamp: new Date().toISOString(),
+          ...(options.metadata || {})
+        }
+      };
       
-      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-web-call`;
-      console.log('Making request to:', functionUrl);
-      
-      // Call our Supabase function directly using fetch as a workaround
-      const response = await fetch(functionUrl, {
-        method: 'POST',
-        mode: 'cors',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          agent_id: options.agentId,
-          customer_name: options.customerName,
-          customer_email: options.customerEmail,
-          metadata: {
-            source: 'enterprise_contact',
-            timestamp: new Date().toISOString(),
-            ...options.metadata,
-          },
-        }),
+      // Use Supabase client for proper request handling
+      const response = await supabase.functions.invoke('create-web-call', {
+        body: cleanPayload,
       });
-
-      console.log('Function response status:', response.status);
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Function response error:', errorText);
-        throw new Error(`Function call failed: ${response.status} ${errorText}`);
+      if (response.error) {
+        console.error('Supabase function error:', response.error);
+        throw new Error(`Function error: ${response.error.message || 'Unknown error'}`);
+      }
+      
+      const responseData = response.data;
+      
+      if (!responseData || typeof responseData !== 'object') {
+        throw new Error('Invalid response format');
       }
 
-      const data = await response.json();
-      console.log('Function response data:', data);
-
-      if (!data || typeof data !== 'object') {
-        throw new Error('Invalid response format from create-web-call function');
-      }
-
-      const { call_id, access_token } = data;
+      const { call_id, access_token } = responseData;
       
       if (!call_id || !access_token) {
-        throw new Error(`Missing required fields in response: call_id=${call_id}, access_token=${access_token ? 'present' : 'missing'}`);
+        throw new Error(`Missing fields: call_id=${call_id}, access_token=${access_token ? 'present' : 'missing'}`);
       }
 
-      // Initialize the call
+      console.log('Call created successfully, initializing client...');
+
+      // Initialize the Retell client
       const retellWebClient = new RetellWebClient();
       retellClientRef.current = retellWebClient;
       
@@ -104,6 +90,7 @@ export const useRetellCall = () => {
 
       // Set up event listeners
       retellWebClient.on('call_started', () => {
+        console.log('Call started event received');
         setState(prev => ({ 
           ...prev, 
           isInitiating: false, 
@@ -118,12 +105,13 @@ export const useRetellCall = () => {
       });
 
       retellWebClient.on('call_ended', () => {
+        console.log('Call ended event received');
         setState(prev => ({ 
           ...prev, 
           isCallActive: false, 
           callId: null 
         }));
-        retellClientRef.current = null; // Clear the client reference
+        retellClientRef.current = null;
         toast({
           title: "Call Ended",
           description: "Thank you for speaking with our sales team. We'll follow up with you soon!",
@@ -132,6 +120,7 @@ export const useRetellCall = () => {
       });
 
       retellWebClient.on('error', (error: Error) => {
+        console.error('Retell client error:', error);
         setState(prev => ({ 
           ...prev, 
           isInitiating: false, 
@@ -139,7 +128,7 @@ export const useRetellCall = () => {
           error: error.message || 'Call failed',
           callId: null
         }));
-        retellClientRef.current = null; // Clear the client reference on error
+        retellClientRef.current = null;
         toast({
           title: "Call Error",
           description: "Unable to connect the call. Please try again or contact us directly.",
@@ -148,11 +137,9 @@ export const useRetellCall = () => {
         });
       });
 
-      // Store the client instance for later use (optional)
-      // window.retellWebClient = retellWebClient;
-
     } catch (error: unknown) {
       console.error('Call initiation error:', error);
+      
       const errorMessage = error instanceof Error ? error.message : 'Failed to initiate call';
       setState(prev => ({ 
         ...prev, 

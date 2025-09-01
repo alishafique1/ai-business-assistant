@@ -1,22 +1,39 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
 Deno.serve(async (req) => {
+  // Get allowed origins from environment or default to common development origins
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:8080',
+    'http://localhost:8081',
+    'https://ai-business-assistant.vercel.app',
+    'https://www.expenzify.com',
+    'https://expenzify.com',
+    // Add your custom domain here
+    ...(Deno.env.get('ALLOWED_ORIGINS')?.split(',') || [])
+  ];
+
+  const origin = req.headers.get('origin');
+  const isAllowedOrigin = allowedOrigins.includes(origin || '') || origin?.includes('.vercel.app');
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
       headers: {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': isAllowedOrigin ? (origin || '*') : '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+        'Access-Control-Allow-Credentials': 'true',
       },
     });
   }
 
   // Set CORS headers for actual request
   const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': isAllowedOrigin ? (origin || '*') : '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Credentials': 'true',
     'Content-Type': 'application/json',
   };
 
@@ -30,10 +47,10 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const { agent_id, customer_name, customer_email, metadata } = body;
 
-  // Temporary hardcoded API key for testing
-  const RETELL_API_KEY = 'key_142fe7fca9596e496dc5fd6dab2b';
+  // Get API key from environment variables
+  const RETELL_API_KEY = Deno.env.get('RETELL_API_KEY');
   
-  console.log('Using hardcoded RETELL_API_KEY for testing');
+  console.log('RETELL_API_KEY present:', !!RETELL_API_KEY);
   
   if (!RETELL_API_KEY) {
     return new Response('Missing RETELL_API_KEY', { 
