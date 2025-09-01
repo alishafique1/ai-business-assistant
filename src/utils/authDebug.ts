@@ -104,54 +104,78 @@ export const testRealAuth = async (email: string, password: string) => {
   console.log('Password length:', password.length);
   
   try {
-    // Try direct API call as fallback
-    console.log('🔄 Attempting Supabase auth...');
+    console.log('🔄 Creating completely sanitized auth request...');
     
-    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://xdinmyztzvrcasvgupir.supabase.co";
-    const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkaW5teXp0enZyY2Fzdmd1cGlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NzgyMjksImV4cCI6MjA2ODI1NDIyOX0.nUYgDJHoZNX5P4ZYKeeY0_AeIV8ZGpCaYjHMyScxwCQ";
+    // Sanitize inputs to remove any invalid characters
+    const cleanEmail = String(email).trim().replace(/[^\w@.-]/g, '');
+    const cleanPassword = String(password).replace(/[\x00-\x1F\x7F-\x9F]/g, ''); // Remove control characters
     
-    // First try the normal Supabase client
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password
+    console.log('✅ Email sanitized:', cleanEmail);
+    console.log('✅ Password sanitized, length:', cleanPassword.length);
+    
+    // Use hardcoded values to avoid any environment variable issues
+    const apiUrl = 'https://xdinmyztzvrcasvgupir.supabase.co/auth/v1/token?grant_type=password';
+    const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkaW5teXp0enZyY2Fzdmd1cGlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NzgyMjksImV4cCI6MjA2ODI1NDIyOX0.nUYgDJHoZNX5P4ZYKeeY0_AeIV8ZGpCaYjHMyScxwCQ';
+    
+    console.log('🔄 Making direct API request...');
+    console.log('URL:', apiUrl);
+    console.log('Key present:', !!apiKey);
+    
+    // Create the most basic possible request
+    const requestBody = JSON.stringify({
+      email: cleanEmail,
+      password: cleanPassword
     });
-
-    if (data.user || !error || !error.message.includes('Invalid value')) {
-      console.log('✅ Supabase client auth successful');
-      console.log('🔑 Real auth result:', {
-        success: !!data.user,
-        userId: data.user?.id,
-        email: data.user?.email,
-        error: error?.message
-      });
-
-      return { success: !!data.user, error: error?.message || null, data };
-    }
-
-    // If we get "Invalid value" error, try direct API call
-    console.log('🔄 Falling back to direct API call...');
     
-    const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    console.log('Request body created, length:', requestBody.length);
+    
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        'apikey': apiKey,
+        'Authorization': 'Bearer ' + apiKey
       },
-      body: JSON.stringify({
-        email: email.trim(),
-        password: password
-      })
+      body: requestBody
     });
+
+    console.log('Response received:', response.status, response.statusText);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Direct API error:', errorText);
-      return { success: false, error: `Authentication failed: ${response.status} ${errorText}`, data: null };
+      console.error('❌ API error:', errorText);
+      
+      // Try different error messages
+      if (response.status === 400) {
+        return { success: false, error: 'Invalid email or password. Please check your credentials.', data: null };
+      } else if (response.status === 422) {
+        return { success: false, error: 'Please check your email and confirm your account first.', data: null };
+      } else if (response.status === 429) {
+        return { success: false, error: 'Too many attempts. Please wait before trying again.', data: null };
+      } else {
+        return { success: false, error: `Authentication failed (${response.status})`, data: null };
+      }
     }
 
     const authData = await response.json();
-    console.log('✅ Direct API auth successful');
+    console.log('✅ Authentication successful!');
+    console.log('User data:', authData.user ? 'Present' : 'Missing');
+    
+    if (authData.user) {
+      // Store session data in localStorage for the app to pick up
+      if (authData.access_token && authData.refresh_token) {
+        localStorage.setItem('supabase.auth.token', JSON.stringify({
+          access_token: authData.access_token,
+          refresh_token: authData.refresh_token,
+          user: authData.user
+        }));
+        
+        // Trigger a page reload to reinitialize auth state
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      }
+    }
     
     return { 
       success: !!authData.user, 
@@ -160,8 +184,16 @@ export const testRealAuth = async (email: string, password: string) => {
     };
 
   } catch (e) {
-    console.error('❌ Real auth exception:', e);
-    return { success: false, error: e instanceof Error ? e.message : 'Unknown error', data: null };
+    console.error('❌ Auth exception:', e);
+    const errorMessage = e instanceof Error ? e.message : 'Network error occurred';
+    
+    if (errorMessage.includes('Invalid value')) {
+      return { success: false, error: 'Browser configuration issue. Please try refreshing the page or using a different browser.', data: null };
+    } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+      return { success: false, error: 'Network connection issue. Please check your internet and try again.', data: null };
+    } else {
+      return { success: false, error: errorMessage, data: null };
+    }
   }
 };
 
