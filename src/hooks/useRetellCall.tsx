@@ -32,24 +32,35 @@ export const useRetellCall = () => {
 
   const fallbackFetch = async (cleanPayload: any) => {
     console.log('Using fallback fetch method');
-    const functionUrl = `${supabase.supabaseUrl}/functions/v1/create-web-call`;
+    
+    // Get the environment variables directly
+    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://xdinmyztzvrcasvgupir.supabase.co";
+    const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkaW5teXp0enZyY2Fzdmd1cGlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NzgyMjksImV4cCI6MjA2ODI1NDIyOX0.nUYgDJHoZNX5P4ZYKeeY0_AeIV8ZGpCaYjHMyScxwCQ";
+    
+    const functionUrl = `${SUPABASE_URL}/functions/v1/create-web-call`;
+    console.log('Fallback fetch URL:', functionUrl);
     
     const response = await fetch(functionUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${supabase.supabaseKey}`,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         'Content-Type': 'application/json',
-        'apikey': supabase.supabaseKey,
+        'apikey': SUPABASE_ANON_KEY,
       },
       body: JSON.stringify(cleanPayload),
     });
 
+    console.log('Fallback response status:', response.status);
+
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('Fallback response error:', errorText);
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
-    return await response.json();
+    const responseData = await response.json();
+    console.log('Fallback response data:', responseData);
+    return responseData;
   };
 
   const initiateCall = useCallback(async (options: RetellCallOptions) => {
