@@ -14,14 +14,17 @@ export const runAuthDiagnostics = async () => {
   try {
     // 1. Check Supabase configuration
     console.log('1️⃣ Checking Supabase configuration...');
+    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://xdinmyztzvrcasvgupir.supabase.co";
+    const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkaW5teXp0enZyY2Fzdmd1cGlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NzgyMjksImV4cCI6MjA2ODI1NDIyOX0.nUYgDJHoZNX5P4ZYKeeY0_AeIV8ZGpCaYjHMyScxwCQ";
+    
     const config = {
-      url: supabase.supabaseUrl,
-      hasKey: !!supabase.supabaseKey,
-      keyLength: supabase.supabaseKey?.length || 0
+      url: SUPABASE_URL,
+      hasKey: !!SUPABASE_ANON_KEY,
+      keyLength: SUPABASE_ANON_KEY?.length || 0
     };
     console.log('📋 Config:', config);
     
-    if (!supabase.supabaseUrl.includes('supabase.co')) {
+    if (!SUPABASE_URL.includes('supabase.co')) {
       results.errors.push('Invalid Supabase URL');
     } else {
       results.configCheck = true;
