@@ -33,34 +33,66 @@ export const useRetellCall = () => {
   const fallbackFetch = async (cleanPayload: any) => {
     console.log('Using fallback fetch method');
     
-    // Get the environment variables directly
-    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://xdinmyztzvrcasvgupir.supabase.co";
-    const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkaW5teXp0enZyY2Fzdmd1cGlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NzgyMjksImV4cCI6MjA2ODI1NDIyOX0.nUYgDJHoZNX5P4ZYKeeY0_AeIV8ZGpCaYjHMyScxwCQ";
-    
-    const functionUrl = `${SUPABASE_URL}/functions/v1/create-web-call`;
-    console.log('Fallback fetch URL:', functionUrl);
-    
-    const response = await fetch(functionUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
-      },
-      body: JSON.stringify(cleanPayload),
-    });
+    try {
+      // Get the environment variables directly
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://xdinmyztzvrcasvgupir.supabase.co";
+      const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkaW5teXp0enZyY2Fzdmd1cGlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NzgyMjksImV4cCI6MjA2ODI1NDIyOX0.nUYgDJHoZNX5P4ZYKeeY0_AeIV8ZGpCaYjHMyScxwCQ";
+      
+      console.log('Environment check:', {
+        url: SUPABASE_URL,
+        keyPresent: !!SUPABASE_ANON_KEY,
+        keyLength: SUPABASE_ANON_KEY.length
+      });
+      
+      const functionUrl = `${SUPABASE_URL}/functions/v1/create-web-call`;
+      console.log('Fallback fetch URL:', functionUrl);
+      
+      // Validate all values before creating request
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        throw new Error('Missing Supabase configuration');
+      }
+      
+      if (!cleanPayload) {
+        throw new Error('Missing payload');
+      }
+      
+      // Create body string and validate it
+      const bodyString = JSON.stringify(cleanPayload);
+      console.log('Request body string:', bodyString);
+      console.log('Request body length:', bodyString.length);
+      
+      // Create headers object step by step
+      const headers: Record<string, string> = {};
+      headers['Content-Type'] = 'application/json';
+      headers['Authorization'] = `Bearer ${SUPABASE_ANON_KEY}`;
+      headers['apikey'] = SUPABASE_ANON_KEY;
+      
+      console.log('Request headers:', headers);
+      
+      // Make the request with explicit configuration
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: headers,
+        body: bodyString,
+        mode: 'cors',
+      });
 
-    console.log('Fallback response status:', response.status);
+      console.log('Fallback response status:', response.status);
+      console.log('Fallback response ok:', response.ok);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Fallback response error:', errorText);
-      throw new Error(`HTTP ${response.status}: ${errorText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Fallback response error:', errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const responseData = await response.json();
+      console.log('Fallback response data:', responseData);
+      return responseData;
+    } catch (error) {
+      console.error('Fallback fetch error:', error);
+      throw error;
     }
-
-    const responseData = await response.json();
-    console.log('Fallback response data:', responseData);
-    return responseData;
   };
 
   const initiateCall = useCallback(async (options: RetellCallOptions) => {
