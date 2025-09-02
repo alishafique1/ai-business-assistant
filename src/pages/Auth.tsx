@@ -156,49 +156,45 @@ export default function Auth() {
     handleEmailConfirmation();
   }, [navigate, location.search, location.hash, from]);
 
-  // Handle redirect based on onboarding status for authenticated users
+  // Handle redirect based on authentication status
   useEffect(() => {
     const checkAndRedirectUser = async () => {
-      console.log('🔄 Checking redirect conditions:', { 
-        onboardingLoading, 
-        isOnboardingCompleted, 
-        from 
-      });
+      // Only proceed if onboarding check is complete
+      if (onboardingLoading) {
+        console.log('⏳ Waiting for onboarding check to complete...');
+        return;
+      }
+
+      const { data: { session }, error } = await supabase.auth.getSession();
       
-      if (!onboardingLoading) {
-        const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error('❌ Error getting session:', error);
+        return;
+      }
+      
+      if (session?.user) {
+        console.log('✅ User is authenticated, determining redirect...', {
+          userId: session.user.id,
+          email: session.user.email,
+          onboardingCompleted: isOnboardingCompleted
+        });
         
-        if (error) {
-          console.error('❌ Error getting session:', error);
-          return;
-        }
+        // Clear any UI state
+        setEmailConfirmed(false);
         
-        if (session) {
-          console.log('✅ User authenticated, redirecting...', {
-            userId: session.user.id,
-            email: session.user.email,
-            onboardingCompleted: isOnboardingCompleted,
-            redirectTo: isOnboardingCompleted ? from : '/onboarding'
-          });
-          
-          // Clear email confirmed state when navigating away
-          setEmailConfirmed(false);
-          
-          if (isOnboardingCompleted) {
-            console.log('🔄 Redirecting to:', from);
-            navigate(from, { replace: true });
-          } else {
-            console.log('🔄 Redirecting to onboarding');
-            navigate('/onboarding', { replace: true });
-          }
-        } else {
-          console.log('ℹ️ No active session found');
-        }
+        // Determine where to redirect
+        const redirectTo = isOnboardingCompleted ? from : '/onboarding';
+        console.log('🔄 Redirecting to:', redirectTo);
+        
+        // Redirect immediately
+        navigate(redirectTo, { replace: true });
+      } else {
+        console.log('ℹ️ No authenticated user found');
       }
     };
 
     checkAndRedirectUser();
-  }, [isOnboardingCompleted, onboardingLoading, navigate, from]);
+  }, [onboardingLoading, isOnboardingCompleted, navigate, from]);
 
   // Listen for cross-tab email confirmation
   useEffect(() => {
@@ -498,32 +494,40 @@ export default function Auth() {
     console.log('✅ Client-side validation passed');
     setIsLoading(true);
 
-    // Use our enhanced auth testing
-    const result = await testRealAuth(email, password);
-    
-    if (result.success && result.data?.user) {
-      console.log('✅ SIGNIN SUCCESSFUL');
-      const userName = result.data.user.email?.split('@')[0] || result.data.user.user_metadata?.business_name || 'User';
-      
-      toast({
-        title: `Welcome back, ${userName}!`,
-        description: "You have been successfully signed in.",
+    // Use standard Supabase auth instead of custom debug function
+    try {
+      console.log('🔑 Attempting sign in with Supabase...');
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password.trim()
       });
+
+      if (error) throw error;
+
+      if (data.user) {
+        console.log('✅ SIGNIN SUCCESSFUL');
+        const userName = data.user.email?.split('@')[0] || data.user.user_metadata?.business_name || 'User';
+        
+        toast({
+          title: `Welcome back, ${userName}!`,
+          description: "You have been successfully signed in.",
+        });
+        
+        // Trigger onboarding status check which will cause the useEffect to redirect
+        console.log('🔑 Triggering onboarding status check...');
+        await checkOnboardingStatus();
+        console.log('🔑 Onboarding status check completed - useEffect will handle redirect');
+      }
       
-      // Check onboarding status and redirect accordingly
-      console.log('🔑 Checking onboarding status...');
-      await checkOnboardingStatus();
-      console.log('🔑 Onboarding check completed');
+    } catch (error: unknown) {
+      console.error('❌ SIGNIN FAILED:', error);
       
-    } else {
-      console.error('❌ SIGNIN FAILED:', result.error);
-      
-      let errorMessage = result.error || "An unexpected error occurred. Please try again.";
+      let errorMessage = "An unexpected error occurred. Please try again.";
       let showForgotPassword = false;
       
       // Enhanced error handling
-      if (result.error) {
-        const errorMsg = result.error.toLowerCase();
+      if (error instanceof Error) {
+        const errorMsg = error.message.toLowerCase();
         
         if (errorMsg.includes('invalid login credentials') || 
             errorMsg.includes('invalid credentials') ||

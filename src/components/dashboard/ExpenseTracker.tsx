@@ -14,7 +14,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useCurrency } from "@/hooks/useCurrency";
 // Removed unused hooks that were causing 404 errors:
 // import { useReceiptLimit } from "@/hooks/useReceiptLimit";
-// import { useFeatureLimits } from "@/hooks/useFeatureLimits";
+import { useFeatureLimits } from "@/hooks/useFeatureLimits";
 import { useSimpleCounter } from "@/hooks/useSimpleCounter";
 import { usePlan } from "@/hooks/usePlan";
 import { useTimezone } from "@/hooks/useTimezone";
@@ -45,6 +45,7 @@ export function ExpenseTracker() {
   const { formatAmount } = useCurrency();
   const { planData } = usePlan();
   // Removed unused hook calls that were causing 404 errors
+  const { canUploadReceipt, usage } = useFeatureLimits();
   const simpleCounter = useSimpleCounter();
   const { formatExpenseDate, formatDateTime, getCurrentDate, getTimezoneDisplay } = useTimezone();
   const { notifyExpenseAdded, notifyLargeExpense, notifyDuplicateExpense, notifyReceiptProcessed } = useNotifications();
