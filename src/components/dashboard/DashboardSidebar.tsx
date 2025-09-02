@@ -52,7 +52,7 @@ export function DashboardSidebar({ activeView, onViewChange }: DashboardSidebarP
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  AI Hub
+                  Expenzify
                 </h2>
                 <Badge 
                   variant={planData.plan === 'pro' ? 'default' : 'secondary'} 
@@ -65,7 +65,7 @@ export function DashboardSidebar({ activeView, onViewChange }: DashboardSidebarP
                   {planData.planLabel}
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground">Business Assistant</p>
+              <p className="text-xs text-muted-foreground">AI assistant</p>
             </div>
           )}
         </button>
