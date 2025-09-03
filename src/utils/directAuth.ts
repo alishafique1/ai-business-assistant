@@ -147,14 +147,22 @@ export async function directSignIn(email: string, password: string): Promise<{ d
       preview: SUPABASE_KEY.substring(0, 20) + '...'
     });
 
-    // Make safe API call
-    const response = await safeFetch(authUrl, {
+    // Create headers with explicit new Headers() to ensure proper formatting
+    const headers = new Headers();
+    headers.set('Content-Type', 'application/json');
+    headers.set('apikey', SUPABASE_KEY);
+    headers.set('Accept', 'application/json');
+    
+    console.log('🔑 Headers being sent:', {
+      'Content-Type': headers.get('Content-Type'),
+      'apikey': headers.get('apikey') ? headers.get('apikey')!.substring(0, 10) + '...' : 'NOT FOUND',
+      'Accept': headers.get('Accept')
+    });
+
+    // Make direct fetch call without safeFetch wrapper for now
+    const response = await fetch(authUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_KEY,
-        'Accept': 'application/json'
-      },
+      headers: headers,
       body: jsonPayload
     });
 
@@ -253,13 +261,15 @@ export async function directSignUp(email: string, password: string, businessName
       throw new Error('Invalid signup URL');
     }
 
-    const response = await safeFetch(signupUrl, {
+    // Create headers with explicit new Headers() to ensure proper formatting
+    const headers = new Headers();
+    headers.set('Content-Type', 'application/json');
+    headers.set('apikey', SUPABASE_KEY);
+    headers.set('Accept', 'application/json');
+
+    const response = await fetch(signupUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_KEY,
-        'Accept': 'application/json'
-      },
+      headers: headers,
       body: jsonPayload
     });
 
