@@ -18,13 +18,14 @@ interface AuthError {
   status?: number;
 }
 
-// Safe environment variable getter
+// Safe environment variable getter that removes all control characters
 const getEnvVar = (key: string, fallback: string): string => {
   const value = import.meta.env[key];
   if (!value || value === 'undefined' || value === 'null' || typeof value !== 'string') {
     return fallback;
   }
-  return value.trim();
+  // Remove all whitespace and control characters, including newlines, tabs, etc.
+  return value.replace(/\s/g, '').replace(/[\x00-\x1F\x7F]/g, '');
 };
 
 const SUPABASE_URL = getEnvVar('VITE_SUPABASE_URL', 'https://xdinmyztzvrcasvgupir.supabase.co');

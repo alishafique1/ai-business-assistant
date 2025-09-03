@@ -2,12 +2,13 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// Safely get environment variables, handling potential undefined/null string values
+// Safely get environment variables, handling potential undefined/null string values and control characters
 const getValidEnvVar = (value: string | undefined, fallback: string): string => {
-  if (!value || value === 'undefined' || value === 'null' || value.trim() === '') {
+  if (!value || value === 'undefined' || value === 'null' || typeof value !== 'string') {
     return fallback;
   }
-  return value.trim();
+  // Remove all whitespace and control characters, including newlines, tabs, etc.
+  return value.replace(/\s/g, '').replace(/[\x00-\x1F\x7F]/g, '');
 };
 
 const SUPABASE_URL = getValidEnvVar(
