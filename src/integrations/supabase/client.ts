@@ -42,24 +42,16 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: typeof window !== 'undefined' ? localStorage : undefined,
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: false, // Disable automatic URL detection to prevent parsing errors
-    flowType: 'pkce'
+    detectSessionInUrl: false, // Completely disable URL session detection
+    flowType: 'implicit' // Change from pkce to implicit to avoid URL parsing
   },
   global: {
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'User-Agent': typeof window !== 'undefined' ? 
-        window.navigator?.userAgent || 'Expenzify-Web-App' : 
-        'Expenzify-Web-App'
+      'Accept': 'application/json'
     }
   },
   db: {
     schema: 'public'
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 2
-    }
   }
 });

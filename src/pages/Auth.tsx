@@ -35,127 +35,34 @@ export default function Auth() {
   const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') === 'signup' ? 'signup' : 'signin');
 
   useEffect(() => {
-    // Handle email confirmation
-    const handleEmailConfirmation = async () => {
-      // Use comprehensive parameter extraction with safe defaults
-      const fullUrl = window.location.href || '';
-      const nativeSearch = window.location.search || '';
-      const nativeHash = window.location.hash || '';
-      
-      console.log('🔍 Auth page - Full URL:', fullUrl);
-      console.log('🔍 Auth page - Native search:', nativeSearch);
-      console.log('🔍 Auth page - Native hash:', nativeHash);
-      
-      const urlParams = new URLSearchParams(nativeSearch || '');
-      const hashParams = new URLSearchParams((nativeHash || '').substring(1));
-      const reactUrlParams = new URLSearchParams(location.search || '');
-      const reactHashParams = new URLSearchParams((location.hash || '').substring(1));
-      
-      console.log('🔍 Auth URL Params:', Array.from(urlParams.entries()));
-      console.log('🔍 Auth Hash Params:', Array.from(hashParams.entries()));
-      
-      // Show the actual parameter values
-      if (urlParams.size > 0) {
-        urlParams.forEach((value, key) => {
-          console.log(`🔍 Auth URL Param: ${key} = ${value}`);
-        });
-      }
-      if (hashParams.size > 0) {
-        hashParams.forEach((value, key) => {
-          console.log(`🔍 Auth Hash Param: ${key} = ${value}`);
-        });
-      }
-      
-      const accessToken = urlParams.get('access_token') || hashParams.get('access_token') || 
-                         reactUrlParams.get('access_token') || reactHashParams.get('access_token');
-      const refreshToken = urlParams.get('refresh_token') || hashParams.get('refresh_token') ||
-                         reactUrlParams.get('refresh_token') || reactHashParams.get('refresh_token');
-      const type = urlParams.get('type') || hashParams.get('type') ||
-                  reactUrlParams.get('type') || reactHashParams.get('type');
-      const tokenHash = urlParams.get('token_hash') || hashParams.get('token_hash') ||
-                       reactUrlParams.get('token_hash') || reactHashParams.get('token_hash');
-      const token = urlParams.get('token') || hashParams.get('token') ||
-                   reactUrlParams.get('token') || reactHashParams.get('token');
-      
-      // Handle email confirmation directly on this page
-      if (accessToken && refreshToken && type === 'signup') {
-        console.log('📧 Handling email confirmation on auth page');
-        try {
-          const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken
-          });
-          
-          if (error) throw error;
-          
-          if (data.user) {
-            // Clear URL parameters
-            window.history.replaceState({}, document.title, '/auth');
-            
-            toast({
-              title: "Email Confirmed!",
-              description: "Welcome! Redirecting to onboarding...",
-            });
-            
-            // Check onboarding status and redirect accordingly
-            await checkOnboardingStatus();
-            // The redirect will happen automatically via the useEffect below
-            return;
-          }
-        } catch (error) {
-          console.error('Email confirmation error:', error);
-          toast({
-            title: "Confirmation Error",
-            description: "There was an issue confirming your email. Please try signing in.",
-            variant: "destructive",
-          });
+    // Simplified approach - just check for existing session without complex URL parsing
+    const checkExistingSession = async () => {
+      try {
+        console.log('🔍 Checking for existing session...');
+        
+        // Only check for existing session, no URL parsing
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('❌ Error getting session:', error);
+          return;
         }
-      } else if (tokenHash || token) {
-        console.log('📧 Attempting alternative token confirmation');
-        try {
-          const tokenToUse = tokenHash || token;
-          const { data, error } = await supabase.auth.verifyOtp({
-            token: tokenToUse,
-            type: 'email'
-          });
-          
-          if (error) throw error;
-          
-          if (data.user) {
-            // Clear URL parameters
-            window.history.replaceState({}, document.title, '/auth');
-            
-            toast({
-              title: "Email Confirmed!",
-              description: "Welcome! Redirecting to onboarding...",
-            });
-            
-            // Check onboarding status and redirect accordingly
-            await checkOnboardingStatus();
-            // The redirect will happen automatically via the useEffect below
-            return;
-          }
-        } catch (error) {
-          console.error('Token verification error:', error);
-          toast({
-            title: "Confirmation Error",
-            description: "There was an issue confirming your email. Please try signing in.",
-            variant: "destructive",
-          });
+        
+        if (session?.user) {
+          console.log('✅ Found existing session for user:', session.user.id);
+          // Check onboarding status and redirect accordingly
+          await checkOnboardingStatus();
+          // The redirect will happen in the useEffect below based on onboarding status
+        } else {
+          console.log('ℹ️ No existing session found');
         }
-      }
-      
-      // Check if user is already logged in
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        // Check onboarding status and redirect accordingly
-        await checkOnboardingStatus();
-        // The redirect will happen in the useEffect below based on onboarding status
+      } catch (error) {
+        console.error('❌ Session check error:', error);
       }
     };
     
-    handleEmailConfirmation();
-  }, [navigate, location.search, location.hash, from]);
+    checkExistingSession();
+  }, [navigate, from]);
 
   // Handle redirect based on authentication status
   useEffect(() => {
