@@ -55,6 +55,9 @@ async function safeFetch(url: string, options: RequestInit): Promise<Response> {
           !key.includes('\0') && !key.includes('\n') && !key.includes('\r') &&
           !value.includes('\0') && !value.includes('\n') && !value.includes('\r')) {
         safeHeaders[key] = value;
+        console.log(`🔒 Adding header: ${key} = ${key === 'apikey' ? value.substring(0, 10) + '...' : value}`);
+      } else {
+        console.warn(`🚨 Filtering out invalid header: ${key} (type: ${typeof key}) = ${typeof value}`);
       }
     }
   }
@@ -135,6 +138,14 @@ export async function directSignIn(email: string, password: string): Promise<{ d
     }
 
     console.log('🔑 Making safe fetch request...');
+    console.log('🔑 SUPABASE_KEY validation:', {
+      type: typeof SUPABASE_KEY,
+      length: SUPABASE_KEY.length,
+      hasNullByte: SUPABASE_KEY.includes('\0'),
+      hasNewline: SUPABASE_KEY.includes('\n'),
+      hasCarriageReturn: SUPABASE_KEY.includes('\r'),
+      preview: SUPABASE_KEY.substring(0, 20) + '...'
+    });
 
     // Make safe API call
     const response = await safeFetch(authUrl, {
