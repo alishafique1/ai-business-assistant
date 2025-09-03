@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { Brain, Building2, Github, Mail, ArrowLeft } from "lucide-react";
 import { runAuthDiagnostics, testRealAuth, testPasswordReset } from "@/utils/authDebug";
+import { directSignIn, directSignUp } from "@/utils/directAuth";
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -364,26 +365,14 @@ export default function Auth() {
       }
 
       console.log('✅ Email check passed, proceeding with signup');
+      console.log('📧 Using direct signup for email:', email.trim());
       
-      // Use production URL for email redirects, fallback to current origin for local dev
-      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const productionUrl = import.meta.env.VITE_SITE_URL || 'https://www.expenzify.com';
-      const redirectUrl = isLocalhost ? `${window.location.origin}/auth` : `${productionUrl}/auth`;
+      // Use direct signup to bypass Supabase client issues
+      const { data: signupData, error: signupError } = await directSignUp(email, password, businessName);
       
-      console.log('📧 Attempting signup for email:', email.trim());
-      
-      const { error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            business_name: businessName.trim(),
-          }
-        }
-      });
-
-      if (error) throw error;
+      if (signupError) {
+        throw new Error(signupError.message);
+      }
 
       toast({
         title: "Account created!",
@@ -494,46 +483,42 @@ export default function Auth() {
     console.log('✅ Client-side validation passed');
     setIsLoading(true);
 
-    // Validate inputs before sending to prevent invalid fetch values
-    const cleanEmail = String(email || '').trim();
-    const cleanPassword = String(password || '').trim();
-
     try {
-      // Use standard Supabase auth with error handling for fetch issues
-      if (!cleanEmail || !cleanPassword) {
-        throw new Error('Email or password is empty after trimming');
+      console.log('🔑 Using direct authentication method...');
+      
+      // Use direct authentication to bypass Supabase client issues
+      const { data: authData, error: authError } = await directSignIn(email, password);
+      
+      if (authError) {
+        throw new Error(authError.message);
       }
       
-      // Check for potential invalid characters that might cause fetch issues
-      if (cleanEmail.includes('\n') || cleanEmail.includes('\r') || 
-          cleanPassword.includes('\n') || cleanPassword.includes('\r') ||
-          cleanEmail.includes('\0') || cleanPassword.includes('\0')) {
-        throw new Error('Invalid characters in email or password');
-      }
-      
-      // Additional validation for fetch safety
-      if (typeof cleanEmail !== 'string' || typeof cleanPassword !== 'string') {
-        throw new Error('Email or password is not a valid string');
-      }
-      console.log('🔑 Attempting sign in with Supabase...');
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
-        password: cleanPassword
-      });
-
-      if (error) throw error;
-
-      if (data.user) {
-        console.log('✅ SIGNIN SUCCESSFUL');
-        const userName = data.user.email?.split('@')[0] || data.user.user_metadata?.business_name || 'User';
+      if (authData) {
+        console.log('✅ Direct authentication successful');
+        
+        // Set the session in Supabase client
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token: authData.access_token,
+          refresh_token: authData.refresh_token
+        });
+        
+        if (sessionError) {
+          console.warn('⚠️ Session setting failed, but auth succeeded:', sessionError);
+          // Continue anyway - we have valid tokens
+        }
+        
+        const userName = authData.user.email?.split('@')[0] || authData.user.user_metadata?.business_name || 'User';
         
         toast({
           title: `Welcome back, ${userName}!`,
           description: "You have been successfully signed in.",
         });
         
-        // Trigger onboarding status check which will cause the useEffect to redirect
+        // Clear form
+        setEmail("");
+        setPassword("");
+        
+        // Trigger onboarding status check
         console.log('🔑 Triggering onboarding status check...');
         await checkOnboardingStatus();
         console.log('🔑 Onboarding status check completed - useEffect will handle redirect');
@@ -542,89 +527,6 @@ export default function Auth() {
     } catch (error: unknown) {
       console.error('❌ SIGNIN FAILED:', error);
       
-      // If we get an "Invalid value" fetch error, try a fallback approach
-      if (error instanceof Error && 
-          (error.message.includes('Invalid value') || error.message.includes('Failed to execute \'fetch\''))) {
-        console.log('🔄 Attempting fallback authentication method...');
-        
-        try {
-          // Create a minimal request payload
-          const authPayload = {
-            email: cleanEmail,
-            password: cleanPassword
-          };
-          
-          // Double-check payload validity
-          if (!authPayload.email || !authPayload.password || 
-              typeof authPayload.email !== 'string' || typeof authPayload.password !== 'string') {
-            throw new Error('Authentication payload validation failed');
-          }
-          
-          // Try direct REST API approach as fallback
-          const getValidEnvVar = (value: string | undefined, fallback: string): string => {
-            if (!value || value === 'undefined' || value === 'null' || value.trim() === '') {
-              return fallback;
-            }
-            return value.trim();
-          };
-
-          const supabaseUrl = getValidEnvVar(
-            import.meta.env.VITE_SUPABASE_URL, 
-            'https://xdinmyztzvrcasvgupir.supabase.co'
-          );
-          const supabaseKey = getValidEnvVar(
-            import.meta.env.VITE_SUPABASE_ANON_KEY,
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkaW5teXp0enZyY2Fzdmd1cGlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NzgyMjksImV4cCI6MjA2ODI1NDIyOX0.nUYgDJHoZNX5P4ZYKeeY0_AeIV8ZGpCaYjHMyScxwCQ'
-          );
-          
-          const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': supabaseKey
-            },
-            body: JSON.stringify(authPayload)
-          });
-          
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
-          
-          const fallbackData = await response.json();
-          
-          if (fallbackData.access_token) {
-            console.log('✅ Fallback authentication successful');
-            
-            // Set the session manually
-            const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-              access_token: fallbackData.access_token,
-              refresh_token: fallbackData.refresh_token
-            });
-            
-            if (sessionError) throw sessionError;
-            
-            if (sessionData.user) {
-              const userName = sessionData.user.email?.split('@')[0] || sessionData.user.user_metadata?.business_name || 'User';
-              
-              toast({
-                title: `Welcome back, ${userName}!`,
-                description: "You have been successfully signed in.",
-              });
-              
-              await checkOnboardingStatus();
-              console.log('🔑 Fallback method succeeded - onboarding check completed');
-              return; // Exit early on success
-            }
-          }
-          
-          throw new Error('Fallback authentication failed');
-          
-        } catch (fallbackError) {
-          console.error('❌ Fallback authentication also failed:', fallbackError);
-          // Continue with normal error handling below
-        }
-      }
-      
       let errorMessage = "An unexpected error occurred. Please try again.";
       let showForgotPassword = false;
       
@@ -632,27 +534,26 @@ export default function Auth() {
       if (error instanceof Error) {
         const errorMsg = error.message.toLowerCase();
         
-        if (errorMsg.includes('invalid login credentials') || 
+        if (errorMsg.includes('invalid email or password') ||
+            errorMsg.includes('invalid login credentials') || 
             errorMsg.includes('invalid credentials') ||
             errorMsg.includes('wrong password') ||
             errorMsg.includes('incorrect password')) {
           errorMessage = "❌ Invalid email or password. Please check your credentials.";
           showForgotPassword = true;
-        } else if (errorMsg.includes('email not confirmed') ||
-                   errorMsg.includes('email confirmation') ||
-                   errorMsg.includes('not verified')) {
-          errorMessage = "📧 Please check your email and click the confirmation link first.";
-        } else if (errorMsg.includes('user not found') ||
-                   errorMsg.includes('no user found') ||
-                   errorMsg.includes('account not found')) {
-          errorMessage = "👤 No account found with this email. Please sign up first.";
-        } else if (errorMsg.includes('too many requests') ||
+        } else if (errorMsg.includes('account not found') ||
+                   errorMsg.includes('email not confirmed') ||
+                   errorMsg.includes('email not found')) {
+          errorMessage = "📧 Account not found or email not confirmed. Please check your email or sign up.";
+        } else if (errorMsg.includes('too many attempts') ||
                    errorMsg.includes('rate limit')) {
           errorMessage = "⏰ Too many attempts. Please wait before trying again.";
         } else if (errorMsg.includes('network') ||
-                   errorMsg.includes('fetch') ||
-                   errorMsg.includes('connection')) {
+                   errorMsg.includes('connection') ||
+                   errorMsg.includes('fetch')) {
           errorMessage = "🌐 Network error. Please check your internet connection.";
+        } else {
+          errorMessage = error.message || errorMessage;
         }
       }
 
