@@ -30,6 +30,56 @@ const getEnvVar = (key: string, fallback: string): string => {
 const SUPABASE_URL = getEnvVar('VITE_SUPABASE_URL', 'https://xdinmyztzvrcasvgupir.supabase.co');
 const SUPABASE_KEY = getEnvVar('VITE_SUPABASE_ANON_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkaW5teXp0enZyY2Fzdmd1cGlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NzgyMjksImV4cCI6MjA2ODI1NDIyOX0.nUYgDJHoZNX5P4ZYKeeY0_AeIV8ZGpCaYjHMyScxwCQ');
 
+// Debug environment variables
+console.log('🔧 DirectAuth Debug Info:');
+console.log('🔧 Raw VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL);
+console.log('🔧 Raw VITE_SUPABASE_ANON_KEY type:', typeof import.meta.env.VITE_SUPABASE_ANON_KEY);
+console.log('🔧 Processed SUPABASE_URL:', SUPABASE_URL);
+console.log('🔧 Processed SUPABASE_KEY length:', SUPABASE_KEY.length);
+
+/**
+ * Safe fetch wrapper that validates all parameters
+ */
+async function safeFetch(url: string, options: RequestInit): Promise<Response> {
+  // Validate URL
+  if (typeof url !== 'string' || !url || url.includes('\0') || url.includes('\n') || url.includes('\r')) {
+    throw new Error('Invalid URL provided to fetch');
+  }
+
+  // Validate and sanitize headers
+  const safeHeaders: Record<string, string> = {};
+  if (options.headers) {
+    const headers = options.headers as Record<string, string>;
+    for (const [key, value] of Object.entries(headers)) {
+      if (typeof key === 'string' && typeof value === 'string' && 
+          !key.includes('\0') && !key.includes('\n') && !key.includes('\r') &&
+          !value.includes('\0') && !value.includes('\n') && !value.includes('\r')) {
+        safeHeaders[key] = value;
+      }
+    }
+  }
+
+  // Validate body
+  let safeBody = options.body;
+  if (safeBody && typeof safeBody === 'string') {
+    if (safeBody.includes('\0')) {
+      throw new Error('Invalid characters in request body');
+    }
+  }
+
+  // Create safe options
+  const safeOptions: RequestInit = {
+    ...options,
+    headers: safeHeaders,
+    body: safeBody
+  };
+
+  console.log('🔒 Safe fetch URL:', url.substring(0, 50) + '...');
+  console.log('🔒 Safe fetch headers:', Object.keys(safeHeaders));
+
+  return fetch(url, safeOptions);
+}
+
 /**
  * Direct sign in using Supabase REST API
  */
@@ -52,23 +102,49 @@ export async function directSignIn(email: string, password: string): Promise<{ d
       return { data: null, error: { message: 'Invalid email format' } };
     }
 
+    // Validate environment variables again
     console.log('🔑 Direct auth attempt for:', cleanEmail);
+    console.log('🔑 SUPABASE_URL check:', typeof SUPABASE_URL, SUPABASE_URL.length);
+    console.log('🔑 SUPABASE_KEY check:', typeof SUPABASE_KEY, SUPABASE_KEY.length);
 
-    // Create the request payload
+    if (!SUPABASE_URL || !SUPABASE_KEY || typeof SUPABASE_URL !== 'string' || typeof SUPABASE_KEY !== 'string') {
+      throw new Error('Invalid Supabase configuration');
+    }
+
+    // Create the request payload with strict validation
     const payload = {
       email: cleanEmail,
       password: cleanPassword
     };
 
-    // Make direct API call
-    const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    // Validate payload can be JSON stringified
+    let jsonPayload: string;
+    try {
+      jsonPayload = JSON.stringify(payload);
+      if (!jsonPayload || jsonPayload === '{}' || jsonPayload.includes('\0')) {
+        throw new Error('Invalid payload serialization');
+      }
+    } catch (e) {
+      throw new Error('Failed to serialize authentication payload');
+    }
+
+    // Construct URL with validation
+    const authUrl = `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
+    if (!authUrl.startsWith('https://') || authUrl.includes('\0')) {
+      throw new Error('Invalid authentication URL');
+    }
+
+    console.log('🔑 Making safe fetch request...');
+
+    // Make safe API call
+    const response = await safeFetch(authUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'apikey': SUPABASE_KEY,
         'Accept': 'application/json'
       },
-      body: JSON.stringify(payload)
+      body: jsonPayload
     });
 
     if (!response.ok) {
@@ -149,14 +225,31 @@ export async function directSignUp(email: string, password: string, businessName
       }
     };
 
-    const response = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+    // Validate payload can be JSON stringified
+    let jsonPayload: string;
+    try {
+      jsonPayload = JSON.stringify(payload);
+      if (!jsonPayload || jsonPayload === '{}' || jsonPayload.includes('\0')) {
+        throw new Error('Invalid signup payload serialization');
+      }
+    } catch (e) {
+      throw new Error('Failed to serialize signup payload');
+    }
+
+    // Construct URL with validation
+    const signupUrl = `${SUPABASE_URL}/auth/v1/signup`;
+    if (!signupUrl.startsWith('https://') || signupUrl.includes('\0')) {
+      throw new Error('Invalid signup URL');
+    }
+
+    const response = await safeFetch(signupUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'apikey': SUPABASE_KEY,
         'Accept': 'application/json'
       },
-      body: JSON.stringify(payload)
+      body: jsonPayload
     });
 
     const result = await response.json();
