@@ -36,19 +36,19 @@ export default function Auth() {
   useEffect(() => {
     // Handle email confirmation
     const handleEmailConfirmation = async () => {
-      // Use comprehensive parameter extraction
-      const fullUrl = window.location.href;
-      const nativeSearch = window.location.search;
-      const nativeHash = window.location.hash;
+      // Use comprehensive parameter extraction with safe defaults
+      const fullUrl = window.location.href || '';
+      const nativeSearch = window.location.search || '';
+      const nativeHash = window.location.hash || '';
       
       console.log('🔍 Auth page - Full URL:', fullUrl);
       console.log('🔍 Auth page - Native search:', nativeSearch);
       console.log('🔍 Auth page - Native hash:', nativeHash);
       
-      const urlParams = new URLSearchParams(nativeSearch);
-      const hashParams = new URLSearchParams(nativeHash.substring(1));
-      const reactUrlParams = new URLSearchParams(location.search);
-      const reactHashParams = new URLSearchParams(location.hash.substring(1));
+      const urlParams = new URLSearchParams(nativeSearch || '');
+      const hashParams = new URLSearchParams((nativeHash || '').substring(1));
+      const reactUrlParams = new URLSearchParams(location.search || '');
+      const reactHashParams = new URLSearchParams((location.hash || '').substring(1));
       
       console.log('🔍 Auth URL Params:', Array.from(urlParams.entries()));
       console.log('🔍 Auth Hash Params:', Array.from(hashParams.entries()));
@@ -494,12 +494,33 @@ export default function Auth() {
     console.log('✅ Client-side validation passed');
     setIsLoading(true);
 
-    // Use standard Supabase auth instead of custom debug function
+    // Use standard Supabase auth with error handling for fetch issues
     try {
       console.log('🔑 Attempting sign in with Supabase...');
+      
+      // Validate inputs before sending to prevent invalid fetch values
+      const cleanEmail = String(email || '').trim();
+      const cleanPassword = String(password || '').trim();
+      
+      if (!cleanEmail || !cleanPassword) {
+        throw new Error('Email or password is empty after trimming');
+      }
+      
+      // Check for potential invalid characters that might cause fetch issues
+      if (cleanEmail.includes('\n') || cleanEmail.includes('\r') || 
+          cleanPassword.includes('\n') || cleanPassword.includes('\r') ||
+          cleanEmail.includes('\0') || cleanPassword.includes('\0')) {
+        throw new Error('Invalid characters in email or password');
+      }
+      
+      // Additional validation for fetch safety
+      if (typeof cleanEmail !== 'string' || typeof cleanPassword !== 'string') {
+        throw new Error('Email or password is not a valid string');
+      }
+      
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password.trim()
+        email: cleanEmail,
+        password: cleanPassword
       });
 
       if (error) throw error;
@@ -521,6 +542,76 @@ export default function Auth() {
       
     } catch (error: unknown) {
       console.error('❌ SIGNIN FAILED:', error);
+      
+      // If we get an "Invalid value" fetch error, try a fallback approach
+      if (error instanceof Error && 
+          (error.message.includes('Invalid value') || error.message.includes('Failed to execute \'fetch\''))) {
+        console.log('🔄 Attempting fallback authentication method...');
+        
+        try {
+          // Create a minimal request payload
+          const authPayload = {
+            email: cleanEmail,
+            password: cleanPassword
+          };
+          
+          // Double-check payload validity
+          if (!authPayload.email || !authPayload.password || 
+              typeof authPayload.email !== 'string' || typeof authPayload.password !== 'string') {
+            throw new Error('Authentication payload validation failed');
+          }
+          
+          // Try direct REST API approach as fallback
+          const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || 'https://xdinmyztzvrcasvgupir.supabase.co').trim();
+          const supabaseKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkaW5teXp0enZyY2Fzdmd1cGlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NzgyMjksImV4cCI6MjA2ODI1NDIyOX0.nUYgDJHoZNX5P4ZYKeeY0_AeIV8ZGpCaYjHMyScxwCQ').trim();
+          
+          const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': supabaseKey
+            },
+            body: JSON.stringify(authPayload)
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          
+          const fallbackData = await response.json();
+          
+          if (fallbackData.access_token) {
+            console.log('✅ Fallback authentication successful');
+            
+            // Set the session manually
+            const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+              access_token: fallbackData.access_token,
+              refresh_token: fallbackData.refresh_token
+            });
+            
+            if (sessionError) throw sessionError;
+            
+            if (sessionData.user) {
+              const userName = sessionData.user.email?.split('@')[0] || sessionData.user.user_metadata?.business_name || 'User';
+              
+              toast({
+                title: `Welcome back, ${userName}!`,
+                description: "You have been successfully signed in.",
+              });
+              
+              await checkOnboardingStatus();
+              console.log('🔑 Fallback method succeeded - onboarding check completed');
+              return; // Exit early on success
+            }
+          }
+          
+          throw new Error('Fallback authentication failed');
+          
+        } catch (fallbackError) {
+          console.error('❌ Fallback authentication also failed:', fallbackError);
+          // Continue with normal error handling below
+        }
+      }
       
       let errorMessage = "An unexpected error occurred. Please try again.";
       let showForgotPassword = false;
