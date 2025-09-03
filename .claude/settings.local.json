@@ -16,7 +16,11 @@
       "Bash(npx supabase functions deploy:*)",
       "Bash(git checkout:*)",
       "Bash(npm install:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(echo $VITE_RETELL_AGENT_ID)",
+      "Bash(npx tsc:*)",
+      "Bash(echo $VITE_SUPABASE_URL)",
+      "Bash(echo $VITE_SUPABASE_ANON_KEY)"
     ],
     "deny": []
   }
