@@ -494,14 +494,12 @@ export default function Auth() {
     console.log('✅ Client-side validation passed');
     setIsLoading(true);
 
-    // Use standard Supabase auth with error handling for fetch issues
+    // Validate inputs before sending to prevent invalid fetch values
+    const cleanEmail = String(email || '').trim();
+    const cleanPassword = String(password || '').trim();
+
     try {
-      console.log('🔑 Attempting sign in with Supabase...');
-      
-      // Validate inputs before sending to prevent invalid fetch values
-      const cleanEmail = String(email || '').trim();
-      const cleanPassword = String(password || '').trim();
-      
+      // Use standard Supabase auth with error handling for fetch issues
       if (!cleanEmail || !cleanPassword) {
         throw new Error('Email or password is empty after trimming');
       }
@@ -517,6 +515,7 @@ export default function Auth() {
       if (typeof cleanEmail !== 'string' || typeof cleanPassword !== 'string') {
         throw new Error('Email or password is not a valid string');
       }
+      console.log('🔑 Attempting sign in with Supabase...');
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
@@ -562,8 +561,21 @@ export default function Auth() {
           }
           
           // Try direct REST API approach as fallback
-          const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || 'https://xdinmyztzvrcasvgupir.supabase.co').trim();
-          const supabaseKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkaW5teXp0enZyY2Fzdmd1cGlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NzgyMjksImV4cCI6MjA2ODI1NDIyOX0.nUYgDJHoZNX5P4ZYKeeY0_AeIV8ZGpCaYjHMyScxwCQ').trim();
+          const getValidEnvVar = (value: string | undefined, fallback: string): string => {
+            if (!value || value === 'undefined' || value === 'null' || value.trim() === '') {
+              return fallback;
+            }
+            return value.trim();
+          };
+
+          const supabaseUrl = getValidEnvVar(
+            import.meta.env.VITE_SUPABASE_URL, 
+            'https://xdinmyztzvrcasvgupir.supabase.co'
+          );
+          const supabaseKey = getValidEnvVar(
+            import.meta.env.VITE_SUPABASE_ANON_KEY,
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkaW5teXp0enZyY2Fzdmd1cGlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NzgyMjksImV4cCI6MjA2ODI1NDIyOX0.nUYgDJHoZNX5P4ZYKeeY0_AeIV8ZGpCaYjHMyScxwCQ'
+          );
           
           const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
             method: 'POST',

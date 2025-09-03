@@ -2,16 +2,36 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// Ensure environment variables are valid strings
-const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || "https://xdinmyztzvrcasvgupir.supabase.co").trim();
-const SUPABASE_PUBLISHABLE_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkaW5teXp0enZyY2Fzdmd1cGlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NzgyMjksImV4cCI6MjA2ODI1NDIyOX0.nUYgDJHoZNX5P4ZYKeeY0_AeIV8ZGpCaYjHMyScxwCQ").trim();
+// Safely get environment variables, handling potential undefined/null string values
+const getValidEnvVar = (value: string | undefined, fallback: string): string => {
+  if (!value || value === 'undefined' || value === 'null' || value.trim() === '') {
+    return fallback;
+  }
+  return value.trim();
+};
 
-// Validate that we have valid values
-if (!SUPABASE_URL || SUPABASE_URL === 'undefined' || SUPABASE_URL === 'null') {
-  console.error('Invalid SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL);
+const SUPABASE_URL = getValidEnvVar(
+  import.meta.env.VITE_SUPABASE_URL, 
+  "https://xdinmyztzvrcasvgupir.supabase.co"
+);
+
+const SUPABASE_PUBLISHABLE_KEY = getValidEnvVar(
+  import.meta.env.VITE_SUPABASE_ANON_KEY,
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkaW5teXp0enZyY2Fzdmd1cGlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI2NzgyMjksImV4cCI6MjA2ODI1NDIyOX0.nUYgDJHoZNX5P4ZYKeeY0_AeIV8ZGpCaYjHMyScxwCQ"
+);
+
+// Log the actual values for debugging (only the first few characters of the key)
+console.log('Supabase URL:', SUPABASE_URL);
+console.log('Supabase Key (preview):', SUPABASE_PUBLISHABLE_KEY.substring(0, 20) + '...');
+
+// Validate URL format
+if (!SUPABASE_URL.startsWith('https://') || !SUPABASE_URL.includes('.supabase.co')) {
+  console.error('Invalid Supabase URL format:', SUPABASE_URL);
 }
-if (!SUPABASE_PUBLISHABLE_KEY || SUPABASE_PUBLISHABLE_KEY === 'undefined' || SUPABASE_PUBLISHABLE_KEY === 'null') {
-  console.error('Invalid SUPABASE_PUBLISHABLE_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY);
+
+// Validate key format (should be a JWT)
+if (!SUPABASE_PUBLISHABLE_KEY.startsWith('eyJ')) {
+  console.error('Invalid Supabase key format - not a JWT:', SUPABASE_PUBLISHABLE_KEY.substring(0, 20));
 }
 
 // Import the supabase client like this:
@@ -22,13 +42,16 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: typeof window !== 'undefined' ? localStorage : undefined,
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: typeof window !== 'undefined',
+    detectSessionInUrl: false, // Disable automatic URL detection to prevent parsing errors
     flowType: 'pkce'
   },
   global: {
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json'
+      'Accept': 'application/json',
+      'User-Agent': typeof window !== 'undefined' ? 
+        window.navigator?.userAgent || 'Expenzify-Web-App' : 
+        'Expenzify-Web-App'
     }
   },
   db: {
