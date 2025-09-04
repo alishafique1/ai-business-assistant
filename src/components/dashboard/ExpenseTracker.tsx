@@ -66,6 +66,11 @@ export function ExpenseTracker() {
   const [voiceResponse, setVoiceResponse] = useState<string>('');
   const [processingVoice, setProcessingVoice] = useState(false);
   
+  // Voice expense category override states
+  const [pendingVoiceExpense, setPendingVoiceExpense] = useState<any>(null);
+  const [showVoiceCategoryDialog, setShowVoiceCategoryDialog] = useState(false);
+  const [voiceExpenseCategory, setVoiceExpenseCategory] = useState('');
+  
   // Input method selection state
   const [activeInputMethod, setActiveInputMethod] = useState<'none' | 'voice' | 'upload'>('none');
 
@@ -1663,9 +1668,9 @@ export function ExpenseTracker() {
           
           console.log('🎯 FINAL ML CATEGORY TO SAVE:', mlCategory);
           
-          // Map the ML category to user categories before saving
+          // Map the ML category to user categories
           const mappedCategoryResult = await mapCategoryFromML(mlCategory);
-          const categoryToStore = mappedCategoryResult.categoryName;
+          const suggestedCategory = mappedCategoryResult.categoryName;
           
           console.log('🗂️ Mapped category result:', {
             originalML: mlCategory,
@@ -1674,39 +1679,19 @@ export function ExpenseTracker() {
             isNewCategory: mappedCategoryResult.isNewCategory
           });
           
-          try {
-            console.log('📝 Attempting to save expense to Supabase...');
-            const { data: savedExpense, error: saveError } = await supabase
-              .from('business_expenses')
-              .insert({
-                description: `Voice Entry: ${result.details.description}`,
-                amount: parseFloat(result.details.amount),
-                category: categoryToStore,
-                expense_date: getCurrentDate(), // Today's date in user's timezone
-                user_id: user?.id
-              })
-              .select();
-              
-            if (saveError) {
-              console.error('❌ Failed to save voice expense to Supabase:', saveError);
-              throw new Error(`Supabase save error: ${saveError.message}`);
-            } else {
-              console.log('✅ Voice expense saved to Supabase:', savedExpense);
-              console.log('🎤 VOICE EXPENSE: Successfully saved, now processing counters...');
-              
-              // Increment receipt count for voice expenses (they use ML processing)
-              console.log('🎤 VOICE EXPENSE: About to increment receipt counters...');
-              console.log('🎤 VOICE EXPENSE: Current user ID:', user?.id);
-              console.log('🎤 VOICE EXPENSE: Using simple counter system');
-              
-              // Increment the simple counter
-              simpleCounter.increment();
-              console.log('🎤 VOICE EXPENSE: Receipt counter incremented');
-            }
-          } catch (supabaseError) {
-            console.error('❌ Error saving to Supabase:', supabaseError);
-            // Don't throw error here - we still want to refresh the list in case the ML API saved it
-          }
+          // Store the pending expense data and show category selection dialog
+          setPendingVoiceExpense({
+            result: result,
+            mlCategory: mlCategory,
+            suggestedCategory: suggestedCategory,
+            mappedCategoryResult: mappedCategoryResult
+          });
+          
+          setVoiceExpenseCategory(suggestedCategory); // Pre-populate with AI suggestion
+          setShowVoiceCategoryDialog(true);
+          setProcessingVoice(false); // Stop the processing spinner
+          
+          console.log('🎯 Showing category selection dialog with suggestion:', suggestedCategory);
         } else {
           console.error('❌ Missing required expense details:', { 
             hasDetails: !!result.details,
@@ -1769,6 +1754,101 @@ export function ExpenseTracker() {
 
   const clearVoiceResponse = () => {
     setVoiceResponse('');
+  };
+
+  // Save voice expense with user-selected category
+  const saveVoiceExpense = async () => {
+    if (!pendingVoiceExpense || !user) return;
+    
+    try {
+      const { result, mlCategory } = pendingVoiceExpense;
+      const categoryToStore = voiceExpenseCategory || 'Other';
+      
+      console.log('💾 Saving voice expense with user-selected category:', categoryToStore);
+      
+      const { data: savedExpense, error: saveError } = await supabase
+        .from('business_expenses')
+        .insert({
+          description: `Voice Entry: ${result.details.description}`,
+          amount: parseFloat(result.details.amount),
+          category: categoryToStore,
+          expense_date: getCurrentDate(),
+          user_id: user.id
+        })
+        .select();
+        
+      if (saveError) {
+        console.error('❌ Failed to save voice expense to Supabase:', saveError);
+        toast({
+          title: "Error Saving Expense",
+          description: "Failed to save your voice expense. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      console.log('✅ Voice expense saved to Supabase:', savedExpense);
+      
+      // Add category to user categories if it's new
+      if (!userCategories.includes(categoryToStore)) {
+        setUserCategories(prev => [...prev, categoryToStore]);
+      }
+      
+      // Increment the receipt counter
+      simpleCounter.increment();
+      console.log('🎤 VOICE EXPENSE: Receipt counter incremented');
+      
+      // Send notifications for the new expense
+      if (savedExpense && savedExpense[0]) {
+        const newExpense = {
+          id: savedExpense[0].id,
+          title: `Voice Entry: ${result.details.description}`,
+          amount: parseFloat(result.details.amount),
+          category: categoryToStore,
+          date: getCurrentDate()
+        };
+        
+        try {
+          notifyExpenseAdded(newExpense);
+          
+          // Check for large expense notification
+          if (newExpense.amount >= 100) {
+            notifyLargeExpense(newExpense);
+          }
+        } catch (notificationError) {
+          console.warn('Notification failed:', notificationError);
+        }
+      }
+      
+      // Clear the dialog and refresh expenses
+      setShowVoiceCategoryDialog(false);
+      setPendingVoiceExpense(null);
+      setVoiceExpenseCategory('');
+      await fetchExpenses();
+      
+      toast({
+        title: "Voice Expense Added",
+        description: `Successfully added ${result.details.description} in ${categoryToStore} category`,
+        duration: 3000
+      });
+      
+    } catch (error) {
+      console.error('❌ Error saving voice expense:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save voice expense. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Cancel voice expense category selection
+  const cancelVoiceExpenseCategory = () => {
+    setShowVoiceCategoryDialog(false);
+    setPendingVoiceExpense(null);
+    setVoiceExpenseCategory('');
+    setProcessingVoice(false);
+    setActiveInputMethod('none');
   };
 
   const handleReceiptUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -3098,6 +3178,87 @@ export function ExpenseTracker() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Voice Expense Category Selection Dialog */}
+      <Dialog open={showVoiceCategoryDialog} onOpenChange={setShowVoiceCategoryDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Set Category for Voice Expense</DialogTitle>
+            <DialogDescription>
+              AI suggested "{pendingVoiceExpense?.suggestedCategory}". You can choose a different category or accept this suggestion.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {pendingVoiceExpense && (
+            <div className="space-y-4">
+              {/* Expense Preview */}
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="font-medium">{pendingVoiceExpense.result.details.description}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {formatAmount(parseFloat(pendingVoiceExpense.result.details.amount))}
+                </p>
+              </div>
+              
+              {/* Category Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="voice-category">Category</Label>
+                <Select value={voiceExpenseCategory} onValueChange={setVoiceExpenseCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {/* AI Suggestion first (if different from user categories) */}
+                    {pendingVoiceExpense.suggestedCategory && 
+                     !userCategories.includes(pendingVoiceExpense.suggestedCategory) && (
+                      <>
+                        <SelectItem value={pendingVoiceExpense.suggestedCategory}>
+                          🤖 {pendingVoiceExpense.suggestedCategory} (AI Suggestion)
+                        </SelectItem>
+                      </>
+                    )}
+                    
+                    {/* User's existing categories */}
+                    {userCategories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                        {category === pendingVoiceExpense.suggestedCategory && " 🤖"}
+                      </SelectItem>
+                    ))}
+                    
+                    {/* Default categories not in user categories */}
+                    {DEFAULT_CATEGORIES
+                      .filter(category => !userCategories.includes(category))
+                      .map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                          {category === pendingVoiceExpense.suggestedCategory && " 🤖"}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-2">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={cancelVoiceExpenseCategory}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  className="flex-1"
+                  onClick={saveVoiceExpense}
+                  disabled={!voiceExpenseCategory}
+                >
+                  Save Expense
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
