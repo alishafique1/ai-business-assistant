@@ -31,12 +31,31 @@ export const useSimpleCounter = () => {
         const used = Math.max(0, data.used || 0);
         const resetTime = data.resetTime ? new Date(data.resetTime) : null;
         
+        console.log('📊 LOADING STORED DATA:', { 
+          rawUsed: data.used, 
+          finalUsed: used, 
+          resetTime: resetTime?.toISOString(),
+          currentTime: now.toISOString()
+        });
+        
         // Check if 10 minutes have passed since reset time
         if (resetTime && now.getTime() >= resetTime.getTime()) {
           console.log('⏰ 10 minutes expired - resetting counter');
-          setCounter({ used: 0, limit: 5, canAdd: true, resetTime: undefined });
-          localStorage.setItem(key, JSON.stringify({ used: 0, resetTime: null }));
+          console.log('⏰ Reset details:', { 
+            currentTime: now.toISOString(), 
+            resetTime: resetTime.toISOString(),
+            timeDiff: (now.getTime() - resetTime.getTime()) / 1000 + 's ago'
+          });
+          
+          // Clear localStorage completely to avoid any stale data
+          localStorage.removeItem(key);
+          
+          // Set counter to fresh state
+          const resetState = { used: 0, limit: 5, canAdd: true, resetTime: undefined };
+          setCounter(resetState);
           setTimeLeft(0);
+          
+          console.log('⏰ Counter reset complete:', resetState);
         } else {
           const canAdd = used < 5;
           setCounter({ used, limit: 5, canAdd, resetTime });
@@ -72,6 +91,13 @@ export const useSimpleCounter = () => {
 
       const newUsed = current + 1;
       const newCanAdd = newUsed < 5;
+      
+      console.log('📊 INCREMENT:', { 
+        currentUsed: current, 
+        newUsed, 
+        limit: 5, 
+        willBeAtLimit: newUsed >= 5 
+      });
       
       // Set reset time to 10 minutes from now when limit is reached
       let resetTime = counter.resetTime;
