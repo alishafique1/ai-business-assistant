@@ -279,7 +279,7 @@ export const Footer = () => {
         {/* Bottom section */}
         <div className="border-t border-background/20 pt-4 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-background/70 text-sm">
-            © 2024 Expenzify. All rights reserved.
+            © 2025 Expenzify. All rights reserved.
           </p>
           <div className="flex items-center gap-6 text-sm text-background/70">
             <span>Made with ❤️ for small businesses</span>

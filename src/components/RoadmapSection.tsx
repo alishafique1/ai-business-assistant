@@ -211,68 +211,6 @@ export default function RoadmapSection() {
           </div>
         </div>
 
-        {/* Enhanced Value Proposition */}
-        <div className="mt-20 text-center relative">
-          <div className="bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-sm rounded-3xl p-12 border border-slate-700/30 shadow-2xl">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent rounded-3xl"></div>
-            
-            <h3 className="text-3xl font-bold text-white mb-6 relative z-10">
-              <span className="bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent">Enterprise Evolution</span> Without Enterprise Costs
-            </h3>
-            <p className="text-xl text-gray-300 mb-10 max-w-4xl mx-auto leading-relaxed relative z-10">
-              Access the complete AI automation ecosystem with a single subscription. While competitors charge separately for each capability, 
-              you receive unlimited intelligence tools with continuous upgrades.
-            </p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto relative z-10">
-              <div className="bg-slate-900/40 rounded-2xl p-6 border border-red-500/20 backdrop-blur-sm">
-                <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center mb-4 mx-auto">
-                  <span className="text-red-400 text-xl">❌</span>
-                </div>
-                <div className="font-bold text-red-400 mb-2 text-lg">Traditional Approach</div>
-                <div className="text-gray-400 text-sm leading-relaxed">
-                  $30-80/month per AI tool<br/>
-                  Limited integrations<br/>
-                  Fragmented workflows
-                </div>
-                <div className="text-red-300 font-semibold mt-3">$500+/month total cost</div>
-              </div>
-              
-              <div className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-2xl p-6 border border-blue-400/30 backdrop-blur-sm relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-2xl"></div>
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-4 mx-auto shadow-lg relative z-10">
-                  <span className="text-white text-xl">🚀</span>
-                </div>
-                <div className="font-bold text-blue-400 mb-2 text-lg relative z-10">Our Unified Platform</div>
-                <div className="text-gray-300 text-sm leading-relaxed relative z-10">
-                  Complete AI ecosystem<br/>
-                  Seamless integration<br/>
-                  Continuous updates
-                </div>
-                <div className="text-blue-300 font-semibold mt-3 relative z-10">One intelligent subscription</div>
-              </div>
-              
-              <div className="bg-slate-900/40 rounded-2xl p-6 border border-emerald-500/20 backdrop-blur-sm">
-                <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-4 mx-auto">
-                  <span className="text-emerald-400 text-xl">💰</span>
-                </div>
-                <div className="font-bold text-emerald-400 mb-2 text-lg">Your Strategic Advantage</div>
-                <div className="text-gray-400 text-sm leading-relaxed">
-                  85% cost optimization<br/>
-                  Unified intelligence<br/>
-                  Future-proof scaling
-                </div>
-                <div className="text-emerald-300 font-semibold mt-3">$400+ monthly savings</div>
-              </div>
-            </div>
-            
-            <div className="mt-10 relative z-10">
-              <p className="text-blue-300 font-semibold text-lg">
-                🎯 Early adopters lock in lifetime pricing with access to all future innovations
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   );

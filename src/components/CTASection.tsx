@@ -209,24 +209,6 @@ export const CTASection = () => {
             </Button>
           </div>
           
-          {/* Enhanced trust indicators */}
-          <div className={`mt-12 pt-8 border-t border-white/30 transition-all duration-1000 delay-900 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            <p className="text-white/80 mb-6 text-lg font-medium">Trusted by innovative enterprises worldwide</p>
-            <div className="flex flex-wrap justify-center items-center gap-6 opacity-90">
-              <div className="bg-white/25 px-6 py-3 rounded-xl backdrop-blur-sm hover:bg-white/35 hover:scale-105 transition-all duration-500 group relative overflow-hidden hover:-translate-y-1 border border-white/10">
-                <span className="text-white font-bold group-hover:drop-shadow-md relative z-10">Bank-Level Security</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              </div>
-              <div className="bg-white/25 px-6 py-3 rounded-xl backdrop-blur-sm hover:bg-white/35 hover:scale-105 transition-all duration-500 group relative overflow-hidden hover:-translate-y-1 border border-white/10">
-                <span className="text-white font-bold group-hover:drop-shadow-md relative z-10">SOC 2 Compliant</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              </div>
-              <div className="bg-white/25 px-6 py-3 rounded-xl backdrop-blur-sm hover:bg-white/35 hover:scale-105 transition-all duration-500 group relative overflow-hidden hover:-translate-y-1 border border-white/10">
-                <span className="text-white font-bold group-hover:drop-shadow-md relative z-10">Enterprise Support</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </section>

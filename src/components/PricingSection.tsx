@@ -423,20 +423,6 @@ export default function PricingSection() {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto">
-            <div className="flex items-center justify-center space-x-2">
-              <DollarSign className="h-5 w-5 text-primary" />
-              <span className="text-white">14-day money-back guarantee</span>
-            </div>
-            <div className="flex items-center justify-center space-x-2">
-              <Clock className="h-5 w-5 text-primary" />
-              <span className="text-white">Cancel anytime, keep your data</span>
-            </div>
-            <div className="flex items-center justify-center space-x-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <span className="text-white">Migrate from any accounting tool</span>
-            </div>
-          </div>
         </div>
       </div>
     </section>

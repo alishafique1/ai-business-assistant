@@ -8,19 +8,10 @@ import {
   Users
 } from "lucide-react";
 import { useScrollAnimation, useStaggeredAnimation } from "@/hooks/useScrollAnimation";
-import { useAnimatedCounter } from "@/hooks/useAnimatedCounter";
 
 export const BenefitsSection = () => {
   const { elementRef: titleRef, isVisible: titleVisible } = useScrollAnimation({ threshold: 0.2 });
   const { containerRef: benefitsRef, visibleItems: visibleBenefits } = useStaggeredAnimation(6, 150);
-  const { elementRef: statsRef, isVisible: statsVisible } = useScrollAnimation({ threshold: 0.3 });
-  const { elementRef: clientsRef, isVisible: clientsVisible } = useScrollAnimation({ threshold: 0.3 });
-  const { elementRef: testimonialRef, isVisible: testimonialVisible } = useScrollAnimation({ threshold: 0.3 });
-  
-  // Animated counters
-  const costSavings = useAnimatedCounter({ end: 85, isVisible: statsVisible, suffix: '%' });
-  const transformations = useAnimatedCounter({ end: 150, isVisible: statsVisible, suffix: '+' });
-  const operations = useAnimatedCounter({ end: 24, isVisible: statsVisible });
 
   const benefits = [
     {
@@ -140,90 +131,6 @@ export const BenefitsSection = () => {
           ))}
         </div>
 
-        {/* Enhanced social proof section */}
-        <div className="mt-24 text-center">
-          <div 
-            ref={clientsRef as React.RefObject<HTMLDivElement>}
-            className={`inline-flex items-center gap-3 bg-slate-800/60 backdrop-blur-sm rounded-full px-8 py-4 mb-12 border border-slate-600/30 transition-all duration-1000 delay-200 ${
-              clientsVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-16'
-            }`}
-          >
-            <div className="flex -space-x-3">
-              <img 
-                src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face&auto=format" 
-                alt="Business Owner - John" 
-                className="w-10 h-10 rounded-full border-2 border-slate-700 shadow-lg object-cover"
-              />
-              <img 
-                src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=40&h=40&fit=crop&crop=face&auto=format" 
-                alt="CFO - Maria" 
-                className="w-10 h-10 rounded-full border-2 border-slate-700 shadow-lg object-cover"
-              />
-              <img 
-                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face&auto=format" 
-                alt="Founder - Alex" 
-                className="w-10 h-10 rounded-full border-2 border-slate-700 shadow-lg object-cover"
-              />
-              <img 
-                src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=40&h=40&fit=crop&crop=face&auto=format" 
-                alt="Director - Michael" 
-                className="w-10 h-10 rounded-full border-2 border-slate-700 shadow-lg object-cover"
-              />
-              <img 
-                src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=40&h=40&fit=crop&crop=face&auto=format" 
-                alt="Manager - Lisa" 
-                className="w-10 h-10 rounded-full border-2 border-slate-700 shadow-lg object-cover"
-              />
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-full border-2 border-slate-700 flex items-center justify-center text-xs text-white font-bold shadow-lg">
-                +145
-              </div>
-            </div>
-            <span className="text-white font-semibold text-lg">Enterprise clients optimizing operations</span>
-          </div>
-          
-          <div 
-            ref={testimonialRef as React.RefObject<HTMLDivElement>}
-            className={`max-w-5xl mx-auto bg-slate-800/40 backdrop-blur-sm rounded-2xl p-8 border border-slate-600/30 shadow-2xl transition-all duration-1000 delay-400 ${
-              testimonialVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-95'
-            }`}
-          >
-            <blockquote className="text-xl md:text-2xl text-white font-medium leading-relaxed mb-6 italic">
-              "I was paying $75/month for ChatGPT Plus, and two other business apps. This platform does everything 
-              for $29 and keeps my data private. Plus they keep adding features!"
-            </blockquote>
-            <div className="flex items-center justify-center gap-4">
-              <img 
-                src="https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=48&h=48&fit=crop&crop=face&auto=format" 
-                alt="Jennifer Kim" 
-                className="w-12 h-12 rounded-full object-cover border-2 border-slate-600"
-              />
-              <div className="text-left">
-                <cite className="text-gray-300 font-semibold block">Jennifer Kim</cite>
-                <p className="text-blue-400 text-sm">Marketing Agency Owner • Early Adopter</p>
-              </div>
-            </div>
-          </div>
-          
-          <div 
-            ref={statsRef as React.RefObject<HTMLDivElement>}
-            className={`mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto transition-all duration-1000 ${
-              statsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-            }`}
-          >
-            <div className="text-center">
-              <div className="text-3xl font-bold text-white mb-2">{costSavings}</div>
-              <p className="text-gray-400">Average cost savings</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-white mb-2">{transformations}</div>
-              <p className="text-gray-400">Business transformations</p>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-white mb-2">{operations}/7</div>
-              <p className="text-gray-400">AI-powered operations</p>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   );
